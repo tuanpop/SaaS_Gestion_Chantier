@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ClawBTP — Conducteur — Mes Chantiers</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            heading: ['Outfit', 'sans-serif'],
+            sans: ['Public Sans', 'sans-serif']
+          },
+          colors: {
+            primary: { DEFAULT: '#334155', light: '#475569', dark: '#1E293B' },
+            accent: '#F97316',
+            danger: { DEFAULT: '#DC2626', bg: '#FEE2E2' },
+            warning: { DEFAULT: '#F59E0B', bg: '#FEF3C7' },
+            success: { DEFAULT: '#22C55E', bg: '#DCFCE7' },
+            surface: '#F1F5F9',
+            cream: '#FAFAF8',
+            muted: '#64748B',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    * { touch-action: manipulation; }
+    body {
+      min-height: 100vh; min-height: 100dvh;
+      background: #FAFAF8;
+      font-family: 'Public Sans', sans-serif;
+      color: #0F172A;
+    }
+    .card-brutal {
+      border: 2px solid #000;
+      box-shadow: 3px 3px 0 #000;
+      border-radius: 6px;
+      background: #fff;
+      transition: transform 100ms, box-shadow 100ms;
+    }
+    .card-brutal:active {
+      box-shadow: 1px 1px 0 #000;
+      transform: translate(2px, 2px);
+    }
+    .btn-brutal {
+      border: 2px solid #000;
+      box-shadow: 3px 3px 0 #000;
+      border-radius: 6px;
+      font-weight: 700;
+      font-family: 'Outfit', sans-serif;
+      transition: transform 100ms, box-shadow 100ms;
+      cursor: pointer;
+    }
+    .btn-brutal:active {
+      box-shadow: 1px 1px 0 #000;
+      transform: translate(2px, 2px);
+    }
+    .badge { border: 2px solid; border-radius: 4px; padding: 2px 10px; font-weight: 600; font-size: 13px; display: inline-block; }
+    .badge-danger { background: #FEE2E2; border-color: #DC2626; color: #DC2626; }
+    .badge-success { background: #DCFCE7; border-color: #22C55E; color: #166534; }
+    .badge-warning { background: #FEF3C7; border-color: #F59E0B; color: #92400E; }
+    .badge-muted { background: #F1F5F9; border-color: #94A3B8; color: #64748B; }
+    .badge-primary { background: #E0F2FE; border-color: #0284C7; color: #0369A1; }
+    .bottom-nav {
+      position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+      width: 100%; max-width: 390px;
+      background: #fff; border-top: 2px solid #000;
+      display: flex; justify-content: space-around; align-items: center;
+      padding: 8px 0 env(safe-area-inset-bottom, 8px);
+      z-index: 50;
+    }
+    .bottom-nav a {
+      display: flex; flex-direction: column; align-items: center;
+      font-size: 11px; font-weight: 500; color: #64748B;
+      gap: 2px; text-decoration: none; padding: 4px 8px;
+      position: relative;
+    }
+    .bottom-nav a.active { color: #F97316; font-weight: 700; }
+    .bottom-nav a.active::after {
+      content: ''; position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
+      width: 24px; height: 3px; background: #F97316; border-radius: 2px;
+    }
+  </style>
+</head>
+<body>
+  <div class="max-w-[390px] mx-auto min-h-screen bg-cream relative">
+
+    <!-- Lien retour prototype -->
+    <a href="00-index.html" class="block text-xs text-muted px-4 pt-2 pb-0 hover:underline">&larr; Prototype</a>
+
+    <!-- Header -->
+    <header class="bg-primary-dark px-4 py-4 flex items-center justify-between">
+      <h1 class="font-heading text-white text-xl font-bold">Mes chantiers</h1>
+      <div class="w-9 h-9 rounded-full border-2 border-black bg-surface flex items-center justify-center text-sm font-bold text-primary-dark">SC</div>
+    </header>
+
+    <!-- Contenu -->
+    <main class="px-4 pt-4 pb-40 flex flex-col gap-3">
+
+      <!-- Chantier 1 — En retard -->
+      <a href="09-conducteur-chantier-detail.html" class="card-brutal block p-3 border-l-[4px] border-l-danger">
+        <div class="flex items-start justify-between mb-1">
+          <div>
+            <div class="font-heading font-semibold text-[15px]">Extension Leclerc — Mérignac</div>
+            <div class="text-muted text-xs">Client : Leclerc Immobilier</div>
+          </div>
+          <span class="badge badge-danger ml-2 shrink-0">En retard</span>
+        </div>
+        <div class="w-full h-2 bg-surface border border-black rounded mt-2 overflow-hidden">
+          <div class="h-full bg-danger rounded-l" style="width: 35%"></div>
+        </div>
+        <div class="flex items-center gap-3 mt-2 text-xs text-muted">
+          <span class="flex items-center gap-1"><i data-lucide="list-checks" class="w-3.5 h-3.5"></i> 12 tâches</span>
+          <span class="flex items-center gap-1"><i data-lucide="users" class="w-3.5 h-3.5"></i> 3 ouvriers</span>
+        </div>
+      </a>
+
+      <!-- Chantier 2 — Dérive -->
+      <a href="09-conducteur-chantier-detail.html" class="card-brutal block p-3 border-l-[4px] border-l-warning">
+        <div class="flex items-start justify-between mb-1">
+          <div>
+            <div class="font-heading font-semibold text-[15px]">Rénovation Bertrand — Pessac</div>
+            <div class="text-muted text-xs">Client : SCI Bertrand</div>
+          </div>
+          <span class="badge badge-warning ml-2 shrink-0">Dérive</span>
+        </div>
+        <div class="w-full h-2 bg-surface border border-black rounded mt-2 overflow-hidden">
+          <div class="h-full bg-warning rounded-l" style="width: 45%"></div>
+        </div>
+        <div class="flex items-center gap-3 mt-2 text-xs text-muted">
+          <span class="flex items-center gap-1"><i data-lucide="list-checks" class="w-3.5 h-3.5"></i> 8 tâches</span>
+          <span class="flex items-center gap-1"><i data-lucide="users" class="w-3.5 h-3.5"></i> 2 ouvriers</span>
+        </div>
+      </a>
+
+      <!-- Chantier 3 — OK -->
+      <a href="09-conducteur-chantier-detail.html" class="card-brutal block p-3 border-l-[4px] border-l-success">
+        <div class="flex items-start justify-between mb-1">
+          <div>
+            <div class="font-heading font-semibold text-[15px]">Maison Martin — Talence</div>
+            <div class="text-muted text-xs">Client : M. et Mme Martin</div>
+          </div>
+          <span class="badge badge-success ml-2 shrink-0">OK</span>
+        </div>
+        <div class="w-full h-2 bg-surface border border-black rounded mt-2 overflow-hidden">
+          <div class="h-full bg-success rounded-l" style="width: 72%"></div>
+        </div>
+        <div class="flex items-center gap-3 mt-2 text-xs text-muted">
+          <span class="flex items-center gap-1"><i data-lucide="list-checks" class="w-3.5 h-3.5"></i> 6 tâches</span>
+          <span class="flex items-center gap-1"><i data-lucide="users" class="w-3.5 h-3.5"></i> 4 ouvriers</span>
+        </div>
+      </a>
+
+      <!-- Chantier 4 — OK -->
+      <a href="09-conducteur-chantier-detail.html" class="card-brutal block p-3 border-l-[4px] border-l-success">
+        <div class="flex items-start justify-between mb-1">
+          <div>
+            <div class="font-heading font-semibold text-[15px]">Dupont — Bordeaux Centre</div>
+            <div class="text-muted text-xs">Client : Dupont Résidences</div>
+          </div>
+          <span class="badge badge-success ml-2 shrink-0">OK</span>
+        </div>
+        <div class="w-full h-2 bg-surface border border-black rounded mt-2 overflow-hidden">
+          <div class="h-full bg-success rounded-l" style="width: 90%"></div>
+        </div>
+        <div class="flex items-center gap-3 mt-2 text-xs text-muted">
+          <span class="flex items-center gap-1"><i data-lucide="list-checks" class="w-3.5 h-3.5"></i> 10 tâches</span>
+          <span class="flex items-center gap-1"><i data-lucide="users" class="w-3.5 h-3.5"></i> 5 ouvriers</span>
+        </div>
+      </a>
+
+    </main>
+
+    <!-- Bottom Nav -->
+    <nav class="bottom-nav">
+      <a href="08-conducteur-chantiers.html" class="active">
+        <i data-lucide="building-2" class="w-5 h-5"></i>
+        <span>Chantiers</span>
+      </a>
+      <a href="10-conducteur-taches.html">
+        <i data-lucide="list-checks" class="w-5 h-5"></i>
+        <span>Tâches</span>
+      </a>
+      <a href="11-conducteur-cr.html">
+        <i data-lucide="file-text" class="w-5 h-5"></i>
+        <span>CR</span>
+      </a>
+      <a href="12-conducteur-alertes.html" class="relative">
+        <i data-lucide="bell" class="w-5 h-5"></i>
+        <span>Alertes</span>
+        <span class="absolute -top-1 right-0 w-4 h-4 bg-danger text-white text-[10px] font-bold rounded-full flex items-center justify-center">3</span>
+      </a>
+      <a href="13-conducteur-clawbot.html">
+        <i data-lucide="bot" class="w-5 h-5"></i>
+        <span>ClawBot</span>
+      </a>
+    </nav>
+
+  </div>
+  <script>lucide.createIcons();</script>
+</body>
+</html>

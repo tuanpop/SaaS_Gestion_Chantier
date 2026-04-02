@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ClawBTP - Essai termine</title>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#451A03;font-family:'Source Sans 3',sans-serif;color:#292524;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px}
+.logo{font-family:'Lexend',sans-serif;font-weight:700;font-size:28px;color:#fff;margin-bottom:8px;text-align:center}
+.logo span{color:#C2703E}
+.expired-title{font-family:'Lexend',sans-serif;font-weight:700;font-size:32px;color:#fff;text-align:center;margin-bottom:8px}
+.expired-sub{color:#A8A29E;font-size:16px;text-align:center;margin-bottom:40px;max-width:500px;line-height:1.5}
+.discount{display:inline-block;background:rgba(194,112,62,0.2);color:#C2703E;font-family:'Lexend',sans-serif;font-weight:700;font-size:15px;padding:6px 20px;border-radius:20px;margin-bottom:32px}
+
+.pricing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;max-width:900px;width:100%;margin-bottom:32px}
+.pricing-card{background:#fff;border:1px solid #E7E0D6;border-radius:14px;box-shadow:0 2px 8px rgba(120,53,15,0.08);padding:28px 24px;text-align:center;position:relative;transition:transform 200ms}
+.pricing-card:hover{transform:translateY(-4px)}
+.pricing-highlight{border:2px solid #C2703E;box-shadow:0 4px 20px rgba(194,112,62,0.2)}
+.popular-badge{position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:#C2703E;color:#fff;font-family:'Lexend',sans-serif;font-weight:700;font-size:12px;padding:4px 16px;border-radius:12px;white-space:nowrap}
+.plan-name{font-family:'Lexend',sans-serif;font-weight:700;font-size:20px;color:#78350F;margin-bottom:4px}
+.plan-desc{font-size:13px;color:#78716C;margin-bottom:16px}
+.plan-price{font-family:'Lexend',sans-serif;font-weight:700;font-size:40px;color:#C2703E;margin-bottom:4px}
+.plan-price span{font-size:16px;font-weight:500;color:#78716C}
+.plan-period{font-size:13px;color:#A8A29E;margin-bottom:20px}
+.plan-features{list-style:none;text-align:left;margin-bottom:24px}
+.plan-features li{padding:6px 0;font-size:14px;display:flex;align-items:center;gap:8px;color:#57534E}
+.plan-features li i{color:#15803D;flex-shrink:0}
+.btn-warm{border:none;border-radius:12px;font-weight:600;font-family:'Lexend',sans-serif;box-shadow:0 2px 8px rgba(120,53,15,0.15);transition:all 150ms;cursor:pointer;padding:14px 24px;font-size:15px;width:100%;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn-warm:active{transform:translateY(2px);box-shadow:0 1px 3px rgba(120,53,15,0.1)}
+.btn-primary{background:#C2703E;color:#fff}
+.btn-outline{background:transparent;color:#C2703E;border:2px solid #C2703E;box-shadow:none}
+
+.readonly-link{color:#A8A29E;font-size:14px;text-decoration:none;display:inline-flex;align-items:center;gap:6px;transition:color 150ms}
+.readonly-link:hover{color:#FEF3C7}
+</style>
+</head>
+<body>
+<a href="00-index.html" style="position:fixed;top:12px;left:12px;z-index:100;background:rgba(255,255,255,0.95);color:#78716C;font-size:12px;padding:6px 12px;border-radius:20px;text-decoration:none;display:inline-flex;align-items:center;gap:4px;box-shadow:0 2px 8px rgba(0,0,0,0.08);font-family:Source Sans 3,sans-serif">&#8592; Index</a>
+
+<div class="logo"><span>Claw</span>BTP</div>
+<div class="expired-title">Votre essai est termine</div>
+<div class="expired-sub">Vos 14 jours d'essai gratuit sont ecoules. Choisissez un plan pour continuer a utiliser ClawBTP et garder vos donnees.</div>
+<div class="discount">-20% sur l'abonnement annuel</div>
+
+<div class="pricing-grid">
+  <!-- Starter -->
+  <div class="pricing-card">
+    <div class="plan-name">Starter</div>
+    <div class="plan-desc">Pour les petites equipes</div>
+    <div class="plan-price">49<span>EUR</span></div>
+    <div class="plan-period">par mois / HT</div>
+    <ul class="plan-features">
+      <li><i data-lucide="check" style="width:16px;height:16px"></i> 3 chantiers actifs</li>
+      <li><i data-lucide="check" style="width:16px;height:16px"></i> 10 ouvriers max</li>
+      <li><i data-lucide="check" style="width:16px;height:16px"></i> CR journaliers IA</li>
+      <li><i data-lucide="check" style="width:16px;height:16px"></i> Alertes derives</li>
+      <li><i data-lucide="check" style="width:16px;height:16px"></i> 1 conducteur</li>
+    </ul>
+    <button class="btn-warm btn-outline">Choisir Starter</button>
+  </div>
+
+  <!-- Pro -->
+  <div class="pricing-card pricing-highlight">
+    <div class="popular-badge">Populaire</div>
+    <div class="plan-name">Pro</div>
+    <div class="plan-desc">Pour les PME en croissance</div>
+    <div class="plan-price">99<span>EUR</span></div>
+    <div class="plan-period">par mois / HT</div>
+    <ul class="plan-features">
+      <li><i data-lucide="check" style="width:16px;height:16px"></i> 10 chantiers actifs</li>
+      <li><i data-lucide="check" style="width:16px;height:16px"></i> 25 ouvriers max</li>
+      <li><i data-lucide="check" style="width:16px;height:16px"></i> CR + rapport hebdo IA</li>
+      <li><i data-lucide="check" style="width:16px;height:16px"></i> ClawBot assistant complet</li>
+      <li><i data-lucide="check" style="width:16px;height:16px"></i> 3 conducteurs</li>
+      <li><i data-lucide="check" style="width:16px;height:16px"></i> Export PDF personnalise</li>
+    </ul>
+    <button class="btn-warm btn-primary">Choisir Pro</button>
+  </div>
+
+  <!-- Business -->
+  <div class="pricing-card">
+    <div class="plan-name">Business</div>
+    <div class="plan-desc">Pour les entreprises etablies</div>
+    <div class="plan-price">179<span>EUR</span></div>
+    <div class="plan-period">par mois / HT</div>
+    <ul class="plan-features">
+      <li><i data-lucide="check" style="width:16px;height:16px"></i> Chantiers illimites</li>
+      <li><i data-lucide="check" style="width:16px;height:16px"></i> Ouvriers illimites</li>
+      <li><i data-lucide="check" style="width:16px;height:16px"></i> Toutes les fonctions Pro</li>
+      <li><i data-lucide="check" style="width:16px;height:16px"></i> Conducteurs illimites</li>
+      <li><i data-lucide="check" style="width:16px;height:16px"></i> Support prioritaire</li>
+      <li><i data-lucide="check" style="width:16px;height:16px"></i> SSO / SAML</li>
+    </ul>
+    <button class="btn-warm btn-outline">Choisir Business</button>
+  </div>
+</div>
+
+<a href="15-admin-dashboard.html" class="readonly-link">Continuer en lecture seule <i data-lucide="arrow-right" style="width:14px;height:14px"></i></a>
+
+<script>lucide.createIcons()</script>
+</body>
+</html>

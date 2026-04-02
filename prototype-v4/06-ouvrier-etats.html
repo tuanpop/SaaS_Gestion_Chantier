@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claw — Etats speciaux</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #F8FAFC;
+    display: flex;
+    justify-content: center;
+    min-height: 100vh;
+  }
+  h1, h2, h3, h4, h5 { font-family: 'Plus Jakarta Sans', sans-serif; }
+  .mobile-frame {
+    width: 100%;
+    max-width: 375px;
+    min-height: 100vh;
+    background: #F8FAFC;
+    position: relative;
+  }
+
+  /* Header */
+  .header {
+    background: linear-gradient(135deg, #6366F1, #8B5CF6);
+    color: white;
+    padding: 48px 24px 20px;
+    border-radius: 0 0 20px 20px;
+  }
+  .header-title {
+    font-size: 18px;
+    font-weight: 700;
+  }
+  .header-sub {
+    font-size: 13px;
+    opacity: 0.8;
+    margin-top: 4px;
+  }
+
+  /* Content */
+  .content {
+    padding: 20px 16px 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .state-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #94A3B8;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: -4px;
+  }
+
+  /* State card */
+  .state-card {
+    background: white;
+    border: 1px solid #E2E8F0;
+    border-radius: 16px;
+    padding: 28px 20px;
+    text-align: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .state-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+  }
+  .state-title {
+    font-size: 17px;
+    font-weight: 700;
+    color: #0F172A;
+    margin-bottom: 6px;
+  }
+  .state-desc {
+    font-size: 13px;
+    color: #475569;
+    line-height: 1.5;
+    margin-bottom: 16px;
+  }
+  .state-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 20px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    font-family: 'Inter', sans-serif;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  /* Empty state */
+  .state-empty .state-icon { background: #F1F5F9; color: #94A3B8; }
+  .state-empty .state-btn { background: #F1F5F9; color: #475569; }
+  .state-empty .state-btn:hover { background: #E2E8F0; }
+
+  /* No assignment */
+  .state-no-assign .state-icon { background: #EEF2FF; color: #6366F1; }
+  .state-no-assign .state-btn { background: #EEF2FF; color: #6366F1; }
+  .state-no-assign .state-btn:hover { background: #E0E7FF; }
+
+  /* Offline */
+  .state-offline .state-icon { background: #FFFBEB; color: #F59E0B; }
+  .offline-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #FFFBEB;
+    color: #D97706;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 6px 14px;
+    border-radius: 8px;
+    margin-bottom: 12px;
+  }
+  .offline-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #F59E0B;
+    animation: blink 1.5s ease-in-out infinite;
+  }
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+  .pending-count {
+    font-size: 28px;
+    font-weight: 800;
+    color: #F59E0B;
+    margin-bottom: 4px;
+  }
+  .pending-label {
+    font-size: 13px;
+    color: #475569;
+    margin-bottom: 12px;
+  }
+
+  /* Sync */
+  .state-sync .state-icon { background: #ECFDF5; color: #10B981; }
+  .sync-progress-bg {
+    height: 8px;
+    background: #E2E8F0;
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 16px 0 8px;
+  }
+  .sync-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #10B981, #34D399);
+    border-radius: 4px;
+    width: 65%;
+    animation: syncAnim 2s ease-in-out infinite;
+  }
+  @keyframes syncAnim {
+    0% { width: 30%; }
+    50% { width: 75%; }
+    100% { width: 30%; }
+  }
+  .sync-label {
+    font-size: 13px;
+    color: #10B981;
+    font-weight: 600;
+  }
+  .sync-detail {
+    font-size: 12px;
+    color: #94A3B8;
+    margin-top: 4px;
+  }
+
+  .spinning {
+    animation: spin 1.5s linear infinite;
+  }
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+</style>
+</head>
+<body>
+
+<a href="00-index.html" style="position:fixed;top:12px;left:12px;z-index:100;background:white;color:#475569;font-size:12px;padding:6px 12px;border-radius:20px;text-decoration:none;display:flex;align-items:center;gap:4px;box-shadow:0 2px 8px rgba(0,0,0,0.1);font-family:'Inter',sans-serif">
+  <i data-lucide="arrow-left" style="width:14px;height:14px"></i> Index
+</a>
+
+<div class="mobile-frame">
+  <div class="header">
+    <h1 class="header-title">Etats speciaux</h1>
+    <p class="header-sub">Apercu des differents etats de l'application</p>
+  </div>
+
+  <div class="content">
+
+    <!-- 1. Empty state -->
+    <p class="state-label">1. Liste vide</p>
+    <div class="state-card state-empty">
+      <div class="state-icon">
+        <i data-lucide="inbox" style="width:32px;height:32px"></i>
+      </div>
+      <h3 class="state-title">Aucune tache</h3>
+      <p class="state-desc">Vous n'avez aucune tache pour ce chantier aujourd'hui. Profitez-en pour verifier les autres chantiers.</p>
+      <a href="02-ouvrier-selecteur-chantier.html" class="state-btn">
+        <i data-lucide="layout-grid" style="width:14px;height:14px"></i>
+        Voir mes chantiers
+      </a>
+    </div>
+
+    <!-- 2. No assignment -->
+    <p class="state-label">2. Aucune affectation</p>
+    <div class="state-card state-no-assign">
+      <div class="state-icon">
+        <i data-lucide="user-x" style="width:32px;height:32px"></i>
+      </div>
+      <h3 class="state-title">Aucune affectation</h3>
+      <p class="state-desc">Vous n'etes affecte a aucun chantier pour le moment. Contactez votre conducteur de travaux.</p>
+      <button class="state-btn">
+        <i data-lucide="phone" style="width:14px;height:14px"></i>
+        Contacter le conducteur
+      </button>
+    </div>
+
+    <!-- 3. Offline -->
+    <p class="state-label">3. Hors ligne</p>
+    <div class="state-card state-offline">
+      <div class="state-icon">
+        <i data-lucide="wifi-off" style="width:32px;height:32px"></i>
+      </div>
+      <div class="offline-badge">
+        <span class="offline-dot"></span>
+        Mode hors ligne
+      </div>
+      <h3 class="state-title">Pas de connexion</h3>
+      <p class="state-desc">Vos actions sont enregistrees localement et seront synchronisees automatiquement.</p>
+      <div class="pending-count">3</div>
+      <div class="pending-label">actions en attente de synchronisation</div>
+    </div>
+
+    <!-- 4. Sync -->
+    <p class="state-label">4. Synchronisation</p>
+    <div class="state-card state-sync">
+      <div class="state-icon">
+        <i data-lucide="refresh-cw" style="width:32px;height:32px" class="spinning"></i>
+      </div>
+      <h3 class="state-title">Synchronisation en cours</h3>
+      <p class="state-desc">Envoi de vos donnees vers le serveur...</p>
+      <div class="sync-progress-bg">
+        <div class="sync-progress-fill"></div>
+      </div>
+      <p class="sync-label">65% — 2 sur 3 envoyees</p>
+      <p class="sync-detail">Photos et mises a jour de taches</p>
+    </div>
+
+  </div>
+</div>
+
+<script>lucide.createIcons()</script>
+</body>
+</html>

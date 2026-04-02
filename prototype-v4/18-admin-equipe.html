@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Claw — Equipe</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', sans-serif; color: #0F172A; background: #F8FAFC; display: flex; min-height: 100vh; }
+
+    .sidebar { width: 240px; min-height: 100vh; background: linear-gradient(to bottom, #4338CA, #6D28D9); color: #fff; display: flex; flex-direction: column; position: fixed; top: 0; left: 0; bottom: 0; }
+    .sidebar-logo { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 24px; font-weight: 800; padding: 24px 24px 32px; }
+    .sidebar-nav { flex: 1; display: flex; flex-direction: column; gap: 2px; padding: 0 12px; }
+    .nav-item { display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-radius: 10px; font-size: 14px; font-weight: 500; color: rgba(255,255,255,0.7); text-decoration: none; transition: all .15s; }
+    .nav-item:hover { background: rgba(255,255,255,0.1); color: #fff; }
+    .nav-item.active { background: rgba(255,255,255,0.18); color: #fff; font-weight: 600; }
+    .sidebar-bottom { padding: 16px; border-top: 1px solid rgba(255,255,255,0.15); }
+    .sidebar-user { display: flex; align-items: center; gap: 10px; }
+    .user-avatar { width: 36px; height: 36px; border-radius: 10px; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; }
+    .user-info .name { font-size: 13px; font-weight: 600; }
+    .user-info .role { font-size: 11px; opacity: 0.65; }
+
+    .main { margin-left: 240px; flex: 1; padding: 32px; }
+    .back-link { display: inline-flex; align-items: center; gap: 6px; color: #94A3B8; font-size: 13px; text-decoration: none; margin-bottom: 16px; font-family: 'Inter', sans-serif; }
+
+    .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+    .page-header h1 { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 24px; font-weight: 700; }
+    .btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 20px; border-radius: 10px; font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 600; border: none; cursor: pointer; transition: all .15s; }
+    .btn-primary { background: #6366F1; color: #fff; }
+    .btn-primary:hover { background: #4F46E5; }
+
+    /* Table */
+    .table-card { background: #fff; border: 1px solid #E2E8F0; border-radius: 16px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.04); margin-bottom: 24px; }
+    table { width: 100%; border-collapse: collapse; }
+    th { text-align: left; padding: 12px 16px; font-size: 12px; font-weight: 600; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #E2E8F0; background: #F8FAFC; }
+    td { padding: 14px 16px; font-size: 14px; border-bottom: 1px solid #F1F5F9; vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    .member-cell { display: flex; align-items: center; gap: 12px; }
+    .member-avatar { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #fff; }
+    .member-name { font-weight: 600; }
+    .badge-sm { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 16px; font-size: 11px; font-weight: 600; }
+    .badge-purple { background: #F5F3FF; color: #8B5CF6; }
+    .badge-indigo { background: #EEF2FF; color: #6366F1; }
+    .badge-gray { background: #F1F5F9; color: #475569; }
+    .badge-green { background: #ECFDF5; color: #10B981; }
+    .badge-orange { background: #FFFBEB; color: #F59E0B; }
+    .actions-cell { display: flex; gap: 6px; }
+    .action-btn { width: 32px; height: 32px; border-radius: 8px; border: 1px solid #E2E8F0; background: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #475569; transition: all .15s; }
+    .action-btn:hover { border-color: #6366F1; color: #6366F1; }
+
+    /* QR Card */
+    .qr-card { background: #fff; border: 1px solid #E2E8F0; border-radius: 16px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); display: flex; align-items: center; gap: 20px; }
+    .qr-icon-box { width: 64px; height: 64px; border-radius: 14px; background: #EEF2FF; color: #6366F1; display: flex; align-items: center; justify-content: center; }
+    .qr-card h3 { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+    .qr-card p { font-size: 13px; color: #475569; line-height: 1.5; }
+  </style>
+</head>
+<body>
+  <nav class="sidebar">
+    <div class="sidebar-logo">Claw</div>
+    <div class="sidebar-nav">
+      <a class="nav-item" href="15-admin-dashboard.html"><i data-lucide="bar-chart-3" style="width:18px;height:18px"></i> Dashboard</a>
+      <a class="nav-item" href="16-admin-chantier-detail.html"><i data-lucide="folder-open" style="width:18px;height:18px"></i> Projets</a>
+      <a class="nav-item active" href="18-admin-equipe.html"><i data-lucide="users" style="width:18px;height:18px"></i> Equipe</a>
+      <a class="nav-item" href="19-admin-notifications.html"><i data-lucide="bell" style="width:18px;height:18px"></i> Notifications</a>
+      <a class="nav-item" href="20-admin-clawbot.html"><i data-lucide="bot" style="width:18px;height:18px"></i> ClawBot</a>
+    </div>
+    <div class="sidebar-bottom">
+      <div class="sidebar-user">
+        <div class="user-avatar">FD</div>
+        <div class="user-info"><div class="name">Frederic Duval</div><div class="role">Admin</div></div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="main">
+    <a href="00-index.html" class="back-link"><i data-lucide="arrow-left" style="width:14px;height:14px"></i> Prototype</a>
+
+    <div class="page-header">
+      <h1>Equipe</h1>
+      <button class="btn btn-primary"><i data-lucide="user-plus" style="width:16px;height:16px"></i> Ajouter un membre</button>
+    </div>
+
+    <div class="table-card">
+      <table>
+        <thead>
+          <tr>
+            <th>Nom</th>
+            <th>Role</th>
+            <th>Email</th>
+            <th>Statut</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><div class="member-cell"><div class="member-avatar" style="background:#6366F1">FD</div><span class="member-name">Frederic Duval</span></div></td>
+            <td><span class="badge-sm badge-purple">Admin</span></td>
+            <td>frederic@duval-sa.fr</td>
+            <td><span class="badge-sm badge-green">Actif</span></td>
+            <td><div class="actions-cell"><button class="action-btn"><i data-lucide="pencil" style="width:14px;height:14px"></i></button></div></td>
+          </tr>
+          <tr>
+            <td><div class="member-cell"><div class="member-avatar" style="background:#8B5CF6">ML</div><span class="member-name">Marc Leroy</span></div></td>
+            <td><span class="badge-sm badge-indigo">Superviseur</span></td>
+            <td>marc.leroy@duval-sa.fr</td>
+            <td><span class="badge-sm badge-green">Actif</span></td>
+            <td><div class="actions-cell"><button class="action-btn"><i data-lucide="pencil" style="width:14px;height:14px"></i></button><button class="action-btn"><i data-lucide="trash-2" style="width:14px;height:14px"></i></button></div></td>
+          </tr>
+          <tr>
+            <td><div class="member-cell"><div class="member-avatar" style="background:#8B5CF6">SB</div><span class="member-name">Sophie Bernard</span></div></td>
+            <td><span class="badge-sm badge-indigo">Superviseur</span></td>
+            <td>sophie.bernard@duval-sa.fr</td>
+            <td><span class="badge-sm badge-green">Actif</span></td>
+            <td><div class="actions-cell"><button class="action-btn"><i data-lucide="pencil" style="width:14px;height:14px"></i></button><button class="action-btn"><i data-lucide="trash-2" style="width:14px;height:14px"></i></button></div></td>
+          </tr>
+          <tr>
+            <td><div class="member-cell"><div class="member-avatar" style="background:#94A3B8">PM</div><span class="member-name">Pierre Martin</span></div></td>
+            <td><span class="badge-sm badge-gray">Operateur</span></td>
+            <td>—</td>
+            <td><span class="badge-sm badge-green">Actif</span></td>
+            <td><div class="actions-cell"><button class="action-btn"><i data-lucide="qr-code" style="width:14px;height:14px"></i></button><button class="action-btn"><i data-lucide="pencil" style="width:14px;height:14px"></i></button><button class="action-btn"><i data-lucide="trash-2" style="width:14px;height:14px"></i></button></div></td>
+          </tr>
+          <tr>
+            <td><div class="member-cell"><div class="member-avatar" style="background:#94A3B8">KB</div><span class="member-name">Karim Bensaid</span></div></td>
+            <td><span class="badge-sm badge-gray">Operateur</span></td>
+            <td>—</td>
+            <td><span class="badge-sm badge-green">Actif</span></td>
+            <td><div class="actions-cell"><button class="action-btn"><i data-lucide="qr-code" style="width:14px;height:14px"></i></button><button class="action-btn"><i data-lucide="pencil" style="width:14px;height:14px"></i></button><button class="action-btn"><i data-lucide="trash-2" style="width:14px;height:14px"></i></button></div></td>
+          </tr>
+          <tr>
+            <td><div class="member-cell"><div class="member-avatar" style="background:#94A3B8">LP</div><span class="member-name">Lucas Petit</span></div></td>
+            <td><span class="badge-sm badge-gray">Operateur</span></td>
+            <td>—</td>
+            <td><span class="badge-sm badge-green">Actif</span></td>
+            <td><div class="actions-cell"><button class="action-btn"><i data-lucide="qr-code" style="width:14px;height:14px"></i></button><button class="action-btn"><i data-lucide="pencil" style="width:14px;height:14px"></i></button><button class="action-btn"><i data-lucide="trash-2" style="width:14px;height:14px"></i></button></div></td>
+          </tr>
+          <tr>
+            <td><div class="member-cell"><div class="member-avatar" style="background:#94A3B8">AR</div><span class="member-name">Antoine Roux</span></div></td>
+            <td><span class="badge-sm badge-gray">Operateur</span></td>
+            <td>—</td>
+            <td><span class="badge-sm badge-orange">Invite</span></td>
+            <td><div class="actions-cell"><button class="action-btn"><i data-lucide="qr-code" style="width:14px;height:14px"></i></button><button class="action-btn"><i data-lucide="pencil" style="width:14px;height:14px"></i></button><button class="action-btn"><i data-lucide="trash-2" style="width:14px;height:14px"></i></button></div></td>
+          </tr>
+          <tr>
+            <td><div class="member-cell"><div class="member-avatar" style="background:#94A3B8">YA</div><span class="member-name">Youssef Amrani</span></div></td>
+            <td><span class="badge-sm badge-gray">Operateur</span></td>
+            <td>—</td>
+            <td><span class="badge-sm badge-green">Actif</span></td>
+            <td><div class="actions-cell"><button class="action-btn"><i data-lucide="qr-code" style="width:14px;height:14px"></i></button><button class="action-btn"><i data-lucide="pencil" style="width:14px;height:14px"></i></button><button class="action-btn"><i data-lucide="trash-2" style="width:14px;height:14px"></i></button></div></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- QR hint card -->
+    <div class="qr-card">
+      <div class="qr-icon-box"><i data-lucide="qr-code" style="width:28px;height:28px"></i></div>
+      <div>
+        <h3>Connexion operateur par QR code</h3>
+        <p>Chaque operateur dispose d'un QR code unique et permanent. Cliquez sur l'icone QR dans la colonne Actions pour generer ou re-imprimer le QR code d'un operateur.</p>
+      </div>
+    </div>
+  </div>
+
+  <script>lucide.createIcons();</script>
+</body>
+</html>

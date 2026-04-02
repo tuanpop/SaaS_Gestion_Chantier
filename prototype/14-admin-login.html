@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ClawBTP — Connexion</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            heading: ['Outfit', 'sans-serif'],
+            sans: ['Public Sans', 'sans-serif']
+          },
+          colors: {
+            primary: { DEFAULT: '#334155', light: '#475569', dark: '#1E293B' },
+            accent: '#F97316',
+            danger: { DEFAULT: '#DC2626', bg: '#FEE2E2' },
+            warning: { DEFAULT: '#F59E0B', bg: '#FEF3C7' },
+            success: { DEFAULT: '#22C55E', bg: '#DCFCE7' },
+            surface: '#F1F5F9',
+            cream: '#FAFAF8',
+            muted: '#64748B',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background: #FAFAF8;
+      font-family: 'Public Sans', sans-serif;
+      color: #0F172A;
+    }
+    .btn-brutal {
+      border: 2px solid #000;
+      box-shadow: 3px 3px 0 #000;
+      border-radius: 6px;
+      font-weight: 700;
+      font-family: 'Outfit', sans-serif;
+      transition: transform 100ms, box-shadow 100ms;
+      cursor: pointer;
+      padding: 10px 20px;
+    }
+    .btn-brutal:hover {
+      box-shadow: 2px 2px 0 #000;
+      transform: translate(1px, 1px);
+    }
+    .btn-brutal:active {
+      box-shadow: 0px 0px 0 #000;
+      transform: translate(3px, 3px);
+    }
+    .input-brutal {
+      border: 2px solid #000;
+      border-radius: 6px;
+      padding: 14px;
+      font-size: 16px;
+      width: 100%;
+      outline: none;
+      font-family: 'Public Sans', sans-serif;
+      background: #fff;
+    }
+    .input-brutal:focus {
+      border-color: #F97316;
+      box-shadow: 0 0 0 3px rgba(249,115,22,0.15);
+    }
+    .card-brutal {
+      border: 2px solid #000;
+      box-shadow: 4px 4px 0 #000;
+      border-radius: 6px;
+      background: #fff;
+    }
+    .tab-brutal {
+      border: 2px solid #000;
+      padding: 10px 24px;
+      font-weight: 700;
+      font-family: 'Outfit', sans-serif;
+      cursor: pointer;
+      font-size: 15px;
+      transition: background 150ms, color 150ms;
+    }
+  </style>
+</head>
+<body class="min-h-screen">
+  <a href="00-index.html" style="position:fixed;top:12px;left:12px;z-index:100;background:rgba(255,255,255,0.95);color:#475569;font-size:12px;padding:6px 12px;border-radius:20px;text-decoration:none;display:inline-flex;align-items:center;gap:4px;box-shadow:0 2px 8px rgba(0,0,0,0.1)">&larr; Index</a>
+  <div class="flex min-h-screen">
+    <!-- Left Panel -->
+    <div class="w-[55%] bg-primary-dark text-white p-12 flex flex-col justify-between relative overflow-hidden">
+      <div>
+        <!-- Logo -->
+        <div class="mb-12">
+          <h1 class="font-heading font-[800] text-[36px]"><span class="text-accent">Claw</span>BTP</h1>
+        </div>
+        <!-- Tagline -->
+        <h2 class="font-heading font-semibold text-[24px] leading-tight mb-10 max-w-md">
+          Le seul outil BTP que tes ouvriers utilisent vraiment.
+        </h2>
+        <!-- Features -->
+        <div class="space-y-5 mb-16">
+          <div class="flex items-center gap-3">
+            <i data-lucide="check-circle" class="w-6 h-6 text-accent flex-shrink-0"></i>
+            <span class="text-[17px] font-medium">QR code : opérationnel en 90 secondes</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <i data-lucide="check-circle" class="w-6 h-6 text-accent flex-shrink-0"></i>
+            <span class="text-[17px] font-medium">CR automatiques chaque soir</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <i data-lucide="check-circle" class="w-6 h-6 text-accent flex-shrink-0"></i>
+            <span class="text-[17px] font-medium">Budget visible en temps réel</span>
+          </div>
+        </div>
+      </div>
+      <!-- Abstract illustration: 3 stacked brutal cards -->
+      <div class="relative h-[220px]">
+        <div class="card-brutal absolute bottom-0 left-0 w-[260px] p-4 rotate-[-4deg] opacity-80">
+          <div class="text-xs font-bold text-muted mb-1">CHANTIER MARTIN</div>
+          <div class="flex justify-between items-center">
+            <span class="font-heading font-bold text-primary-dark text-lg">42 000€</span>
+            <span class="text-xs font-semibold bg-green-100 text-green-700 border border-green-500 rounded px-2 py-0.5">OK</span>
+          </div>
+          <div class="h-2 bg-surface border border-black rounded mt-2"><div class="h-full bg-green-500 rounded" style="width:55%"></div></div>
+        </div>
+        <div class="card-brutal absolute bottom-8 left-16 w-[260px] p-4 rotate-[2deg] opacity-90">
+          <div class="text-xs font-bold text-muted mb-1">CHANTIER DUPONT</div>
+          <div class="flex justify-between items-center">
+            <span class="font-heading font-bold text-primary-dark text-lg">78 500€</span>
+            <span class="text-xs font-semibold bg-orange-100 text-orange-700 border border-orange-500 rounded px-2 py-0.5">Dérive</span>
+          </div>
+          <div class="h-2 bg-surface border border-black rounded mt-2"><div class="h-full bg-orange-500 rounded" style="width:78%"></div></div>
+        </div>
+        <div class="card-brutal absolute bottom-16 left-32 w-[260px] p-4 rotate-[-1deg]">
+          <div class="text-xs font-bold text-muted mb-1">CHANTIER LECLERC</div>
+          <div class="flex justify-between items-center">
+            <span class="font-heading font-bold text-primary-dark text-lg">31 200€</span>
+            <span class="text-xs font-semibold bg-red-100 text-red-700 border border-red-500 rounded px-2 py-0.5">Retard</span>
+          </div>
+          <div class="h-2 bg-surface border border-black rounded mt-2"><div class="h-full bg-red-500 rounded" style="width:92%"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Panel -->
+    <div class="w-[45%] bg-cream flex items-center justify-center p-12">
+      <div class="w-full max-w-[420px]">
+        <!-- Tabs -->
+        <div class="flex mb-8">
+          <button onclick="switchTab('login')" id="tab-login" class="tab-brutal rounded-l-md bg-accent text-white border-r-0">Connexion</button>
+          <button onclick="switchTab('signup')" id="tab-signup" class="tab-brutal rounded-r-md bg-white text-primary">Inscription</button>
+        </div>
+
+        <!-- Login Form -->
+        <div id="form-login">
+          <div class="space-y-4">
+            <div>
+              <label class="block font-heading font-semibold text-xs uppercase text-muted mb-2 tracking-wide">Email</label>
+              <input type="email" placeholder="frederic@sandau.fr" class="input-brutal">
+            </div>
+            <div>
+              <label class="block font-heading font-semibold text-xs uppercase text-muted mb-2 tracking-wide">Mot de passe</label>
+              <input type="password" placeholder="••••••••••••" class="input-brutal">
+            </div>
+            <button class="btn-brutal bg-accent text-white w-full text-[16px] py-3">Se connecter</button>
+          </div>
+          <div class="flex items-center gap-4 my-6">
+            <div class="flex-1 h-px bg-gray-300"></div>
+            <span class="text-muted text-sm font-medium">ou</span>
+            <div class="flex-1 h-px bg-gray-300"></div>
+          </div>
+          <button class="btn-brutal bg-white text-primary w-full text-[16px] py-3">Recevoir un magic link</button>
+        </div>
+
+        <!-- Signup Form -->
+        <div id="form-signup" class="hidden">
+          <div class="space-y-4">
+            <div>
+              <label class="block font-heading font-semibold text-xs uppercase text-muted mb-2 tracking-wide">Nom de l'entreprise</label>
+              <input type="text" placeholder="Sandau Charpente" class="input-brutal">
+            </div>
+            <div>
+              <label class="block font-heading font-semibold text-xs uppercase text-muted mb-2 tracking-wide">Secteur</label>
+              <select class="input-brutal text-muted">
+                <option value="">Choisir un secteur</option>
+                <option>Plomberie</option>
+                <option>Électricité</option>
+                <option>Carrelage</option>
+                <option>Peinture</option>
+                <option>Maçonnerie</option>
+                <option>Charpente</option>
+                <option>Menuiserie</option>
+                <option>Multi-corps</option>
+              </select>
+            </div>
+            <div>
+              <label class="block font-heading font-semibold text-xs uppercase text-muted mb-2 tracking-wide">Email professionnel</label>
+              <input type="email" placeholder="frederic@sandau.fr" class="input-brutal">
+            </div>
+            <div>
+              <label class="block font-heading font-semibold text-xs uppercase text-muted mb-2 tracking-wide">Mot de passe</label>
+              <input type="password" placeholder="Min 12 caractères" class="input-brutal">
+              <p class="text-muted text-xs mt-1">Minimum 12 caractères</p>
+            </div>
+            <button class="btn-brutal bg-accent text-white w-full text-[16px] py-3">Démarrer l'essai gratuit</button>
+          </div>
+          <p class="text-center text-muted text-sm mt-4 font-medium">14 jours gratuits, sans carte bancaire</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    lucide.createIcons();
+
+    function switchTab(tab) {
+      const loginForm = document.getElementById('form-login');
+      const signupForm = document.getElementById('form-signup');
+      const tabLogin = document.getElementById('tab-login');
+      const tabSignup = document.getElementById('tab-signup');
+
+      if (tab === 'login') {
+        loginForm.classList.remove('hidden');
+        signupForm.classList.add('hidden');
+        tabLogin.classList.add('bg-accent', 'text-white');
+        tabLogin.classList.remove('bg-white', 'text-primary');
+        tabSignup.classList.remove('bg-accent', 'text-white');
+        tabSignup.classList.add('bg-white', 'text-primary');
+      } else {
+        loginForm.classList.add('hidden');
+        signupForm.classList.remove('hidden');
+        tabSignup.classList.add('bg-accent', 'text-white');
+        tabSignup.classList.remove('bg-white', 'text-primary');
+        tabLogin.classList.remove('bg-accent', 'text-white');
+        tabLogin.classList.add('bg-white', 'text-primary');
+      }
+    }
+  </script>
+</body>
+</html>

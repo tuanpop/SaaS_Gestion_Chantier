@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Claw — Plans et tarifs</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', sans-serif; color: #0F172A; min-height: 100vh; background: #F8FAFC; }
+
+    .back-pill { position: fixed; top: 12px; left: 12px; z-index: 100; background: white; color: #475569; font-size: 12px; padding: 6px 12px; border-radius: 20px; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); font-family: 'Inter', sans-serif; }
+
+    .page { max-width: 1100px; margin: 0 auto; padding: 64px 24px 80px; }
+
+    /* Header */
+    .header { text-align: center; margin-bottom: 56px; }
+    .trial-badge { display: inline-flex; align-items: center; gap: 8px; background: #FFFBEB; color: #D97706; font-size: 13px; font-weight: 600; padding: 8px 18px; border-radius: 24px; margin-bottom: 20px; border: 1px solid #FDE68A; }
+    .trial-badge i { flex-shrink: 0; }
+    .header h1 { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 36px; font-weight: 800; margin-bottom: 8px; letter-spacing: -0.5px; }
+    .header h1 span { color: #6366F1; }
+    .header p { font-size: 16px; color: #475569; max-width: 500px; margin: 0 auto; line-height: 1.6; }
+
+    /* Pricing grid */
+    .pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-bottom: 56px; }
+
+    .plan { background: #fff; border: 2px solid #E2E8F0; border-radius: 20px; padding: 36px 28px; position: relative; transition: box-shadow 0.2s, border-color 0.2s; display: flex; flex-direction: column; }
+    .plan:hover { box-shadow: 0 8px 24px rgba(0,0,0,0.06); }
+
+    .plan.recommended { border-color: #6366F1; box-shadow: 0 8px 32px rgba(99,102,241,0.15); }
+    .plan.recommended .recommend-badge { position: absolute; top: -14px; left: 50%; transform: translateX(-50%); background: linear-gradient(135deg, #6366F1, #8B5CF6); color: #fff; font-size: 12px; font-weight: 700; padding: 6px 20px; border-radius: 20px; white-space: nowrap; font-family: 'Plus Jakarta Sans', sans-serif; }
+
+    .plan-name { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+    .plan-desc { font-size: 13px; color: #64748B; margin-bottom: 20px; line-height: 1.5; }
+
+    .plan-price { display: flex; align-items: baseline; gap: 4px; margin-bottom: 4px; }
+    .plan-price .amount { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 48px; font-weight: 800; letter-spacing: -1px; }
+    .plan.recommended .amount { color: #6366F1; }
+    .plan-price .currency { font-size: 20px; font-weight: 700; color: #475569; }
+    .plan-price .period { font-size: 14px; color: #94A3B8; margin-left: 2px; }
+    .plan-annual { font-size: 12px; color: #94A3B8; margin-bottom: 24px; }
+
+    .plan-divider { height: 1px; background: #E2E8F0; margin-bottom: 24px; }
+
+    .plan-features { list-style: none; flex: 1; margin-bottom: 28px; }
+    .plan-features li { display: flex; align-items: flex-start; gap: 10px; font-size: 14px; color: #334155; margin-bottom: 14px; line-height: 1.4; }
+    .plan-features li i { color: #10B981; flex-shrink: 0; margin-top: 2px; }
+    .plan-features li.disabled { color: #CBD5E1; }
+    .plan-features li.disabled i { color: #CBD5E1; }
+
+    .plan-cta { display: block; width: 100%; text-align: center; padding: 14px; border-radius: 12px; font-size: 15px; font-weight: 600; font-family: 'Plus Jakarta Sans', sans-serif; text-decoration: none; cursor: pointer; border: none; transition: all 0.15s; }
+    .plan-cta.outline { background: #fff; color: #6366F1; border: 2px solid #E2E8F0; }
+    .plan-cta.outline:hover { border-color: #6366F1; background: #EEF2FF; }
+    .plan-cta.primary { background: linear-gradient(135deg, #6366F1, #8B5CF6); color: #fff; border: none; }
+    .plan-cta.primary:hover { filter: brightness(1.05); transform: translateY(-1px); }
+
+    /* Guarantees */
+    .guarantees { display: flex; justify-content: center; gap: 40px; flex-wrap: wrap; padding-top: 32px; border-top: 1px solid #E2E8F0; }
+    .guarantee { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #64748B; }
+    .guarantee i { color: #6366F1; flex-shrink: 0; }
+
+    /* FAQ */
+    .faq { margin-top: 56px; }
+    .faq h3 { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 22px; font-weight: 700; text-align: center; margin-bottom: 28px; }
+    .faq-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+    .faq-item { background: #fff; border: 1px solid #E2E8F0; border-radius: 14px; padding: 20px; }
+    .faq-item h4 { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+    .faq-item p { font-size: 13px; color: #64748B; line-height: 1.5; }
+
+    @media (max-width: 768px) {
+      .pricing-grid { grid-template-columns: 1fr; max-width: 400px; margin-left: auto; margin-right: auto; }
+      .faq-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<a href="00-index.html" class="back-pill">
+  <i data-lucide="arrow-left" style="width:14px;height:14px"></i> Index
+</a>
+
+<div class="page">
+  <!-- Header -->
+  <div class="header">
+    <div class="trial-badge">
+      <i data-lucide="clock" style="width:16px;height:16px"></i>
+      Votre essai gratuit se termine dans 3 jours
+    </div>
+    <h1>Choisissez le plan <span>adapte</span> a votre equipe</h1>
+    <p>Continuez a piloter vos projets terrain avec Claw. Tous les plans incluent 14 jours d'essai gratuit.</p>
+  </div>
+
+  <!-- Pricing Cards -->
+  <div class="pricing-grid">
+    <!-- Starter -->
+    <div class="plan">
+      <div class="plan-name">Starter</div>
+      <div class="plan-desc">Pour les petites equipes qui demarrent la gestion numerique.</div>
+      <div class="plan-price">
+        <span class="amount">49</span>
+        <span class="currency">&euro;</span>
+        <span class="period">/ mois</span>
+      </div>
+      <div class="plan-annual">ou 490&euro;/an (2 mois offerts)</div>
+      <div class="plan-divider"></div>
+      <ul class="plan-features">
+        <li><i data-lucide="check" style="width:16px;height:16px"></i> Jusqu'a 3 projets actifs</li>
+        <li><i data-lucide="check" style="width:16px;height:16px"></i> 10 utilisateurs max</li>
+        <li><i data-lucide="check" style="width:16px;height:16px"></i> Gestion des taches</li>
+        <li><i data-lucide="check" style="width:16px;height:16px"></i> Photos terrain</li>
+        <li><i data-lucide="check" style="width:16px;height:16px"></i> QR code operateurs</li>
+        <li class="disabled"><i data-lucide="x" style="width:16px;height:16px"></i> CR automatiques IA</li>
+        <li class="disabled"><i data-lucide="x" style="width:16px;height:16px"></i> ClawBot assistant</li>
+        <li class="disabled"><i data-lucide="x" style="width:16px;height:16px"></i> Detection de derives</li>
+      </ul>
+      <button class="plan-cta outline">Choisir Starter</button>
+    </div>
+
+    <!-- Pro -->
+    <div class="plan recommended">
+      <div class="recommend-badge">Recommande</div>
+      <div class="plan-name">Pro</div>
+      <div class="plan-desc">L'essentiel pour piloter efficacement avec l'IA.</div>
+      <div class="plan-price">
+        <span class="amount">99</span>
+        <span class="currency">&euro;</span>
+        <span class="period">/ mois</span>
+      </div>
+      <div class="plan-annual">ou 990&euro;/an (2 mois offerts)</div>
+      <div class="plan-divider"></div>
+      <ul class="plan-features">
+        <li><i data-lucide="check" style="width:16px;height:16px"></i> Jusqu'a 10 projets actifs</li>
+        <li><i data-lucide="check" style="width:16px;height:16px"></i> 30 utilisateurs max</li>
+        <li><i data-lucide="check" style="width:16px;height:16px"></i> Gestion des taches</li>
+        <li><i data-lucide="check" style="width:16px;height:16px"></i> Photos terrain illimitees</li>
+        <li><i data-lucide="check" style="width:16px;height:16px"></i> QR code operateurs</li>
+        <li><i data-lucide="check" style="width:16px;height:16px"></i> CR automatiques IA</li>
+        <li><i data-lucide="check" style="width:16px;height:16px"></i> ClawBot assistant IA</li>
+        <li><i data-lucide="check" style="width:16px;height:16px"></i> Detection de derives</li>
+      </ul>
+      <button class="plan-cta primary">Choisir Pro</button>
+    </div>
+
+    <!-- Business -->
+    <div class="plan">
+      <div class="plan-name">Business</div>
+      <div class="plan-desc">Pour les entreprises avec plusieurs equipes terrain.</div>
+      <div class="plan-price">
+        <span class="amount">179</span>
+        <span class="currency">&euro;</span>
+        <span class="period">/ mois</span>
+      </div>
+      <div class="plan-annual">ou 1 790&euro;/an (2 mois offerts)</div>
+      <div class="plan-divider"></div>
+      <ul class="plan-features">
+        <li><i data-lucide="check" style="width:16px;height:16px"></i> Projets illimites</li>
+        <li><i data-lucide="check" style="width:16px;height:16px"></i> Utilisateurs illimites</li>
+        <li><i data-lucide="check" style="width:16px;height:16px"></i> Tout le plan Pro inclus</li>
+        <li><i data-lucide="check" style="width:16px;height:16px"></i> Briefing hebdo IA</li>
+        <li><i data-lucide="check" style="width:16px;height:16px"></i> Rapport budget avance</li>
+        <li><i data-lucide="check" style="width:16px;height:16px"></i> Alertes meteo chantier</li>
+        <li><i data-lucide="check" style="width:16px;height:16px"></i> Support prioritaire</li>
+        <li><i data-lucide="check" style="width:16px;height:16px"></i> Export PDF/Excel</li>
+      </ul>
+      <button class="plan-cta outline">Choisir Business</button>
+    </div>
+  </div>
+
+  <!-- Guarantees -->
+  <div class="guarantees">
+    <div class="guarantee">
+      <i data-lucide="shield-check" style="width:18px;height:18px"></i>
+      Sans engagement, annulez a tout moment
+    </div>
+    <div class="guarantee">
+      <i data-lucide="credit-card" style="width:18px;height:18px"></i>
+      Paiement securise par Stripe
+    </div>
+    <div class="guarantee">
+      <i data-lucide="headphones" style="width:18px;height:18px"></i>
+      Support reactif sous 24h
+    </div>
+    <div class="guarantee">
+      <i data-lucide="database" style="width:18px;height:18px"></i>
+      Donnees hebergees en France
+    </div>
+  </div>
+
+  <!-- FAQ -->
+  <div class="faq">
+    <h3>Questions frequentes</h3>
+    <div class="faq-grid">
+      <div class="faq-item">
+        <h4>Puis-je changer de plan plus tard ?</h4>
+        <p>Oui, vous pouvez upgrader ou downgrader a tout moment. La difference sera proratisee.</p>
+      </div>
+      <div class="faq-item">
+        <h4>Qu'arrive-t-il a mes donnees si j'arrete ?</h4>
+        <p>Vos donnees restent accessibles en lecture seule pendant 90 jours. Vous pouvez les exporter a tout moment.</p>
+      </div>
+      <div class="faq-item">
+        <h4>Y a-t-il un engagement minimum ?</h4>
+        <p>Non, tous les plans sont sans engagement. Annulez quand vous voulez, sans frais.</p>
+      </div>
+      <div class="faq-item">
+        <h4>Comment fonctionne l'essai gratuit ?</h4>
+        <p>14 jours d'acces complet au plan Pro. Aucune carte bancaire requise pour commencer.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>lucide.createIcons()</script>
+</body>
+</html>

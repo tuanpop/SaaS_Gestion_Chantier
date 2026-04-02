@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>ClawBTP - Mes Chantiers</title>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;touch-action:manipulation}
+body{background:#FAF6F1;font-family:'Source Sans 3',sans-serif;color:#292524;max-width:390px;margin:0 auto;min-height:100vh;padding-bottom:80px}
+.header{background:#C2703E;color:#fff;padding:20px 20px 24px;border-radius:0 0 20px 20px}
+.header-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.header h1{font-family:'Lexend',sans-serif;font-weight:700;font-size:22px}
+.avatar{width:40px;height:40px;border-radius:50%;background:#451A03;display:flex;align-items:center;justify-content:center;font-family:'Lexend',sans-serif;font-weight:600;font-size:14px;color:#FEF3C7}
+.header-sub{font-size:14px;opacity:0.85}
+.content{padding:16px}
+.section-label{font-family:'Lexend',sans-serif;font-weight:600;font-size:15px;color:#78716C;margin-bottom:12px}
+.card-warm{background:#fff;border:1px solid #E7E0D6;border-radius:14px;box-shadow:0 2px 8px rgba(120,53,15,0.08);transition:box-shadow 200ms,transform 200ms;padding:16px;margin-bottom:12px;cursor:pointer;text-decoration:none;display:block;color:#292524}
+.card-warm:active{box-shadow:0 1px 3px rgba(120,53,15,0.1);transform:translateY(1px)}
+.card-border-red{border-left:4px solid #DC2626}
+.card-border-orange{border-left:4px solid #D97706}
+.card-border-green{border-left:4px solid #15803D}
+.card-border-blue{border-left:4px solid #C2703E}
+.card-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
+.card-title{font-family:'Lexend',sans-serif;font-weight:600;font-size:16px}
+.card-client{font-size:13px;color:#78716C;margin-bottom:10px}
+.progress-warm{height:10px;border-radius:5px;background:#F5F0E8;overflow:hidden;margin-bottom:8px}
+.progress-fill{height:100%;border-radius:5px}
+.progress-red{background:linear-gradient(90deg,#DC2626,#EF4444)}
+.progress-orange{background:linear-gradient(90deg,#D97706,#F59E0B)}
+.progress-green{background:linear-gradient(90deg,#15803D,#22C55E)}
+.progress-terra{background:linear-gradient(90deg,#C2703E,#D4845A)}
+.card-footer{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:#78716C}
+.badge-warm{border-radius:8px;padding:4px 12px;font-weight:600;font-size:13px;display:inline-block}
+.badge-danger{background:#FEE2E2;color:#DC2626}
+.badge-warning{background:#FEF3C7;color:#D97706}
+.badge-success{background:#DCFCE7;color:#15803D}
+.badge-accent{background:#FEF3C7;color:#B45309}
+
+.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:390px;background:#fff;border-top:1px solid #E7E0D6;display:flex;justify-content:space-around;align-items:center;padding:8px 0 env(safe-area-inset-bottom,8px);z-index:50;box-shadow:0 -2px 8px rgba(120,53,15,0.06)}
+.bottom-nav a{display:flex;flex-direction:column;align-items:center;font-size:11px;font-weight:500;color:#A8A29E;gap:2px;text-decoration:none;padding:4px 8px;position:relative}
+.bottom-nav a.active{color:#C2703E;font-weight:700}
+.bottom-nav a.active::after{content:'';position:absolute;top:-9px;left:50%;transform:translateX(-50%);width:24px;height:3px;background:#C2703E;border-radius:2px}
+.nav-badge{position:absolute;top:0;right:2px;background:#DC2626;color:#fff;font-size:10px;font-weight:700;width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.back-link{display:inline-flex;align-items:center;gap:6px;color:#78716C;font-size:13px;text-decoration:none;margin-bottom:16px}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <div>
+      <h1>Mes chantiers</h1>
+      <div class="header-sub">4 chantiers actifs</div>
+    </div>
+    <div class="avatar">JD</div>
+  </div>
+</div>
+
+<div class="content">
+  <a href="00-index.html" class="back-link"><i data-lucide="arrow-left" style="width:14px;height:14px"></i> Prototype</a>
+
+  <div class="section-label">Tri par priorite</div>
+
+  <a href="09-conducteur-chantier-detail.html" class="card-warm card-border-red">
+    <div class="card-header">
+      <div class="card-title">Residence Les Oliviers</div>
+      <span class="badge-warm badge-danger">En retard</span>
+    </div>
+    <div class="card-client">Client : SCI Provence Habitat</div>
+    <div class="progress-warm"><div class="progress-fill progress-red" style="width:35%"></div></div>
+    <div class="card-footer">
+      <span>35% avancement</span>
+      <span>6 taches bloquees</span>
+    </div>
+  </a>
+
+  <a href="09-conducteur-chantier-detail.html" class="card-warm card-border-orange">
+    <div class="card-header">
+      <div class="card-title">Bureau Mistral</div>
+      <span class="badge-warm badge-warning">A surveiller</span>
+    </div>
+    <div class="card-client">Client : Mistral Consulting</div>
+    <div class="progress-warm"><div class="progress-fill progress-orange" style="width:58%"></div></div>
+    <div class="card-footer">
+      <span>58% avancement</span>
+      <span>2 taches bloquees</span>
+    </div>
+  </a>
+
+  <a href="09-conducteur-chantier-detail.html" class="card-warm card-border-green">
+    <div class="card-header">
+      <div class="card-title">Maison Dubois</div>
+      <span class="badge-warm badge-success">En avance</span>
+    </div>
+    <div class="card-client">Client : M. et Mme Dubois</div>
+    <div class="progress-warm"><div class="progress-fill progress-green" style="width:82%"></div></div>
+    <div class="card-footer">
+      <span>82% avancement</span>
+      <span>0 blocage</span>
+    </div>
+  </a>
+
+  <a href="09-conducteur-chantier-detail.html" class="card-warm card-border-blue">
+    <div class="card-header">
+      <div class="card-title">Local Commercial Vauban</div>
+      <span class="badge-warm badge-accent">Normal</span>
+    </div>
+    <div class="card-client">Client : Boulangerie Vauban</div>
+    <div class="progress-warm"><div class="progress-fill progress-terra" style="width:45%"></div></div>
+    <div class="card-footer">
+      <span>45% avancement</span>
+      <span>1 blocage</span>
+    </div>
+  </a>
+</div>
+
+<nav class="bottom-nav">
+  <a href="08-conducteur-chantiers.html" class="active"><i data-lucide="hard-hat" style="width:22px;height:22px"></i>Chantiers</a>
+  <a href="10-conducteur-taches.html"><i data-lucide="check-square" style="width:22px;height:22px"></i>Taches</a>
+  <a href="11-conducteur-cr.html"><i data-lucide="file-text" style="width:22px;height:22px"></i>CR</a>
+  <a href="12-conducteur-alertes.html"><i data-lucide="bell" style="width:22px;height:22px"></i><span class="nav-badge">3</span>Alertes</a>
+  <a href="13-conducteur-clawbot.html"><i data-lucide="bot" style="width:22px;height:22px"></i>ClawBot</a>
+</nav>
+
+<script>lucide.createIcons()</script>
+</body>
+</html>

@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claw — Photo</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #F8FAFC;
+    display: flex;
+    justify-content: center;
+    min-height: 100vh;
+  }
+  h1, h2, h3, h4, h5 { font-family: 'Plus Jakarta Sans', sans-serif; }
+  .mobile-frame {
+    width: 100%;
+    max-width: 375px;
+    min-height: 100vh;
+    background: #F8FAFC;
+    position: relative;
+    padding-bottom: 80px;
+  }
+
+  /* Header */
+  .header {
+    background: linear-gradient(135deg, #6366F1, #8B5CF6);
+    color: white;
+    padding: 48px 24px 20px;
+    border-radius: 0 0 20px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .back-link {
+    color: white;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+  }
+  .header-title {
+    font-size: 18px;
+    font-weight: 700;
+  }
+
+  /* Content */
+  .content {
+    padding: 24px 16px;
+  }
+
+  .section-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #94A3B8;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 12px;
+  }
+
+  /* Capture buttons */
+  .capture-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 28px;
+  }
+  .capture-btn {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-height: 56px;
+    padding: 0 20px;
+    border-radius: 14px;
+    border: none;
+    font-size: 15px;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+  }
+  .capture-btn-primary {
+    background: linear-gradient(135deg, #6366F1, #8B5CF6);
+    color: white;
+    box-shadow: 0 4px 16px rgba(99, 102, 241, 0.3);
+  }
+  .capture-btn-primary:hover { box-shadow: 0 8px 24px rgba(99, 102, 241, 0.4); transform: translateY(-1px); }
+  .capture-btn-secondary {
+    background: white;
+    color: #0F172A;
+    border: 1px solid #E2E8F0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .capture-btn-secondary:hover { border-color: #6366F1; }
+
+  .capture-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .capture-btn-primary .capture-icon { background: rgba(255,255,255,0.2); }
+  .capture-btn-secondary .capture-icon { background: #EEF2FF; color: #6366F1; }
+
+  /* Type selector */
+  .type-selector {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+  .type-pill {
+    padding: 10px 16px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 600;
+    border: 2px solid #E2E8F0;
+    background: white;
+    color: #475569;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .type-pill:hover { border-color: #6366F1; }
+  .type-pill.active {
+    background: #EEF2FF;
+    border-color: #6366F1;
+    color: #6366F1;
+  }
+
+  /* Task selector */
+  .task-select {
+    background: white;
+    border: 1px solid #E2E8F0;
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .task-select-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #94A3B8;
+    margin-bottom: 6px;
+  }
+  .task-select-value {
+    font-size: 14px;
+    font-weight: 600;
+    color: #0F172A;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  /* Comment */
+  .comment-area {
+    width: 100%;
+    background: white;
+    border: 1px solid #E2E8F0;
+    border-radius: 14px;
+    padding: 16px;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    color: #0F172A;
+    resize: none;
+    min-height: 80px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    transition: border-color 0.2s;
+  }
+  .comment-area:focus {
+    outline: none;
+    border-color: #6366F1;
+  }
+  .comment-area::placeholder { color: #94A3B8; }
+
+  /* Send button */
+  .btn-send {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 56px;
+    background: linear-gradient(135deg, #6366F1, #8B5CF6);
+    color: white;
+    border: none;
+    border-radius: 14px;
+    font-size: 16px;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 16px rgba(99, 102, 241, 0.3);
+  }
+  .btn-send:hover { box-shadow: 0 8px 24px rgba(99, 102, 241, 0.4); transform: translateY(-1px); }
+
+  /* Bottom nav */
+  .bottom-nav {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    max-width: 375px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: white;
+    border-top: 1px solid #E2E8F0;
+    display: flex;
+    padding: 8px 0 12px;
+    z-index: 20;
+  }
+  .nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    text-decoration: none;
+    font-size: 11px;
+    color: #94A3B8;
+    position: relative;
+    padding-top: 6px;
+  }
+  .nav-item.active { color: #6366F1; }
+  .nav-item.active::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 24px;
+    height: 3px;
+    background: #6366F1;
+    border-radius: 0 0 3px 3px;
+  }
+  .nav-label { font-weight: 500; }
+</style>
+</head>
+<body>
+
+<a href="00-index.html" style="position:fixed;top:12px;left:12px;z-index:100;background:white;color:#475569;font-size:12px;padding:6px 12px;border-radius:20px;text-decoration:none;display:flex;align-items:center;gap:4px;box-shadow:0 2px 8px rgba(0,0,0,0.1);font-family:'Inter',sans-serif">
+  <i data-lucide="arrow-left" style="width:14px;height:14px"></i> Index
+</a>
+
+<div class="mobile-frame">
+  <div class="header">
+    <a href="03-ouvrier-taches.html" class="back-link">
+      <i data-lucide="chevron-left" style="width:20px;height:20px"></i>
+    </a>
+    <h1 class="header-title">Ajouter une photo</h1>
+  </div>
+
+  <div class="content">
+    <p class="section-label">Source</p>
+    <div class="capture-buttons">
+      <button class="capture-btn capture-btn-primary">
+        <div class="capture-icon">
+          <i data-lucide="camera" style="width:20px;height:20px"></i>
+        </div>
+        Prendre une photo
+      </button>
+      <button class="capture-btn capture-btn-secondary">
+        <div class="capture-icon">
+          <i data-lucide="image" style="width:20px;height:20px"></i>
+        </div>
+        Depuis la galerie
+      </button>
+    </div>
+
+    <p class="section-label">Type de photo</p>
+    <div class="type-selector">
+      <div class="type-pill active">
+        <i data-lucide="trending-up" style="width:14px;height:14px"></i>
+        Avancement
+      </div>
+      <div class="type-pill">
+        <i data-lucide="alert-circle" style="width:14px;height:14px"></i>
+        Probleme
+      </div>
+      <div class="type-pill">
+        <i data-lucide="package" style="width:14px;height:14px"></i>
+        Livraison
+      </div>
+    </div>
+
+    <p class="section-label">Tache associee</p>
+    <div class="task-select">
+      <div class="task-select-label">Tache</div>
+      <div class="task-select-value">
+        Carrelage cuisine 201
+        <i data-lucide="chevron-down" style="width:16px;height:16px;color:#94A3B8"></i>
+      </div>
+    </div>
+
+    <p class="section-label">Commentaire</p>
+    <textarea class="comment-area" placeholder="Ajouter un commentaire (optionnel)..."></textarea>
+
+    <button class="btn-send">
+      <i data-lucide="send" style="width:18px;height:18px"></i>
+      Envoyer la photo
+    </button>
+  </div>
+
+  <nav class="bottom-nav">
+    <a href="03-ouvrier-taches.html" class="nav-item">
+      <i data-lucide="check-square" style="width:20px;height:20px"></i>
+      <span class="nav-label">Taches</span>
+    </a>
+    <a href="05-ouvrier-photo.html" class="nav-item active">
+      <i data-lucide="camera" style="width:20px;height:20px"></i>
+      <span class="nav-label">Photo</span>
+    </a>
+    <a href="07-ouvrier-clawbot.html" class="nav-item">
+      <i data-lucide="bot" style="width:20px;height:20px"></i>
+      <span class="nav-label">Bot</span>
+    </a>
+    <a href="02-ouvrier-selecteur-chantier.html" class="nav-item">
+      <i data-lucide="menu" style="width:20px;height:20px"></i>
+      <span class="nav-label">Menu</span>
+    </a>
+  </nav>
+</div>
+
+<script>lucide.createIcons()</script>
+</body>
+</html>

@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Claw — Prototype V4</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #F8FAFC; font-family: 'Inter', sans-serif; color: #0F172A; min-height: 100vh; }
+    .container { max-width: 1000px; margin: 0 auto; padding: 48px 24px 64px; }
+
+    /* Header */
+    .header { text-align: center; margin-bottom: 48px; }
+    .logo { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 42px; font-weight: 800; color: #6366F1; letter-spacing: -1px; }
+    .subtitle { font-size: 15px; color: #475569; margin-top: 6px; }
+    .count { display: inline-block; margin-top: 12px; background: #EEF2FF; color: #6366F1; font-size: 13px; font-weight: 600; padding: 6px 14px; border-radius: 20px; }
+
+    /* Sections */
+    .section { margin-bottom: 40px; }
+    .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+    .section-icon { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; }
+    .section-icon.indigo { background: #EEF2FF; color: #6366F1; }
+    .section-icon.violet { background: #F5F3FF; color: #8B5CF6; }
+    .section-icon.dark { background: #E0E7FF; color: #3730A3; }
+    .section-title { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 20px; font-weight: 700; }
+    .section-badge { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .badge-mobile { background: #EEF2FF; color: #6366F1; }
+    .badge-desktop { background: #E0E7FF; color: #3730A3; }
+
+    /* Grid */
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 14px; }
+
+    /* Cards */
+    .card { display: flex; align-items: center; gap: 14px; background: #fff; border: 1px solid #E2E8F0; border-radius: 14px; padding: 16px; cursor: pointer; text-decoration: none; color: inherit; transition: box-shadow .15s, border-color .15s; }
+    .card:hover { box-shadow: 0 4px 12px rgba(99,102,241,0.1); border-color: #C7D2FE; }
+    .card-icon { width: 44px; height: 44px; min-width: 44px; border-radius: 12px; background: #EEF2FF; color: #6366F1; display: flex; align-items: center; justify-content: center; }
+    .card-num { font-size: 11px; font-weight: 700; color: #94A3B8; }
+    .card-title { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14px; font-weight: 600; margin-top: 1px; }
+    .card-desc { font-size: 12px; color: #475569; margin-top: 2px; }
+    .card.dashed { border-style: dashed; border-color: #CBD5E1; }
+    .card.dashed .card-icon { background: #F1F5F9; color: #94A3B8; }
+
+    /* Design System Showcase */
+    .showcase { background: #fff; border: 1px solid #E2E8F0; border-radius: 16px; padding: 32px; margin-top: 48px; }
+    .showcase h3 { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 18px; font-weight: 700; margin-bottom: 24px; }
+    .showcase-section { margin-bottom: 28px; }
+    .showcase-section:last-child { margin-bottom: 0; }
+    .showcase-label { font-size: 12px; font-weight: 600; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
+
+    /* Swatches */
+    .swatches { display: flex; gap: 10px; flex-wrap: wrap; }
+    .swatch { width: 56px; height: 56px; border-radius: 12px; position: relative; }
+    .swatch span { position: absolute; bottom: -20px; left: 0; font-size: 10px; color: #94A3B8; white-space: nowrap; }
+
+    /* Typography */
+    .typo-sample h1 { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 28px; font-weight: 800; margin-bottom: 4px; }
+    .typo-sample h2 { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 20px; font-weight: 700; margin-bottom: 4px; color: #475569; }
+    .typo-sample p { font-family: 'Inter', sans-serif; font-size: 14px; color: #475569; }
+
+    /* Buttons */
+    .btn-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 20px; border-radius: 10px; font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 600; border: none; cursor: pointer; transition: background .15s; }
+    .btn-primary { background: #6366F1; color: #fff; }
+    .btn-primary:hover { background: #4F46E5; }
+    .btn-outline { background: transparent; color: #6366F1; border: 1.5px solid #6366F1; }
+    .btn-success { background: #10B981; color: #fff; }
+    .btn-danger { background: #EF4444; color: #fff; }
+    .btn-ghost { background: transparent; color: #475569; }
+
+    /* Badges */
+    .badge-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .badge { display: inline-flex; align-items: center; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+    .badge-indigo { background: #EEF2FF; color: #6366F1; }
+    .badge-green { background: #ECFDF5; color: #10B981; }
+    .badge-orange { background: #FFFBEB; color: #F59E0B; }
+    .badge-red { background: #FEF2F2; color: #EF4444; }
+    .badge-purple { background: #F5F3FF; color: #8B5CF6; }
+
+    /* Progress */
+    .progress-row { display: flex; flex-direction: column; gap: 12px; max-width: 400px; }
+    .progress-item { display: flex; align-items: center; gap: 10px; }
+    .progress-item span { font-size: 12px; font-weight: 600; min-width: 36px; text-align: right; }
+    .progress-bar { flex: 1; height: 8px; background: #E2E8F0; border-radius: 4px; overflow: hidden; }
+    .progress-fill { height: 100%; border-radius: 4px; }
+    .fill-indigo { background: #6366F1; }
+    .fill-green { background: #10B981; }
+    .fill-orange { background: #F59E0B; }
+    .fill-red { background: #EF4444; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <div class="logo">Claw</div>
+      <div class="subtitle">Prototype V4 — Aura Light</div>
+      <div class="count">21 maquettes — Operateur / Superviseur / Admin</div>
+    </div>
+
+    <!-- Operateur -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-icon indigo"><i data-lucide="smartphone" style="width:20px;height:20px"></i></div>
+        <div class="section-title">Interface Operateur</div>
+        <span class="section-badge badge-mobile">Mobile PWA</span>
+      </div>
+      <div class="grid">
+        <a class="card" href="01-ouvrier-scan-qr.html">
+          <div class="card-icon"><i data-lucide="qr-code" style="width:20px;height:20px"></i></div>
+          <div><div class="card-num">01</div><div class="card-title">Scan QR</div><div class="card-desc">Connexion operateur</div></div>
+        </a>
+        <a class="card" href="02-ouvrier-selecteur-chantier.html">
+          <div class="card-icon"><i data-lucide="map-pin" style="width:20px;height:20px"></i></div>
+          <div><div class="card-num">02</div><div class="card-title">Selecteur projet</div><div class="card-desc">Choix du projet actif</div></div>
+        </a>
+        <a class="card" href="03-ouvrier-taches.html">
+          <div class="card-icon"><i data-lucide="check-square" style="width:20px;height:20px"></i></div>
+          <div><div class="card-num">03</div><div class="card-title">Liste des taches</div><div class="card-desc">Ecran principal</div></div>
+        </a>
+        <a class="card" href="04-ouvrier-tache-detail.html">
+          <div class="card-icon"><i data-lucide="file-text" style="width:20px;height:20px"></i></div>
+          <div><div class="card-num">04</div><div class="card-title">Detail tache</div><div class="card-desc">Detail, photos, actions</div></div>
+        </a>
+        <a class="card" href="05-ouvrier-photo.html">
+          <div class="card-icon"><i data-lucide="camera" style="width:20px;height:20px"></i></div>
+          <div><div class="card-num">05</div><div class="card-title">Prise de photo</div><div class="card-desc">Capture et envoi</div></div>
+        </a>
+        <a class="card" href="06-ouvrier-etats.html">
+          <div class="card-icon"><i data-lucide="wifi-off" style="width:20px;height:20px"></i></div>
+          <div><div class="card-num">06</div><div class="card-title">Etats speciaux</div><div class="card-desc">Vide, hors ligne, sync</div></div>
+        </a>
+        <a class="card" href="07-ouvrier-clawbot.html">
+          <div class="card-icon"><i data-lucide="bot" style="width:20px;height:20px"></i></div>
+          <div><div class="card-num">07</div><div class="card-title">ClawBot</div><div class="card-desc">Assistant IA</div></div>
+        </a>
+      </div>
+    </div>
+
+    <!-- Superviseur -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-icon violet"><i data-lucide="tablet" style="width:20px;height:20px"></i></div>
+        <div class="section-title">Interface Superviseur</div>
+        <span class="section-badge badge-mobile">Mobile</span>
+      </div>
+      <div class="grid">
+        <a class="card" href="08-conducteur-chantiers.html">
+          <div class="card-icon"><i data-lucide="layout-grid" style="width:20px;height:20px"></i></div>
+          <div><div class="card-num">08</div><div class="card-title">Mes projets</div><div class="card-desc">Vue d'ensemble des projets</div></div>
+        </a>
+        <a class="card" href="09-conducteur-chantier-detail.html">
+          <div class="card-icon"><i data-lucide="building-2" style="width:20px;height:20px"></i></div>
+          <div><div class="card-num">09</div><div class="card-title">Detail projet</div><div class="card-desc">Suivi detaille du projet</div></div>
+        </a>
+        <a class="card" href="10-conducteur-taches.html">
+          <div class="card-icon"><i data-lucide="list-checks" style="width:20px;height:20px"></i></div>
+          <div><div class="card-num">10</div><div class="card-title">Gestion taches</div><div class="card-desc">Organiser et assigner</div></div>
+        </a>
+        <a class="card" href="11-conducteur-cr.html">
+          <div class="card-icon"><i data-lucide="file-check" style="width:20px;height:20px"></i></div>
+          <div><div class="card-num">11</div><div class="card-title">Comptes-rendus</div><div class="card-desc">CR journaliers IA</div></div>
+        </a>
+        <a class="card" href="12-conducteur-alertes.html">
+          <div class="card-icon"><i data-lucide="alert-triangle" style="width:20px;height:20px"></i></div>
+          <div><div class="card-num">12</div><div class="card-title">Alertes</div><div class="card-desc">Blocages et derives</div></div>
+        </a>
+        <a class="card" href="13-conducteur-clawbot.html">
+          <div class="card-icon"><i data-lucide="bot" style="width:20px;height:20px"></i></div>
+          <div><div class="card-num">13</div><div class="card-title">ClawBot Superviseur</div><div class="card-desc">Assistant IA superviseur</div></div>
+        </a>
+      </div>
+    </div>
+
+    <!-- Admin -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-icon dark"><i data-lucide="monitor" style="width:20px;height:20px"></i></div>
+        <div class="section-title">Interface Admin</div>
+        <span class="section-badge badge-desktop">Desktop</span>
+      </div>
+      <div class="grid">
+        <a class="card" href="14-admin-login.html">
+          <div class="card-icon"><i data-lucide="log-in" style="width:20px;height:20px"></i></div>
+          <div><div class="card-num">14</div><div class="card-title">Login / Inscription</div><div class="card-desc">Authentification admin</div></div>
+        </a>
+        <a class="card" href="15-admin-dashboard.html">
+          <div class="card-icon"><i data-lucide="bar-chart-3" style="width:20px;height:20px"></i></div>
+          <div><div class="card-num">15</div><div class="card-title">Dashboard</div><div class="card-desc">Vue d'ensemble</div></div>
+        </a>
+        <a class="card" href="16-admin-chantier-detail.html">
+          <div class="card-icon"><i data-lucide="folder-open" style="width:20px;height:20px"></i></div>
+          <div><div class="card-num">16</div><div class="card-title">Detail projet</div><div class="card-desc">Suivi detaille admin</div></div>
+        </a>
+        <a class="card" href="17-admin-chantier-nouveau.html">
+          <div class="card-icon"><i data-lucide="plus-circle" style="width:20px;height:20px"></i></div>
+          <div><div class="card-num">17</div><div class="card-title">Nouveau projet</div><div class="card-desc">Creation de projet</div></div>
+        </a>
+        <a class="card" href="18-admin-equipe.html">
+          <div class="card-icon"><i data-lucide="users" style="width:20px;height:20px"></i></div>
+          <div><div class="card-num">18</div><div class="card-title">Equipe</div><div class="card-desc">Gestion des membres</div></div>
+        </a>
+        <a class="card" href="19-admin-notifications.html">
+          <div class="card-icon"><i data-lucide="bell" style="width:20px;height:20px"></i></div>
+          <div><div class="card-num">19</div><div class="card-title">Notifications</div><div class="card-desc">Alertes et activite</div></div>
+        </a>
+        <a class="card" href="20-admin-clawbot.html">
+          <div class="card-icon"><i data-lucide="bot" style="width:20px;height:20px"></i></div>
+          <div><div class="card-num">20</div><div class="card-title">ClawBot Admin</div><div class="card-desc">Assistant IA admin</div></div>
+        </a>
+        <a class="card" href="21-admin-trial-expire.html">
+          <div class="card-icon"><i data-lucide="credit-card" style="width:20px;height:20px"></i></div>
+          <div><div class="card-num">21</div><div class="card-title">Plans et tarifs</div><div class="card-desc">Abonnement et facturation</div></div>
+        </a>
+      </div>
+    </div>
+
+    <!-- Design System Showcase -->
+    <div class="showcase">
+      <h3>Design System — Aura Light</h3>
+
+      <div class="showcase-section">
+        <div class="showcase-label">Couleurs</div>
+        <div class="swatches" style="padding-bottom:24px">
+          <div class="swatch" style="background:#6366F1"><span>Primary</span></div>
+          <div class="swatch" style="background:#4F46E5"><span>P. Hover</span></div>
+          <div class="swatch" style="background:#8B5CF6"><span>Accent</span></div>
+          <div class="swatch" style="background:#10B981"><span>Success</span></div>
+          <div class="swatch" style="background:#F59E0B"><span>Warning</span></div>
+          <div class="swatch" style="background:#EF4444"><span>Danger</span></div>
+          <div class="swatch" style="background:#F8FAFC;border:1px solid #E2E8F0"><span>BG</span></div>
+          <div class="swatch" style="background:#0F172A"><span>Text</span></div>
+          <div class="swatch" style="background:#475569"><span>Secondary</span></div>
+          <div class="swatch" style="background:#94A3B8"><span>Muted</span></div>
+        </div>
+      </div>
+
+      <div class="showcase-section">
+        <div class="showcase-label">Typographie</div>
+        <div class="typo-sample">
+          <h1>Plus Jakarta Sans — Heading</h1>
+          <h2>Sous-titre semi-bold</h2>
+          <p>Inter — Corps de texte pour le contenu principal et les descriptions.</p>
+        </div>
+      </div>
+
+      <div class="showcase-section">
+        <div class="showcase-label">Boutons</div>
+        <div class="btn-row">
+          <button class="btn btn-primary">Primary</button>
+          <button class="btn btn-outline">Outline</button>
+          <button class="btn btn-success">Success</button>
+          <button class="btn btn-danger">Danger</button>
+          <button class="btn btn-ghost">Ghost</button>
+        </div>
+      </div>
+
+      <div class="showcase-section">
+        <div class="showcase-label">Badges</div>
+        <div class="badge-row">
+          <span class="badge badge-indigo">En cours</span>
+          <span class="badge badge-green">Termine</span>
+          <span class="badge badge-orange">En retard</span>
+          <span class="badge badge-red">Bloque</span>
+          <span class="badge badge-purple">Admin</span>
+        </div>
+      </div>
+
+      <div class="showcase-section">
+        <div class="showcase-label">Barres de progression</div>
+        <div class="progress-row">
+          <div class="progress-item"><span>82%</span><div class="progress-bar"><div class="progress-fill fill-green" style="width:82%"></div></div></div>
+          <div class="progress-item"><span>58%</span><div class="progress-bar"><div class="progress-fill fill-orange" style="width:58%"></div></div></div>
+          <div class="progress-item"><span>35%</span><div class="progress-bar"><div class="progress-fill fill-red" style="width:35%"></div></div></div>
+          <div class="progress-item"><span>95%</span><div class="progress-bar"><div class="progress-fill fill-indigo" style="width:95%"></div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>lucide.createIcons();</script>
+</body>
+</html>

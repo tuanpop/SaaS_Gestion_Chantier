@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ClawBTP — Equipe</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { heading: ['Space Grotesk','sans-serif'], sans: ['DM Sans','sans-serif'], mono: ['JetBrains Mono','monospace'] },
+          colors: {
+            bg: { DEFAULT: '#0F172A', card: '#1E293B', elevated: '#334155' },
+            accent: '#3B82F6',
+            danger: { DEFAULT: '#EF4444' },
+            warning: { DEFAULT: '#F59E0B' },
+            success: { DEFAULT: '#22C55E' },
+            text: { DEFAULT: '#F8FAFC', muted: '#94A3B8', dim: '#64748B' },
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { background: #0F172A; font-family: 'DM Sans', sans-serif; color: #F8FAFC; }
+    .sidebar { position:fixed;left:0;top:0;bottom:0;width:240px;background:#0B1120;border-right:1px solid rgba(148,163,184,0.15);padding:24px 0;z-index:40;display:flex;flex-direction:column; }
+    .sidebar a { display:flex;align-items:center;gap:12px;padding:12px 24px;color:#64748B;text-decoration:none;font-weight:500;font-size:15px;transition:all 150ms; }
+    .sidebar a:hover { color:#94A3B8;background:rgba(59,130,246,0.1); }
+    .sidebar a.active { color:#3B82F6;background:rgba(59,130,246,0.15);border-left:3px solid #3B82F6;box-shadow:inset 0 0 20px rgba(59,130,246,0.1); }
+    .main-content { margin-left:240px;padding:32px;min-height:100vh; }
+    .card-cockpit { background: #1E293B; border: 1px solid rgba(148,163,184,0.15); border-radius: 12px; }
+    .glow-accent { box-shadow: 0 0 20px rgba(59,130,246,0.3); }
+    .btn-cockpit { border-radius: 10px; font-weight: 600; font-family: 'Space Grotesk', sans-serif; cursor: pointer; transition: all 150ms; padding: 10px 20px; border: none; }
+    .btn-cockpit:hover { filter: brightness(1.1); transform: translateY(-1px); }
+    .badge-cockpit { border-radius: 6px; padding: 3px 10px; font-weight: 600; font-size: 12px; display: inline-flex; align-items: center; }
+    .table-cockpit { width: 100%; border-collapse: collapse; }
+    .table-cockpit thead { background: #334155; }
+    .table-cockpit th { padding: 12px 16px; text-align: left; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #94A3B8; font-family: 'Space Grotesk', sans-serif; }
+    .table-cockpit tbody tr { background: #1E293B; border-bottom: 1px solid rgba(148,163,184,0.1); transition: background 150ms; }
+    .table-cockpit tbody tr:hover { background: #253347; }
+    .table-cockpit td { padding: 14px 16px; font-size: 14px; }
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 50; display: flex; align-items: center; justify-content: center; }
+    .input-cockpit { background: #334155; border: 1px solid #475569; border-radius: 10px; padding: 14px 16px; font-size: 15px; width: 100%; outline: none; color: #F8FAFC; font-family: 'DM Sans', sans-serif; transition: border-color 150ms, box-shadow 150ms; }
+    .input-cockpit:focus { border-color: #3B82F6; box-shadow: 0 0 0 3px rgba(59,130,246,0.15); }
+    .input-cockpit::placeholder { color: #64748B; }
+    .label-cockpit { display: block; font-family: 'Space Grotesk', sans-serif; font-weight: 500; font-size: 11px; text-transform: uppercase; color: #64748B; margin-bottom: 8px; letter-spacing: 0.1em; }
+    .radio-cockpit { appearance: none; width: 18px; height: 18px; border: 2px solid #475569; border-radius: 50%; background: #334155; cursor: pointer; transition: all 150ms; }
+    .radio-cockpit:checked { border-color: #3B82F6; background: #3B82F6; box-shadow: 0 0 8px rgba(59,130,246,0.4), inset 0 0 0 3px #1E293B; }
+  </style>
+</head>
+<body>
+<a href="00-index.html" style="position:fixed;top:12px;left:12px;z-index:100;background:rgba(30,41,59,0.9);color:#94A3B8;font-size:12px;padding:6px 12px;border-radius:20px;text-decoration:none;display:inline-flex;align-items:center;gap:4px;box-shadow:0 2px 8px rgba(0,0,0,0.3);font-family:DM Sans,sans-serif">&#8592; Index</a>
+  <!-- Sidebar -->
+  <nav class="sidebar">
+    <div class="px-6 mb-8">
+      <h1 class="font-heading font-[700] text-[22px]"><span class="text-accent" style="text-shadow:0 0 15px rgba(59,130,246,0.5)">Claw</span>BTP</h1>
+    </div>
+    <a href="14-admin-login.html" class="text-text-dim text-sm !text-[13px] mb-2">
+      <i data-lucide="arrow-left" class="w-4 h-4"></i> Prototype
+    </a>
+    <div class="flex-1">
+      <a href="15-admin-dashboard.html">
+        <i data-lucide="layout-dashboard" class="w-5 h-5"></i> Dashboard
+      </a>
+      <a href="16-admin-chantier-detail.html">
+        <i data-lucide="building-2" class="w-5 h-5"></i> Chantiers
+      </a>
+      <a href="18-admin-equipe.html" class="active">
+        <i data-lucide="users" class="w-5 h-5"></i> Equipe
+      </a>
+      <a href="19-admin-notifications.html">
+        <i data-lucide="bell" class="w-5 h-5"></i> Notifications
+      </a>
+      <a href="20-admin-clawbot.html">
+        <i data-lucide="bot" class="w-5 h-5"></i> ClawBot
+      </a>
+    </div>
+    <div class="px-6 mt-auto pt-4 border-t border-white/10">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-full bg-accent/20 flex items-center justify-center text-accent font-heading font-bold text-sm" style="box-shadow:0 0 12px rgba(59,130,246,0.3)">FS</div>
+        <div>
+          <div class="text-sm font-medium text-text">Frederic S.</div>
+          <div class="text-xs text-text-dim">Admin</div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main -->
+  <main class="main-content">
+    <div class="flex items-center justify-between mb-8">
+      <div>
+        <h1 class="font-heading font-bold text-[26px] text-text">Equipe</h1>
+        <p class="text-text-muted text-sm mt-1">18 membres — Sandau Charpente</p>
+      </div>
+      <button onclick="document.getElementById('modal-add').classList.remove('hidden')" class="btn-cockpit bg-accent text-white text-sm px-5 py-2.5 glow-accent flex items-center gap-2">
+        <i data-lucide="user-plus" class="w-4 h-4"></i> Inviter
+      </button>
+    </div>
+
+    <!-- Table -->
+    <div class="card-cockpit overflow-hidden rounded-xl">
+      <table class="table-cockpit">
+        <thead>
+          <tr>
+            <th>Nom</th>
+            <th>Role</th>
+            <th>Email / QR</th>
+            <th>Chantiers</th>
+            <th>Statut</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center text-accent text-xs font-bold">FS</div>
+                <span class="font-medium text-text">Frederic Sandau</span>
+              </div>
+            </td>
+            <td><span class="badge-cockpit bg-accent/20 text-accent">Admin</span></td>
+            <td class="text-text-muted text-sm">frederic@sandau.fr</td>
+            <td class="font-mono text-text-muted text-sm">Tous</td>
+            <td><span class="w-2 h-2 rounded-full bg-success inline-block" style="box-shadow:0 0 6px rgba(34,197,94,0.5)"></span> <span class="text-text-muted text-sm ml-1">Actif</span></td>
+            <td class="text-text-dim">—</td>
+          </tr>
+          <tr>
+            <td>
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full bg-warning/20 flex items-center justify-center text-warning text-xs font-bold">JV</div>
+                <span class="font-medium text-text">Jean-Marc Vidal</span>
+              </div>
+            </td>
+            <td><span class="badge-cockpit bg-warning/20 text-warning">Conducteur</span></td>
+            <td class="text-text-muted text-sm">jm.vidal@sandau.fr</td>
+            <td class="font-mono text-text-muted text-sm">3</td>
+            <td><span class="w-2 h-2 rounded-full bg-success inline-block" style="box-shadow:0 0 6px rgba(34,197,94,0.5)"></span> <span class="text-text-muted text-sm ml-1">Actif</span></td>
+            <td>
+              <button class="text-text-dim hover:text-text-muted transition-colors"><i data-lucide="more-horizontal" class="w-4 h-4"></i></button>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full bg-warning/20 flex items-center justify-center text-warning text-xs font-bold">SL</div>
+                <span class="font-medium text-text">Sophie Laurent</span>
+              </div>
+            </td>
+            <td><span class="badge-cockpit bg-warning/20 text-warning">Conducteur</span></td>
+            <td class="text-text-muted text-sm">s.laurent@sandau.fr</td>
+            <td class="font-mono text-text-muted text-sm">2</td>
+            <td><span class="w-2 h-2 rounded-full bg-success inline-block" style="box-shadow:0 0 6px rgba(34,197,94,0.5)"></span> <span class="text-text-muted text-sm ml-1">Actif</span></td>
+            <td>
+              <button class="text-text-dim hover:text-text-muted transition-colors"><i data-lucide="more-horizontal" class="w-4 h-4"></i></button>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full bg-bg-elevated flex items-center justify-center text-text-dim text-xs font-bold">AB</div>
+                <span class="font-medium text-text">Ahmed Benali</span>
+              </div>
+            </td>
+            <td><span class="badge-cockpit bg-bg-elevated text-text-dim">Ouvrier</span></td>
+            <td class="text-text-muted text-sm">
+              <button onclick="document.getElementById('modal-qr').classList.remove('hidden')" class="text-accent hover:text-accent/80 transition-colors flex items-center gap-1">
+                <i data-lucide="qr-code" class="w-3.5 h-3.5"></i> Voir QR
+              </button>
+            </td>
+            <td class="font-mono text-text-muted text-sm">2</td>
+            <td><span class="w-2 h-2 rounded-full bg-success inline-block" style="box-shadow:0 0 6px rgba(34,197,94,0.5)"></span> <span class="text-text-muted text-sm ml-1">Actif</span></td>
+            <td>
+              <button class="text-text-dim hover:text-text-muted transition-colors"><i data-lucide="more-horizontal" class="w-4 h-4"></i></button>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full bg-bg-elevated flex items-center justify-center text-text-dim text-xs font-bold">LM</div>
+                <span class="font-medium text-text">Lucas Martin</span>
+              </div>
+            </td>
+            <td><span class="badge-cockpit bg-bg-elevated text-text-dim">Ouvrier</span></td>
+            <td class="text-text-muted text-sm">
+              <button class="text-accent hover:text-accent/80 transition-colors flex items-center gap-1">
+                <i data-lucide="qr-code" class="w-3.5 h-3.5"></i> Voir QR
+              </button>
+            </td>
+            <td class="font-mono text-text-muted text-sm">1</td>
+            <td><span class="w-2 h-2 rounded-full bg-success inline-block" style="box-shadow:0 0 6px rgba(34,197,94,0.5)"></span> <span class="text-text-muted text-sm ml-1">Actif</span></td>
+            <td>
+              <button class="text-text-dim hover:text-text-muted transition-colors"><i data-lucide="more-horizontal" class="w-4 h-4"></i></button>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full bg-bg-elevated flex items-center justify-center text-text-dim text-xs font-bold">PD</div>
+                <span class="font-medium text-text">Paul Dupuis</span>
+              </div>
+            </td>
+            <td><span class="badge-cockpit bg-bg-elevated text-text-dim">Ouvrier</span></td>
+            <td class="text-text-muted text-sm">
+              <button class="text-accent hover:text-accent/80 transition-colors flex items-center gap-1">
+                <i data-lucide="qr-code" class="w-3.5 h-3.5"></i> Voir QR
+              </button>
+            </td>
+            <td class="font-mono text-text-muted text-sm">2</td>
+            <td><span class="w-2 h-2 rounded-full bg-text-dim inline-block"></span> <span class="text-text-muted text-sm ml-1">Inactif</span></td>
+            <td>
+              <button class="text-text-dim hover:text-text-muted transition-colors"><i data-lucide="more-horizontal" class="w-4 h-4"></i></button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <!-- Modal QR Code -->
+  <div id="modal-qr" class="modal-overlay hidden" onclick="if(event.target===this)this.classList.add('hidden')">
+    <div class="card-cockpit p-8 w-[400px] text-center">
+      <h3 class="font-heading font-semibold text-[18px] text-text mb-2">QR Code — Ahmed Benali</h3>
+      <p class="text-text-dim text-sm mb-6">Scannez ce QR code pour acceder a l'interface ouvrier</p>
+      <div class="w-48 h-48 mx-auto rounded-xl bg-bg-elevated border border-white/10 flex items-center justify-center mb-6 glow-accent">
+        <div class="grid grid-cols-5 gap-1 p-4">
+          <div class="w-4 h-4 bg-accent rounded-sm"></div><div class="w-4 h-4 bg-accent rounded-sm"></div><div class="w-4 h-4 bg-accent rounded-sm"></div><div class="w-4 h-4 bg-bg-elevated rounded-sm"></div><div class="w-4 h-4 bg-accent rounded-sm"></div>
+          <div class="w-4 h-4 bg-accent rounded-sm"></div><div class="w-4 h-4 bg-bg-elevated rounded-sm"></div><div class="w-4 h-4 bg-accent rounded-sm"></div><div class="w-4 h-4 bg-accent rounded-sm"></div><div class="w-4 h-4 bg-bg-elevated rounded-sm"></div>
+          <div class="w-4 h-4 bg-bg-elevated rounded-sm"></div><div class="w-4 h-4 bg-accent rounded-sm"></div><div class="w-4 h-4 bg-bg-elevated rounded-sm"></div><div class="w-4 h-4 bg-accent rounded-sm"></div><div class="w-4 h-4 bg-accent rounded-sm"></div>
+          <div class="w-4 h-4 bg-accent rounded-sm"></div><div class="w-4 h-4 bg-accent rounded-sm"></div><div class="w-4 h-4 bg-bg-elevated rounded-sm"></div><div class="w-4 h-4 bg-bg-elevated rounded-sm"></div><div class="w-4 h-4 bg-accent rounded-sm"></div>
+          <div class="w-4 h-4 bg-accent rounded-sm"></div><div class="w-4 h-4 bg-bg-elevated rounded-sm"></div><div class="w-4 h-4 bg-accent rounded-sm"></div><div class="w-4 h-4 bg-accent rounded-sm"></div><div class="w-4 h-4 bg-accent rounded-sm"></div>
+        </div>
+      </div>
+      <div class="flex gap-3 justify-center">
+        <button class="btn-cockpit bg-accent text-white text-sm px-5 py-2.5 flex items-center gap-2">
+          <i data-lucide="download" class="w-4 h-4"></i> Telecharger
+        </button>
+        <button onclick="document.getElementById('modal-qr').classList.add('hidden')" class="btn-cockpit bg-bg-card text-text-muted border border-white/15 text-sm px-5 py-2.5">
+          Fermer
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Ajout Membre -->
+  <div id="modal-add" class="modal-overlay hidden" onclick="if(event.target===this)this.classList.add('hidden')">
+    <div class="card-cockpit p-8 w-[480px]">
+      <h3 class="font-heading font-semibold text-[18px] text-text mb-6">Inviter un membre</h3>
+      <div class="space-y-5">
+        <!-- Role -->
+        <div>
+          <label class="label-cockpit">Role</label>
+          <div class="flex gap-4">
+            <label class="flex items-center gap-3 cursor-pointer card-cockpit px-4 py-3 flex-1">
+              <input type="radio" name="role" value="conducteur" class="radio-cockpit">
+              <div>
+                <span class="text-text font-medium text-sm">Conducteur</span>
+                <p class="text-text-dim text-xs mt-0.5">Acces email + mot de passe</p>
+              </div>
+            </label>
+            <label class="flex items-center gap-3 cursor-pointer card-cockpit px-4 py-3 flex-1">
+              <input type="radio" name="role" value="ouvrier" class="radio-cockpit" checked>
+              <div>
+                <span class="text-text font-medium text-sm">Ouvrier</span>
+                <p class="text-text-dim text-xs mt-0.5">Acces QR code uniquement</p>
+              </div>
+            </label>
+          </div>
+        </div>
+        <div>
+          <label class="label-cockpit">Prenom</label>
+          <input type="text" placeholder="Jean" class="input-cockpit">
+        </div>
+        <div>
+          <label class="label-cockpit">Nom</label>
+          <input type="text" placeholder="Dupont" class="input-cockpit">
+        </div>
+        <div>
+          <label class="label-cockpit">Email <span class="text-text-dim normal-case">(conducteur uniquement)</span></label>
+          <input type="email" placeholder="jean.dupont@sandau.fr" class="input-cockpit">
+        </div>
+      </div>
+      <div class="flex gap-3 mt-8 pt-6 border-t border-white/10">
+        <button class="btn-cockpit bg-accent text-white text-sm px-6 py-2.5 glow-accent flex items-center gap-2">
+          <i data-lucide="send" class="w-4 h-4"></i> Envoyer l'invitation
+        </button>
+        <button onclick="document.getElementById('modal-add').classList.add('hidden')" class="btn-cockpit bg-bg-card text-text-muted border border-white/15 text-sm px-6 py-2.5">
+          Annuler
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>lucide.createIcons();</script>
+</body>
+</html>

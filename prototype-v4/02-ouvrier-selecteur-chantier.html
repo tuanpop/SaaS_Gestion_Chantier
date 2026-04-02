@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claw — Chantiers</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #F8FAFC;
+    display: flex;
+    justify-content: center;
+    min-height: 100vh;
+  }
+  h1, h2, h3, h4, h5 { font-family: 'Plus Jakarta Sans', sans-serif; }
+  .mobile-frame {
+    width: 100%;
+    max-width: 375px;
+    min-height: 100vh;
+    background: #F8FAFC;
+    position: relative;
+  }
+
+  /* Header */
+  .header {
+    background: linear-gradient(135deg, #6366F1, #8B5CF6);
+    color: white;
+    padding: 56px 24px 28px;
+    border-radius: 0 0 20px 20px;
+  }
+  .header-greeting {
+    font-size: 14px;
+    opacity: 0.85;
+    margin-bottom: 4px;
+  }
+  .header-name {
+    font-size: 24px;
+    font-weight: 800;
+    margin-bottom: 4px;
+  }
+  .header-sub {
+    font-size: 13px;
+    opacity: 0.75;
+  }
+
+  /* Content */
+  .content {
+    padding: 20px 16px 32px;
+  }
+  .section-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #94A3B8;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 12px;
+  }
+
+  /* Project card */
+  .project-card {
+    background: white;
+    border: 1px solid #E2E8F0;
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 12px;
+    text-decoration: none;
+    display: block;
+    transition: box-shadow 0.2s, transform 0.15s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .project-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    transform: translateY(-1px);
+  }
+  .project-card:active {
+    transform: scale(0.98);
+  }
+  .project-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .project-name {
+    font-size: 16px;
+    font-weight: 700;
+    color: #0F172A;
+  }
+  .status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .status-dot.active { background: #10B981; }
+  .status-dot.pending { background: #F59E0B; }
+  .status-dot.new { background: #6366F1; }
+
+  .project-meta {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .meta-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: #475569;
+  }
+  .meta-item i { color: #94A3B8; }
+
+  .task-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: #EEF2FF;
+    color: #6366F1;
+    font-weight: 600;
+    font-size: 13px;
+    padding: 4px 10px;
+    border-radius: 8px;
+  }
+
+  .project-progress {
+    margin-top: 12px;
+    height: 4px;
+    background: #E2E8F0;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .project-progress-bar {
+    height: 100%;
+    border-radius: 4px;
+    background: linear-gradient(90deg, #6366F1, #8B5CF6);
+    transition: width 0.3s;
+  }
+
+  .chevron-right {
+    color: #94A3B8;
+    flex-shrink: 0;
+  }
+</style>
+</head>
+<body>
+
+<a href="00-index.html" style="position:fixed;top:12px;left:12px;z-index:100;background:white;color:#475569;font-size:12px;padding:6px 12px;border-radius:20px;text-decoration:none;display:flex;align-items:center;gap:4px;box-shadow:0 2px 8px rgba(0,0,0,0.1);font-family:'Inter',sans-serif">
+  <i data-lucide="arrow-left" style="width:14px;height:14px"></i> Index
+</a>
+
+<div class="mobile-frame">
+  <div class="header">
+    <p class="header-greeting">Bonjour</p>
+    <h1 class="header-name">Mohamed B.</h1>
+    <p class="header-sub">3 chantiers actifs &middot; 9 taches au total</p>
+  </div>
+
+  <div class="content">
+    <p class="section-label">Mes chantiers</p>
+
+    <!-- Leclerc -->
+    <a href="03-ouvrier-taches.html" class="project-card">
+      <div class="project-top">
+        <div>
+          <div class="project-name">Leclerc — Merignac</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="status-dot active"></span>
+          <i data-lucide="chevron-right" style="width:18px;height:18px;color:#94A3B8"></i>
+        </div>
+      </div>
+      <div class="project-meta">
+        <span class="task-badge">
+          <i data-lucide="check-square" style="width:14px;height:14px"></i>
+          4 taches
+        </span>
+        <span class="meta-item">
+          <i data-lucide="clock" style="width:14px;height:14px"></i>
+          1 en cours
+        </span>
+      </div>
+      <div class="project-progress">
+        <div class="project-progress-bar" style="width:25%"></div>
+      </div>
+    </a>
+
+    <!-- Residence -->
+    <a href="03-ouvrier-taches.html" class="project-card">
+      <div class="project-top">
+        <div>
+          <div class="project-name">Residence Les Pins</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="status-dot pending"></span>
+          <i data-lucide="chevron-right" style="width:18px;height:18px;color:#94A3B8"></i>
+        </div>
+      </div>
+      <div class="project-meta">
+        <span class="task-badge">
+          <i data-lucide="check-square" style="width:14px;height:14px"></i>
+          3 taches
+        </span>
+        <span class="meta-item">
+          <i data-lucide="clock" style="width:14px;height:14px"></i>
+          2 en cours
+        </span>
+      </div>
+      <div class="project-progress">
+        <div class="project-progress-bar" style="width:40%"></div>
+      </div>
+    </a>
+
+    <!-- Bureau Thales -->
+    <a href="03-ouvrier-taches.html" class="project-card">
+      <div class="project-top">
+        <div>
+          <div class="project-name">Bureau Thales</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="status-dot new"></span>
+          <i data-lucide="chevron-right" style="width:18px;height:18px;color:#94A3B8"></i>
+        </div>
+      </div>
+      <div class="project-meta">
+        <span class="task-badge">
+          <i data-lucide="check-square" style="width:14px;height:14px"></i>
+          2 taches
+        </span>
+        <span class="meta-item">
+          <i data-lucide="clock" style="width:14px;height:14px"></i>
+          0 en cours
+        </span>
+      </div>
+      <div class="project-progress">
+        <div class="project-progress-bar" style="width:0%"></div>
+      </div>
+    </a>
+  </div>
+</div>
+
+<script>lucide.createIcons()</script>
+</body>
+</html>

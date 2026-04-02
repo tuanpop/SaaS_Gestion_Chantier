@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>ClawBTP - Comptes Rendus</title>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;touch-action:manipulation}
+body{background:#FAF6F1;font-family:'Source Sans 3',sans-serif;color:#292524;max-width:390px;margin:0 auto;min-height:100vh;padding-bottom:80px}
+.header{background:#C2703E;color:#fff;padding:20px 20px 24px;border-radius:0 0 20px 20px}
+.header h1{font-family:'Lexend',sans-serif;font-weight:700;font-size:22px}
+.header-sub{font-size:14px;opacity:0.85;margin-top:2px}
+.content{padding:16px}
+.card-warm{background:#fff;border:1px solid #E7E0D6;border-radius:14px;box-shadow:0 2px 8px rgba(120,53,15,0.08);transition:box-shadow 200ms,transform 200ms;padding:16px;margin-bottom:12px}
+.card-warm:active{box-shadow:0 1px 3px rgba(120,53,15,0.1);transform:translateY(1px)}
+.badge-warm{border-radius:8px;padding:4px 12px;font-weight:600;font-size:13px;display:inline-block}
+.badge-danger{background:#FEE2E2;color:#DC2626}
+.badge-warning{background:#FEF3C7;color:#D97706}
+.badge-success{background:#DCFCE7;color:#15803D}
+.badge-muted{background:#F5F0E8;color:#78716C}
+.badge-accent{background:#FEF3C7;color:#B45309}
+
+.cr-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.cr-title{font-family:'Lexend',sans-serif;font-weight:600;font-size:15px}
+.cr-date{font-size:12px;color:#78716C}
+.cr-chantier{font-size:13px;color:#78716C;margin-bottom:8px}
+
+.cr-list-item{cursor:pointer}
+
+/* CR ouvert */
+.cr-section{margin-top:16px}
+.cr-section-title{font-family:'Lexend',sans-serif;font-weight:600;font-size:14px;color:#78350F;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.cr-textarea{width:100%;min-height:80px;background:#F5F0E8;border:1px solid #A8A29E;border-radius:12px;padding:12px;font-family:'Source Sans 3',sans-serif;font-size:14px;color:#292524;resize:vertical;line-height:1.5}
+.cr-textarea:focus{outline:none;border-color:#C2703E;box-shadow:0 0 0 3px rgba(194,112,62,0.15)}
+.btn-row{display:flex;gap:10px;margin-top:16px}
+.btn-warm{border:none;border-radius:12px;font-weight:600;font-family:'Lexend',sans-serif;box-shadow:0 2px 8px rgba(120,53,15,0.15);transition:all 150ms;cursor:pointer;padding:14px 20px;font-size:14px;display:flex;align-items:center;justify-content:center;gap:8px;flex:1}
+.btn-warm:active{transform:translateY(2px);box-shadow:0 1px 3px rgba(120,53,15,0.1)}
+.btn-primary{background:#C2703E;color:#fff}
+.btn-secondary{background:#F5F0E8;color:#78716C;box-shadow:0 2px 8px rgba(120,53,15,0.08)}
+.separator{height:1px;background:#E7E0D6;margin:20px 0}
+.section-label{font-family:'Lexend',sans-serif;font-weight:600;font-size:14px;color:#78716C;margin-bottom:10px}
+
+.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:390px;background:#fff;border-top:1px solid #E7E0D6;display:flex;justify-content:space-around;align-items:center;padding:8px 0 env(safe-area-inset-bottom,8px);z-index:50;box-shadow:0 -2px 8px rgba(120,53,15,0.06)}
+.bottom-nav a{display:flex;flex-direction:column;align-items:center;font-size:11px;font-weight:500;color:#A8A29E;gap:2px;text-decoration:none;padding:4px 8px;position:relative}
+.bottom-nav a.active{color:#C2703E;font-weight:700}
+.bottom-nav a.active::after{content:'';position:absolute;top:-9px;left:50%;transform:translateX(-50%);width:24px;height:3px;background:#C2703E;border-radius:2px}
+.nav-badge{position:absolute;top:0;right:2px;background:#DC2626;color:#fff;font-size:10px;font-weight:700;width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.back-link{display:inline-flex;align-items:center;gap:6px;color:#78716C;font-size:13px;text-decoration:none;margin-bottom:12px}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Comptes Rendus</h1>
+  <div class="header-sub">3 CR en attente de validation</div>
+</div>
+
+<div class="content">
+  <a href="00-index.html" class="back-link"><i data-lucide="arrow-left" style="width:14px;height:14px"></i> Prototype</a>
+
+  <!-- CR OUVERT -->
+  <div class="card-warm">
+    <div class="cr-header">
+      <div class="cr-title">CR du 03/04/2026</div>
+      <span class="badge-warm badge-muted">Brouillon</span>
+    </div>
+    <div class="cr-chantier">Residence Les Oliviers</div>
+
+    <div class="cr-section">
+      <div class="cr-section-title"><i data-lucide="check-circle" style="width:16px;height:16px;color:#15803D"></i> Travaux realises</div>
+      <textarea class="cr-textarea">Pose cloisons terminee RDC. Enduit commence salle de bain. Mohamed a termine carrelage cuisine, joints en cours. Raccordement electrique salon valide par Rachid.</textarea>
+    </div>
+
+    <div class="cr-section">
+      <div class="cr-section-title"><i data-lucide="alert-triangle" style="width:16px;height:16px;color:#D97706"></i> Problemes / Blocages</div>
+      <textarea class="cr-textarea">Attente livraison plinthes prevue jeudi. Manque 2 sacs d'enduit — commande passee ce matin. Retard electricien sous-traitant sur etage 1.</textarea>
+    </div>
+
+    <div class="cr-section">
+      <div class="cr-section-title"><i data-lucide="calendar" style="width:16px;height:16px;color:#C2703E"></i> Prochaines etapes</div>
+      <textarea class="cr-textarea">Pose plinthes des reception livraison. Electricien confirme jeudi matin. Demarrage peinture chambre 1 si enduit sec.</textarea>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn-warm btn-primary"><i data-lucide="file-check" style="width:16px;height:16px"></i> Valider et PDF</button>
+      <button class="btn-warm btn-secondary"><i data-lucide="refresh-cw" style="width:16px;height:16px"></i> Regenerer</button>
+    </div>
+  </div>
+
+  <div class="separator"></div>
+  <div class="section-label">Historique</div>
+
+  <!-- CR valide -->
+  <div class="card-warm cr-list-item">
+    <div class="cr-header">
+      <div class="cr-title">CR du 02/04/2026</div>
+      <span class="badge-warm badge-accent">Valide</span>
+    </div>
+    <div class="cr-chantier">Bureau Mistral</div>
+    <div class="cr-date">Valide le 02/04 a 18h30</div>
+  </div>
+
+  <!-- CR envoye -->
+  <div class="card-warm cr-list-item">
+    <div class="cr-header">
+      <div class="cr-title">CR du 01/04/2026</div>
+      <span class="badge-warm badge-success">Envoye</span>
+    </div>
+    <div class="cr-chantier">Maison Dubois</div>
+    <div class="cr-date">Envoye le 01/04 a 19h15</div>
+  </div>
+
+  <div class="card-warm cr-list-item">
+    <div class="cr-header">
+      <div class="cr-title">CR du 01/04/2026</div>
+      <span class="badge-warm badge-success">Envoye</span>
+    </div>
+    <div class="cr-chantier">Residence Les Oliviers</div>
+    <div class="cr-date">Envoye le 01/04 a 18h45</div>
+  </div>
+
+  <div class="card-warm cr-list-item">
+    <div class="cr-header">
+      <div class="cr-title">CR du 31/03/2026</div>
+      <span class="badge-warm badge-muted">Brouillon</span>
+    </div>
+    <div class="cr-chantier">Local Commercial Vauban</div>
+    <div class="cr-date">Genere le 31/03 a 18h00</div>
+  </div>
+</div>
+
+<nav class="bottom-nav">
+  <a href="08-conducteur-chantiers.html"><i data-lucide="hard-hat" style="width:22px;height:22px"></i>Chantiers</a>
+  <a href="10-conducteur-taches.html"><i data-lucide="check-square" style="width:22px;height:22px"></i>Taches</a>
+  <a href="11-conducteur-cr.html" class="active"><i data-lucide="file-text" style="width:22px;height:22px"></i>CR</a>
+  <a href="12-conducteur-alertes.html"><i data-lucide="bell" style="width:22px;height:22px"></i><span class="nav-badge">3</span>Alertes</a>
+  <a href="13-conducteur-clawbot.html"><i data-lucide="bot" style="width:22px;height:22px"></i>ClawBot</a>
+</nav>
+
+<script>lucide.createIcons()</script>
+</body>
+</html>

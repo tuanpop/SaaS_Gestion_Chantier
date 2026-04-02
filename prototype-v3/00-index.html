@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ClawBTP — Prototype V3 — Chantier Chaleureux</title>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#FAF6F1;font-family:'Source Sans 3',sans-serif;color:#292524;min-height:100vh}
+.container{max-width:1000px;margin:0 auto;padding:40px 24px 60px}
+.logo{font-family:'Lexend',sans-serif;font-weight:700;font-size:36px;text-align:center}
+.logo span{color:#C2703E}
+.subtitle{text-align:center;color:#78716C;font-size:16px;margin-top:4px}
+.section-title{font-family:'Lexend',sans-serif;font-weight:700;font-size:20px;margin:36px 0 16px;padding-bottom:8px;border-bottom:2px solid #E7E0D6;display:flex;align-items:center;gap:10px}
+.section-icon{width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+.card-warm{background:#fff;border:1px solid #E7E0D6;border-radius:14px;box-shadow:0 2px 8px rgba(120,53,15,0.08);transition:box-shadow 200ms,transform 200ms;padding:16px;display:flex;align-items:center;gap:14px;text-decoration:none;color:#292524;cursor:pointer}
+.card-warm:hover{box-shadow:0 4px 16px rgba(120,53,15,0.14);transform:translateY(-2px)}
+.card-warm:active{box-shadow:0 1px 3px rgba(120,53,15,0.1);transform:translateY(1px)}
+.card-icon{width:44px;height:44px;border-radius:12px;background:#FEF3C7;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#C2703E}
+.card-title{font-family:'Lexend',sans-serif;font-weight:600;font-size:15px}
+.card-desc{font-size:13px;color:#78716C;margin-top:2px}
+.badge-warm{border-radius:8px;padding:3px 10px;font-weight:600;font-size:11px;display:inline-block;margin-left:8px}
+.badge-mobile{background:#FEF3C7;color:#B45309}
+.badge-desktop{background:#DCFCE7;color:#15803D}
+.badge-fullpage{background:#FEE2E2;color:#DC2626}
+
+/* Design system showcase */
+.ds-section{margin-top:48px;padding-top:32px;border-top:2px solid #E7E0D6}
+.ds-title{font-family:'Lexend',sans-serif;font-weight:700;font-size:20px;margin-bottom:20px}
+.ds-row{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:20px}
+.ds-label{font-family:'Lexend',sans-serif;font-weight:600;font-size:13px;color:#78716C;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px}
+.color-swatch{width:60px;height:60px;border-radius:12px;display:flex;align-items:flex-end;padding:4px;font-size:10px;color:#fff;font-weight:600;box-shadow:0 2px 8px rgba(120,53,15,0.1)}
+.typo-sample{padding:8px 16px;background:#fff;border:1px solid #E7E0D6;border-radius:10px}
+.component-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.btn-warm{border:none;border-radius:12px;font-weight:600;font-family:'Lexend',sans-serif;box-shadow:0 2px 8px rgba(120,53,15,0.15);transition:all 150ms;cursor:pointer;padding:10px 20px;font-size:14px;display:inline-flex;align-items:center;gap:6px}
+.btn-warm:active{transform:translateY(2px)}
+.badge-danger{background:#FEE2E2;color:#DC2626}
+.badge-warning{background:#FEF3C7;color:#D97706}
+.badge-success{background:#DCFCE7;color:#15803D}
+.badge-muted{background:#F5F0E8;color:#78716C}
+.badge-accent{background:#FEF3C7;color:#B45309}
+.progress-warm{height:10px;border-radius:5px;background:#F5F0E8;overflow:hidden;width:200px}
+.progress-fill{height:100%;border-radius:5px}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <!-- Header -->
+  <div class="logo"><span>Claw</span>BTP</div>
+  <div class="subtitle">Prototype V3 — Chantier Chaleureux</div>
+  <p style="text-align:center;color:#A8A29E;font-size:13px;margin-top:4px">20 maquettes — Ouvrier / Conducteur / Admin</p>
+
+  <!-- OUVRIER -->
+  <div class="section-title">
+    <div class="section-icon" style="background:#FEF3C7;color:#B45309"><i data-lucide="wrench" style="width:18px;height:18px"></i></div>
+    Interface Ouvrier <span class="badge-warm badge-mobile">Mobile PWA</span>
+  </div>
+  <div class="grid">
+    <a href="01-ouvrier-scan-qr.html" class="card-warm">
+      <div class="card-icon"><i data-lucide="qr-code" style="width:22px;height:22px"></i></div>
+      <div><div class="card-title">1. Scan QR</div><div class="card-desc">Connexion ouvrier par QR code</div></div>
+    </a>
+    <a href="02-ouvrier-selecteur-chantier.html" class="card-warm">
+      <div class="card-icon"><i data-lucide="building" style="width:22px;height:22px"></i></div>
+      <div><div class="card-title">2. Selecteur chantier</div><div class="card-desc">Choix du chantier actif</div></div>
+    </a>
+    <a href="03-ouvrier-taches.html" class="card-warm">
+      <div class="card-icon"><i data-lucide="check-square" style="width:22px;height:22px"></i></div>
+      <div><div class="card-title">3. Liste des taches</div><div class="card-desc">Ecran principal ouvrier</div></div>
+    </a>
+    <a href="04-ouvrier-tache-detail.html" class="card-warm">
+      <div class="card-icon"><i data-lucide="file-text" style="width:22px;height:22px"></i></div>
+      <div><div class="card-title">4. Detail tache</div><div class="card-desc">Detail, photos, actions</div></div>
+    </a>
+    <a href="05-ouvrier-photo.html" class="card-warm">
+      <div class="card-icon"><i data-lucide="camera" style="width:22px;height:22px"></i></div>
+      <div><div class="card-title">5. Prise de photo</div><div class="card-desc">Capture et envoi photo</div></div>
+    </a>
+    <a href="06-ouvrier-etats.html" class="card-warm">
+      <div class="card-icon"><i data-lucide="alert-circle" style="width:22px;height:22px"></i></div>
+      <div><div class="card-title">6. Etats speciaux</div><div class="card-desc">Vide, hors ligne, sync...</div></div>
+    </a>
+    <a href="07-ouvrier-clawbot.html" class="card-warm">
+      <div class="card-icon"><i data-lucide="bot" style="width:22px;height:22px"></i></div>
+      <div><div class="card-title">7. ClawBot</div><div class="card-desc">Assistant IA conversationnel</div></div>
+    </a>
+  </div>
+
+  <!-- CONDUCTEUR -->
+  <div class="section-title">
+    <div class="section-icon" style="background:#FEF3C7;color:#C2703E"><i data-lucide="hard-hat" style="width:18px;height:18px"></i></div>
+    Interface Conducteur <span class="badge-warm badge-mobile">Mobile</span>
+  </div>
+  <div class="grid">
+    <a href="08-conducteur-chantiers.html" class="card-warm">
+      <div class="card-icon"><i data-lucide="building" style="width:22px;height:22px"></i></div>
+      <div><div class="card-title">1. Mes chantiers</div><div class="card-desc">Liste des chantiers actifs</div></div>
+    </a>
+    <a href="09-conducteur-chantier-detail.html" class="card-warm">
+      <div class="card-icon"><i data-lucide="layout-list" style="width:22px;height:22px"></i></div>
+      <div><div class="card-title">2. Detail chantier</div><div class="card-desc">Taches, equipe, photos</div></div>
+    </a>
+    <a href="10-conducteur-taches.html" class="card-warm">
+      <div class="card-icon"><i data-lucide="check-square" style="width:22px;height:22px"></i></div>
+      <div><div class="card-title">3. Gestion taches</div><div class="card-desc">Suivi multi-chantiers</div></div>
+    </a>
+    <a href="11-conducteur-cr.html" class="card-warm">
+      <div class="card-icon"><i data-lucide="file-text" style="width:22px;height:22px"></i></div>
+      <div><div class="card-title">4. Comptes-rendus</div><div class="card-desc">CR journaliers IA</div></div>
+    </a>
+    <a href="12-conducteur-alertes.html" class="card-warm">
+      <div class="card-icon"><i data-lucide="bell" style="width:22px;height:22px"></i></div>
+      <div><div class="card-title">5. Alertes</div><div class="card-desc">Notifications et derives</div></div>
+    </a>
+    <a href="13-conducteur-clawbot.html" class="card-warm">
+      <div class="card-icon"><i data-lucide="bot" style="width:22px;height:22px"></i></div>
+      <div><div class="card-title">6. ClawBot</div><div class="card-desc">Assistant IA conducteur</div></div>
+    </a>
+  </div>
+
+  <!-- ADMIN -->
+  <div class="section-title">
+    <div class="section-icon" style="background:#451A03;color:#FEF3C7"><i data-lucide="shield" style="width:18px;height:18px"></i></div>
+    Interface Admin <span class="badge-warm badge-desktop">Desktop</span>
+  </div>
+  <div class="grid">
+    <a href="14-admin-login.html" class="card-warm">
+      <div class="card-icon"><i data-lucide="log-in" style="width:22px;height:22px"></i></div>
+      <div><div class="card-title">1. Login</div><div class="card-desc">Connexion / inscription</div></div>
+    </a>
+    <a href="15-admin-dashboard.html" class="card-warm">
+      <div class="card-icon"><i data-lucide="layout-dashboard" style="width:22px;height:22px"></i></div>
+      <div><div class="card-title">2. Dashboard</div><div class="card-desc">Vue d'ensemble, KPIs, alertes</div></div>
+    </a>
+    <a href="16-admin-chantier-detail.html" class="card-warm">
+      <div class="card-icon"><i data-lucide="hard-hat" style="width:22px;height:22px"></i></div>
+      <div><div class="card-title">3. Detail chantier</div><div class="card-desc">Infos, taches, photos, CR</div></div>
+    </a>
+    <a href="17-admin-chantier-nouveau.html" class="card-warm">
+      <div class="card-icon"><i data-lucide="plus-circle" style="width:22px;height:22px"></i></div>
+      <div><div class="card-title">4. Nouveau chantier</div><div class="card-desc">Formulaire de creation</div></div>
+    </a>
+    <a href="18-admin-equipe.html" class="card-warm">
+      <div class="card-icon"><i data-lucide="users" style="width:22px;height:22px"></i></div>
+      <div><div class="card-title">5. Equipe</div><div class="card-desc">Gestion membres et QR</div></div>
+    </a>
+    <a href="19-admin-notifications.html" class="card-warm">
+      <div class="card-icon"><i data-lucide="bell" style="width:22px;height:22px"></i></div>
+      <div><div class="card-title">6. Notifications</div><div class="card-desc">Centre de notifications</div></div>
+    </a>
+    <a href="20-admin-clawbot.html" class="card-warm">
+      <div class="card-icon"><i data-lucide="bot" style="width:22px;height:22px"></i></div>
+      <div><div class="card-title">7. ClawBot Admin</div><div class="card-desc">Assistant IA avec mini-cards</div></div>
+    </a>
+    <a href="21-admin-trial-expire.html" class="card-warm">
+      <div class="card-icon" style="background:#FEE2E2;color:#DC2626"><i data-lucide="clock" style="width:22px;height:22px"></i></div>
+      <div><div class="card-title">8. Essai expire</div><div class="card-desc">Pricing 3 plans</div></div>
+    </a>
+  </div>
+
+  <!-- DESIGN SYSTEM SHOWCASE -->
+  <div class="ds-section">
+    <div class="ds-title">Design System — Chantier Chaleureux</div>
+
+    <div class="ds-label">Palette de couleurs</div>
+    <div class="ds-row">
+      <div class="color-swatch" style="background:#78350F">Primary</div>
+      <div class="color-swatch" style="background:#C2703E">Accent</div>
+      <div class="color-swatch" style="background:#B45309">Terra</div>
+      <div class="color-swatch" style="background:#451A03">Dark</div>
+      <div class="color-swatch" style="background:#FEF3C7;color:#B45309">Sand</div>
+      <div class="color-swatch" style="background:#FAF6F1;color:#78716C">Cream</div>
+      <div class="color-swatch" style="background:#F5F0E8;color:#78716C">Surface</div>
+      <div class="color-swatch" style="background:#DC2626">Danger</div>
+      <div class="color-swatch" style="background:#D97706">Warning</div>
+      <div class="color-swatch" style="background:#15803D">Success</div>
+    </div>
+
+    <div class="ds-label">Typographie</div>
+    <div class="ds-row" style="flex-direction:column;gap:8px">
+      <div class="typo-sample"><span style="font-family:'Lexend',sans-serif;font-weight:700;font-size:24px">Lexend Bold 700</span> <span style="color:#78716C;font-size:13px">— Titres, headings</span></div>
+      <div class="typo-sample"><span style="font-family:'Lexend',sans-serif;font-weight:600;font-size:16px">Lexend Semibold 600</span> <span style="color:#78716C;font-size:13px">— Sous-titres, boutons</span></div>
+      <div class="typo-sample"><span style="font-family:'Source Sans 3',sans-serif;font-size:15px">Source Sans 3 Regular</span> <span style="color:#78716C;font-size:13px">— Corps de texte</span></div>
+      <div class="typo-sample"><span style="font-family:'Source Sans 3',sans-serif;font-size:13px;color:#78716C">Source Sans 3 Muted</span> <span style="color:#A8A29E;font-size:13px">— Labels, descriptions</span></div>
+    </div>
+
+    <div class="ds-label">Badges</div>
+    <div class="component-row" style="margin-bottom:20px">
+      <span class="badge-warm badge-danger" style="border-radius:8px;padding:4px 12px;font-weight:600;font-size:13px">En retard</span>
+      <span class="badge-warm badge-warning" style="border-radius:8px;padding:4px 12px;font-weight:600;font-size:13px">A surveiller</span>
+      <span class="badge-warm badge-success" style="border-radius:8px;padding:4px 12px;font-weight:600;font-size:13px">En avance</span>
+      <span class="badge-warm badge-accent" style="border-radius:8px;padding:4px 12px;font-weight:600;font-size:13px">Normal</span>
+      <span class="badge-warm badge-muted" style="border-radius:8px;padding:4px 12px;font-weight:600;font-size:13px">Brouillon</span>
+    </div>
+
+    <div class="ds-label">Boutons</div>
+    <div class="component-row" style="margin-bottom:20px">
+      <button class="btn-warm" style="background:#C2703E;color:#fff"><i data-lucide="plus" style="width:16px;height:16px"></i> Primary</button>
+      <button class="btn-warm" style="background:#F5F0E8;color:#78716C;box-shadow:0 2px 8px rgba(120,53,15,0.08)"><i data-lucide="edit" style="width:16px;height:16px"></i> Secondary</button>
+      <button class="btn-warm" style="background:#DCFCE7;color:#15803D;box-shadow:none"><i data-lucide="check" style="width:16px;height:16px"></i> Confirmer</button>
+    </div>
+
+    <div class="ds-label">Barres de progression</div>
+    <div class="component-row" style="margin-bottom:20px;gap:16px">
+      <div><div class="progress-warm"><div class="progress-fill" style="width:35%;background:linear-gradient(90deg,#DC2626,#EF4444)"></div></div><span style="font-size:12px;color:#78716C">35% — Danger</span></div>
+      <div><div class="progress-warm"><div class="progress-fill" style="width:58%;background:linear-gradient(90deg,#D97706,#F59E0B)"></div></div><span style="font-size:12px;color:#78716C">58% — Warning</span></div>
+      <div><div class="progress-warm"><div class="progress-fill" style="width:82%;background:linear-gradient(90deg,#15803D,#22C55E)"></div></div><span style="font-size:12px;color:#78716C">82% — Success</span></div>
+    </div>
+
+    <div class="ds-label">Identite</div>
+    <div class="ds-row" style="flex-direction:column;gap:4px">
+      <p><strong>Principe :</strong> Tons chauds terracotta/sable/bois. Ombres douces, coins arrondis 12-14px.</p>
+      <p><strong>Feeling :</strong> "Carnet de chantier moderne" — friendly, humain, pas intimidant.</p>
+      <p><strong>Interdit :</strong> Pas de bleu, pas de gris froid, pas de noir pur (#292524 = warm black).</p>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div style="text-align:center;margin-top:48px;color:#A8A29E;font-size:13px">
+    ClawBTP — Prototype V3 Chantier Chaleureux — 20 maquettes
+  </div>
+</div>
+
+<script>lucide.createIcons()</script>
+</body>
+</html>

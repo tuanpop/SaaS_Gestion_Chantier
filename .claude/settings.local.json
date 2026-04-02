@@ -1,0 +1,35 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 \"C:/Users/Tuan/.claude/skills/ui-ux-pro-max/scripts/search.py\" \"SaaS B2B construction BTP professional mobile-first dashboard field workers\" --design-system -p \"ClawBTP\")",
+      "Bash(python \"C:/Users/Tuan/.claude/skills/ui-ux-pro-max/scripts/search.py\" \"SaaS B2B construction BTP professional mobile-first dashboard field workers\" --design-system -p \"ClawBTP\")",
+      "Bash(python \"C:/Users/Tuan/.claude/skills/ui-ux-pro-max/scripts/search.py\" \"touch mobile field workers gloves outdoor sunlight\" --domain ux -n 15)",
+      "Bash(python \"C:/Users/Tuan/.claude/skills/ui-ux-pro-max/scripts/search.py\" \"accessibility color contrast outdoor\" --domain ux -n 10)",
+      "Bash(python \"C:/Users/Tuan/.claude/skills/ui-ux-pro-max/scripts/search.py\" \"SaaS B2B dashboard professional\" --domain color -n 10)",
+      "Bash(python \"C:/Users/Tuan/.claude/skills/ui-ux-pro-max/scripts/search.py\" \"professional clean modern\" --domain typography -n 10)",
+      "Bash(python \"C:/Users/Tuan/.claude/skills/ui-ux-pro-max/scripts/search.py\" \"loading skeleton error states empty\" --domain ux -n 10)",
+      "Bash(python \"C:/Users/Tuan/.claude/skills/ui-ux-pro-max/scripts/search.py\" \"PWA offline mobile performance\" --domain ux -n 10)",
+      "Bash(python \"C:/Users/Tuan/.claude/skills/ui-ux-pro-max/scripts/search.py\" \"industrial construction robust bold dark\" --design-system -p \"ClawBTP\")",
+      "Bash(python \"C:/Users/Tuan/.claude/skills/ui-ux-pro-max/scripts/search.py\" \"industrial bold robust\" --domain style -n 15)",
+      "Bash(python \"C:/Users/Tuan/.claude/skills/ui-ux-pro-max/scripts/search.py\" \"construction industrial home services\" --domain color -n 15)",
+      "Bash(python \"C:/Users/Tuan/.claude/skills/ui-ux-pro-max/scripts/search.py\" \"bold industrial robust heavy\" --domain typography -n 10)",
+      "Bash(python \"C:/Users/Tuan/.claude/skills/ui-ux-pro-max/scripts/search.py\" \"dashboard cockpit data dense\" --domain style -n 10)",
+      "Bash(python \"C:/Users/Tuan/.claude/skills/ui-ux-pro-max/scripts/search.py\" \"neubrutalism\" --domain prompt -n 3)",
+      "Bash(python \"C:/Users/Tuan/.claude/skills/ui-ux-pro-max/scripts/search.py\" \"dark dashboard monitoring cockpit status\" --design-system -p \"ClawBTP Cockpit\")",
+      "Bash(python \"C:/Users/Tuan/.claude/skills/ui-ux-pro-max/scripts/search.py\" \"warm earthy organic natural\" --domain style -n 8)",
+      "Bash(python \"C:/Users/Tuan/.claude/skills/ui-ux-pro-max/scripts/search.py\" \"warm humanist readable\" --domain typography -n 5)",
+      "Bash(mkdir -p \"c:/_Git/SaaS_Gestion_Chantier/prototype-v2\")",
+      "Bash(mkdir -p \"c:/_Git/SaaS_Gestion_Chantier/prototype-v3\")",
+      "Bash(python \"C:/Users/Tuan/.claude/skills/ui-ux-pro-max/scripts/search.py\" \"construction SaaS industrial bold futuristic neon\" --design-system -p \"ClawBTP V4\")",
+      "Bash(python \"C:/Users/Tuan/.claude/skills/ui-ux-pro-max/scripts/search.py\" \"brutalism neon cyberpunk bold\" --domain style -n 5)",
+      "Bash(python \"C:/Users/Tuan/.claude/skills/ui-ux-pro-max/scripts/search.py\" \"industrial construction bold\" --domain color -n 5)",
+      "Bash(python \"C:/Users/Tuan/.claude/skills/ui-ux-pro-max/scripts/search.py\" \"bold industrial futuristic\" --domain typography -n 5)",
+      "Bash(python3 skills/ui-ux-pro-max/scripts/search.py \"construction BTP SaaS dashboard management professional\" --design-system -p \"ClawBTP\")",
+      "Bash(mv index.html 00-index.html)",
+      "Bash(mv ouvrier-scan-qr.html 01-ouvrier-scan-qr.html)",
+      "Bash(mv ouvrier-selecteur-chantier.html 02-ouvrier-selecteur-chantier.html)",
+      "Bash(mv ouvrier-taches.html 03-ouvrier-taches.html)",
+      "Bash(mv ouvrier-tache-detail.html 04-ouvrier-tache-detail.html)"
+    ]
+  }
+}

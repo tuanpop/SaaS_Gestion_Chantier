@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ClawBTP — Chantier Bertrand</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            heading: ['Outfit', 'sans-serif'],
+            sans: ['Public Sans', 'sans-serif']
+          },
+          colors: {
+            primary: { DEFAULT: '#334155', light: '#475569', dark: '#1E293B' },
+            accent: '#F97316',
+            danger: { DEFAULT: '#DC2626', bg: '#FEE2E2' },
+            warning: { DEFAULT: '#F59E0B', bg: '#FEF3C7' },
+            success: { DEFAULT: '#22C55E', bg: '#DCFCE7' },
+            surface: '#F1F5F9',
+            cream: '#FAFAF8',
+            muted: '#64748B',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background: #FAFAF8;
+      font-family: 'Public Sans', sans-serif;
+      color: #0F172A;
+    }
+    .sidebar {
+      position: fixed; left: 0; top: 0; bottom: 0;
+      width: 240px; background: #1E293B; color: #fff;
+      padding: 24px 0; z-index: 40;
+      border-right: 2px solid #000;
+    }
+    .sidebar a {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 24px; color: #94A3B8; text-decoration: none;
+      font-weight: 500; font-size: 15px;
+      transition: background 150ms, color 150ms;
+    }
+    .sidebar a:hover { background: #334155; color: #fff; }
+    .sidebar a.active {
+      background: #F97316; color: #fff; font-weight: 700;
+      border-left: 4px solid #fff;
+    }
+    .main-content {
+      margin-left: 240px; padding: 32px; min-height: 100vh;
+    }
+    .card-brutal {
+      border: 2px solid #000;
+      box-shadow: 4px 4px 0 #000;
+      border-radius: 6px;
+      background: #fff;
+    }
+    .btn-brutal {
+      border: 2px solid #000;
+      box-shadow: 3px 3px 0 #000;
+      border-radius: 6px;
+      font-weight: 700;
+      font-family: 'Outfit', sans-serif;
+      transition: transform 100ms, box-shadow 100ms;
+      cursor: pointer;
+      padding: 10px 20px;
+    }
+    .btn-brutal:hover {
+      box-shadow: 2px 2px 0 #000;
+      transform: translate(1px, 1px);
+    }
+    .badge { border: 2px solid; border-radius: 4px; padding: 2px 10px; font-weight: 600; font-size: 13px; display: inline-block; }
+    .badge-danger { background: #FEE2E2; border-color: #DC2626; color: #DC2626; }
+    .badge-success { background: #DCFCE7; border-color: #22C55E; color: #166534; }
+    .badge-warning { background: #FEF3C7; border-color: #F59E0B; color: #92400E; }
+    .badge-muted { background: #F1F5F9; border-color: #94A3B8; color: #64748B; }
+    .badge-primary { background: #E0F2FE; border-color: #0284C7; color: #0369A1; }
+    .table-brutal {
+      width: 100%; border-collapse: collapse;
+      border: 2px solid #000; border-radius: 6px; overflow: hidden;
+    }
+    .table-brutal th {
+      background: #1E293B; color: #fff; font-family: 'Outfit', sans-serif;
+      font-weight: 600; font-size: 14px; padding: 12px 16px; text-align: left;
+      border-bottom: 2px solid #000;
+    }
+    .table-brutal td {
+      padding: 12px 16px; border-bottom: 1px solid #E2E8F0; font-size: 14px;
+    }
+    .table-brutal tr:hover td { background: #F1F5F9; }
+    .progress-bar {
+      height: 12px; border: 2px solid #000; border-radius: 6px;
+      background: #F1F5F9; overflow: hidden;
+    }
+    .progress-fill { height: 100%; border-radius: 4px; }
+    .tab-brutal {
+      border: 2px solid #000;
+      padding: 10px 24px;
+      font-weight: 700;
+      font-family: 'Outfit', sans-serif;
+      cursor: pointer;
+      font-size: 15px;
+      background: #fff;
+      color: #334155;
+      transition: background 150ms, color 150ms;
+    }
+    .tab-brutal.active {
+      background: #F97316;
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+  <!-- Sidebar -->
+  <nav class="sidebar">
+    <div class="px-6 mb-2">
+      <a href="00-index.html" class="text-xs !text-[#64748B] !p-0 mb-4 hover:!text-white !font-normal"><i data-lucide="arrow-left" class="w-3 h-3"></i> Prototype</a>
+    </div>
+    <div class="px-6 mb-8">
+      <h1 class="font-heading font-[800] text-[22px]"><span class="text-accent">Claw</span>BTP</h1>
+    </div>
+    <a href="15-admin-dashboard.html"><i data-lucide="layout-dashboard" class="w-5 h-5"></i> Dashboard</a>
+    <a href="16-admin-chantier-detail.html" class="active"><i data-lucide="building-2" class="w-5 h-5"></i> Chantiers</a>
+    <a href="18-admin-equipe.html"><i data-lucide="users" class="w-5 h-5"></i> Équipe</a>
+    <a href="19-admin-notifications.html"><i data-lucide="bell" class="w-5 h-5"></i> Notifications</a>
+    <a href="20-admin-clawbot.html"><i data-lucide="bot" class="w-5 h-5"></i> ClawBot</a>
+  </nav>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-6">
+      <div class="flex items-center gap-4">
+        <h1 class="font-heading font-bold text-[28px]">Chantier Bertrand — Bordeaux</h1>
+        <span class="badge badge-warning">Dérive</span>
+      </div>
+      <button class="btn-brutal bg-white text-primary text-sm py-2 px-4 inline-flex items-center gap-2">
+        <i data-lucide="edit" class="w-4 h-4"></i> Modifier
+      </button>
+    </div>
+
+    <!-- Tabs -->
+    <div class="flex mb-6">
+      <button onclick="switchTab('infos')" id="tab-infos" class="tab-brutal rounded-l-md active border-r-0">Informations</button>
+      <button onclick="switchTab('taches')" id="tab-taches" class="tab-brutal border-r-0">Tâches</button>
+      <button onclick="switchTab('photos')" id="tab-photos" class="tab-brutal border-r-0">Photos</button>
+      <button onclick="switchTab('cr')" id="tab-cr" class="tab-brutal rounded-r-md">Comptes-rendus</button>
+    </div>
+
+    <!-- Tab: Informations -->
+    <div id="content-infos">
+      <div class="grid grid-cols-2 gap-6">
+        <!-- Infos chantier -->
+        <div class="card-brutal p-6">
+          <h3 class="font-heading font-semibold text-lg mb-4">Informations</h3>
+          <div class="space-y-3">
+            <div class="flex justify-between py-2 border-b border-gray-100">
+              <span class="text-muted font-medium text-sm">Client</span>
+              <span class="font-semibold text-sm">Bertrand SARL</span>
+            </div>
+            <div class="flex justify-between py-2 border-b border-gray-100">
+              <span class="text-muted font-medium text-sm">Adresse</span>
+              <span class="font-semibold text-sm">14 rue des Lilas, Bordeaux</span>
+            </div>
+            <div class="flex justify-between py-2 border-b border-gray-100">
+              <span class="text-muted font-medium text-sm">Code postal</span>
+              <span class="font-semibold text-sm">33000</span>
+            </div>
+            <div class="flex justify-between py-2 border-b border-gray-100">
+              <span class="text-muted font-medium text-sm">Date début</span>
+              <span class="font-semibold text-sm">15/01/2026</span>
+            </div>
+            <div class="flex justify-between py-2">
+              <span class="text-muted font-medium text-sm">Date fin prévue</span>
+              <span class="font-semibold text-sm">30/04/2026</span>
+            </div>
+          </div>
+        </div>
+        <!-- Budget -->
+        <div class="card-brutal p-6">
+          <h3 class="font-heading font-semibold text-lg mb-4">Budget</h3>
+          <div class="text-center mb-4">
+            <span class="font-heading font-bold text-[32px]">47 450€</span>
+            <span class="text-muted text-lg"> / 65 000€</span>
+          </div>
+          <div class="progress-bar mb-3">
+            <div class="progress-fill bg-danger" style="width:73%"></div>
+          </div>
+          <p class="text-danger font-bold text-center mb-3">+2 450€ de dépassement estimé</p>
+          <div class="text-center">
+            <span class="badge badge-warning">Dérive détectée</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: Tâches -->
+    <div id="content-taches" class="hidden">
+      <table class="table-brutal">
+        <thead>
+          <tr>
+            <th>Tâche</th>
+            <th>Assigné</th>
+            <th>Statut</th>
+            <th>Échéance</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="bg-danger-bg">
+            <td class="font-semibold">Coulage dalle RDC</td>
+            <td>Mohamed Benali</td>
+            <td><span class="badge badge-danger text-xs">Bloquée</span></td>
+            <td class="text-danger font-semibold">28/03/2026</td>
+          </tr>
+          <tr class="bg-danger-bg">
+            <td class="font-semibold">Ferraillage étage 1</td>
+            <td>Karim Hadj</td>
+            <td><span class="badge badge-danger text-xs">Bloquée</span></td>
+            <td class="text-danger font-semibold">01/04/2026</td>
+          </tr>
+          <tr>
+            <td class="font-semibold">Coffrage escalier</td>
+            <td>Lucas Martin</td>
+            <td><span class="badge badge-warning text-xs">En cours</span></td>
+            <td>05/04/2026</td>
+          </tr>
+          <tr>
+            <td class="font-semibold">Pose menuiseries ext.</td>
+            <td>Ali Reza</td>
+            <td><span class="badge badge-muted text-xs">À faire</span></td>
+            <td>12/04/2026</td>
+          </tr>
+          <tr>
+            <td class="font-semibold">Enduit façade</td>
+            <td>Jean Petit</td>
+            <td><span class="badge badge-muted text-xs">À faire</span></td>
+            <td>18/04/2026</td>
+          </tr>
+          <tr>
+            <td class="font-semibold">Charpente toiture</td>
+            <td>Mohamed Benali</td>
+            <td><span class="badge badge-success text-xs">Terminée</span></td>
+            <td class="text-muted">20/03/2026</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Tab: Photos -->
+    <div id="content-photos" class="hidden">
+      <div class="grid grid-cols-4 gap-4">
+        <div class="card-brutal overflow-hidden">
+          <div class="h-32 bg-gray-200 flex items-center justify-center"><i data-lucide="image" class="w-8 h-8 text-muted"></i></div>
+          <div class="p-3">
+            <span class="badge badge-primary text-xs mb-1">Avant</span>
+            <p class="text-xs text-muted mt-1">15/01/2026</p>
+          </div>
+        </div>
+        <div class="card-brutal overflow-hidden">
+          <div class="h-32 bg-gray-200 flex items-center justify-center"><i data-lucide="image" class="w-8 h-8 text-muted"></i></div>
+          <div class="p-3">
+            <span class="badge badge-success text-xs mb-1">Après</span>
+            <p class="text-xs text-muted mt-1">20/02/2026</p>
+          </div>
+        </div>
+        <div class="card-brutal overflow-hidden">
+          <div class="h-32 bg-gray-200 flex items-center justify-center"><i data-lucide="image" class="w-8 h-8 text-muted"></i></div>
+          <div class="p-3">
+            <span class="badge badge-danger text-xs mb-1">Blocage</span>
+            <p class="text-xs text-muted mt-1">28/03/2026</p>
+          </div>
+        </div>
+        <div class="card-brutal overflow-hidden">
+          <div class="h-32 bg-gray-200 flex items-center justify-center"><i data-lucide="image" class="w-8 h-8 text-muted"></i></div>
+          <div class="p-3">
+            <span class="badge badge-primary text-xs mb-1">Avant</span>
+            <p class="text-xs text-muted mt-1">01/04/2026</p>
+          </div>
+        </div>
+        <div class="card-brutal overflow-hidden">
+          <div class="h-32 bg-gray-200 flex items-center justify-center"><i data-lucide="image" class="w-8 h-8 text-muted"></i></div>
+          <div class="p-3">
+            <span class="badge badge-success text-xs mb-1">Après</span>
+            <p class="text-xs text-muted mt-1">01/04/2026</p>
+          </div>
+        </div>
+        <div class="card-brutal overflow-hidden">
+          <div class="h-32 bg-gray-200 flex items-center justify-center"><i data-lucide="image" class="w-8 h-8 text-muted"></i></div>
+          <div class="p-3">
+            <span class="badge badge-danger text-xs mb-1">Blocage</span>
+            <p class="text-xs text-muted mt-1">02/04/2026</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: CR -->
+    <div id="content-cr" class="hidden">
+      <div class="space-y-4">
+        <div class="card-brutal p-5 flex items-center justify-between">
+          <div>
+            <h4 class="font-heading font-semibold">Compte-rendu du 01/04/2026</h4>
+            <p class="text-muted text-sm mt-1">Généré par ClawBot — 3 tâches, 2 blocages signalés</p>
+          </div>
+          <span class="badge badge-muted">Brouillon</span>
+        </div>
+        <div class="card-brutal p-5 flex items-center justify-between">
+          <div>
+            <h4 class="font-heading font-semibold">Compte-rendu du 28/03/2026</h4>
+            <p class="text-muted text-sm mt-1">Validé par Frédéric — envoyé au client</p>
+          </div>
+          <span class="badge badge-success">Envoyé</span>
+        </div>
+        <div class="card-brutal p-5 flex items-center justify-between">
+          <div>
+            <h4 class="font-heading font-semibold">Compte-rendu du 25/03/2026</h4>
+            <p class="text-muted text-sm mt-1">Validé par Frédéric</p>
+          </div>
+          <span class="badge badge-primary">Validé</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    lucide.createIcons();
+
+    function switchTab(tab) {
+      const tabs = ['infos', 'taches', 'photos', 'cr'];
+      tabs.forEach(t => {
+        document.getElementById('tab-' + t).classList.remove('active');
+        document.getElementById('content-' + t).classList.add('hidden');
+      });
+      document.getElementById('tab-' + tab).classList.add('active');
+      document.getElementById('content-' + tab).classList.remove('hidden');
+    }
+  </script>
+</body>
+</html>

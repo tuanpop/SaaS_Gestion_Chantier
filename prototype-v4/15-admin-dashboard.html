@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Claw — Dashboard Admin</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', sans-serif; color: #0F172A; background: #F8FAFC; display: flex; min-height: 100vh; }
+
+    /* Sidebar */
+    .sidebar { width: 240px; min-height: 100vh; background: linear-gradient(to bottom, #4338CA, #6D28D9); color: #fff; display: flex; flex-direction: column; position: fixed; top: 0; left: 0; bottom: 0; z-index: 10; }
+    .sidebar-logo { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 24px; font-weight: 800; padding: 24px 24px 32px; }
+    .sidebar-nav { flex: 1; display: flex; flex-direction: column; gap: 2px; padding: 0 12px; }
+    .nav-item { display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-radius: 10px; font-size: 14px; font-weight: 500; color: rgba(255,255,255,0.7); text-decoration: none; transition: all .15s; }
+    .nav-item:hover { background: rgba(255,255,255,0.1); color: #fff; }
+    .nav-item.active { background: rgba(255,255,255,0.18); color: #fff; font-weight: 600; }
+    .sidebar-bottom { padding: 16px; border-top: 1px solid rgba(255,255,255,0.15); }
+    .sidebar-user { display: flex; align-items: center; gap: 10px; }
+    .user-avatar { width: 36px; height: 36px; border-radius: 10px; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; }
+    .user-info .name { font-size: 13px; font-weight: 600; }
+    .user-info .role { font-size: 11px; opacity: 0.65; }
+
+    /* Main */
+    .main { margin-left: 240px; flex: 1; padding: 32px; }
+
+    .back-link { display: inline-flex; align-items: center; gap: 6px; color: #94A3B8; font-size: 13px; text-decoration: none; margin-bottom: 16px; font-family: 'Inter', sans-serif; }
+
+    /* Top bar */
+    .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; }
+    .topbar-left h1 { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 24px; font-weight: 700; }
+    .topbar-left p { font-size: 14px; color: #475569; margin-top: 2px; }
+    .topbar-right { display: flex; align-items: center; gap: 16px; }
+    .notif-btn { position: relative; width: 40px; height: 40px; border-radius: 10px; background: #fff; border: 1px solid #E2E8F0; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #475569; }
+    .notif-badge { position: absolute; top: -4px; right: -4px; width: 18px; height: 18px; border-radius: 50%; background: #EF4444; color: #fff; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+    .topbar-avatar { width: 40px; height: 40px; border-radius: 10px; background: #EEF2FF; color: #6366F1; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; }
+
+    /* Alerts row */
+    .alerts-row { display: flex; gap: 14px; margin-bottom: 28px; overflow-x: auto; padding-bottom: 4px; }
+    .alert-card { min-width: 280px; padding: 14px 16px; border-radius: 12px; border-left: 4px solid; display: flex; align-items: flex-start; gap: 12px; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+    .alert-card.red { border-left-color: #EF4444; }
+    .alert-card.orange { border-left-color: #F59E0B; }
+    .alert-card.indigo { border-left-color: #6366F1; }
+    .alert-icon { width: 32px; height: 32px; min-width: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+    .alert-icon.red { background: #FEF2F2; color: #EF4444; }
+    .alert-icon.orange { background: #FFFBEB; color: #F59E0B; }
+    .alert-icon.indigo { background: #EEF2FF; color: #6366F1; }
+    .alert-title { font-size: 13px; font-weight: 600; }
+    .alert-desc { font-size: 12px; color: #475569; margin-top: 2px; }
+
+    /* KPI */
+    .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 28px; }
+    .kpi-card { background: #fff; border: 1px solid #E2E8F0; border-radius: 16px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+    .kpi-label { font-size: 13px; color: #475569; margin-bottom: 6px; }
+    .kpi-value { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 28px; font-weight: 800; }
+    .kpi-value.indigo { color: #6366F1; }
+    .kpi-value.green { color: #10B981; }
+    .kpi-value.red { color: #EF4444; }
+
+    /* Projects */
+    .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .section-title { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 18px; font-weight: 700; }
+    .project-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+    .project-card { background: #fff; border: 1px solid #E2E8F0; border-radius: 16px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); cursor: pointer; transition: box-shadow .15s; text-decoration: none; color: inherit; display: block; }
+    .project-card:hover { box-shadow: 0 4px 12px rgba(99,102,241,0.1); }
+    .project-name { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+    .project-client { font-size: 13px; color: #475569; margin-bottom: 14px; }
+    .project-progress { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .progress-bar { flex: 1; height: 8px; background: #E2E8F0; border-radius: 4px; overflow: hidden; }
+    .progress-fill { height: 100%; border-radius: 4px; }
+    .progress-pct { font-size: 13px; font-weight: 700; min-width: 36px; }
+    .project-footer { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: #94A3B8; }
+    .project-card.dashed { border-style: dashed; border-color: #CBD5E1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; color: #94A3B8; min-height: 170px; }
+    .project-card.dashed:hover { border-color: #6366F1; color: #6366F1; }
+  </style>
+</head>
+<body>
+  <!-- Sidebar -->
+  <nav class="sidebar">
+    <div class="sidebar-logo">Claw</div>
+    <div class="sidebar-nav">
+      <a class="nav-item active" href="15-admin-dashboard.html"><i data-lucide="bar-chart-3" style="width:18px;height:18px"></i> Dashboard</a>
+      <a class="nav-item" href="16-admin-chantier-detail.html"><i data-lucide="folder-open" style="width:18px;height:18px"></i> Projets</a>
+      <a class="nav-item" href="18-admin-equipe.html"><i data-lucide="users" style="width:18px;height:18px"></i> Equipe</a>
+      <a class="nav-item" href="19-admin-notifications.html"><i data-lucide="bell" style="width:18px;height:18px"></i> Notifications</a>
+      <a class="nav-item" href="20-admin-clawbot.html"><i data-lucide="bot" style="width:18px;height:18px"></i> ClawBot</a>
+    </div>
+    <div class="sidebar-bottom">
+      <div class="sidebar-user">
+        <div class="user-avatar">FD</div>
+        <div class="user-info">
+          <div class="name">Frederic Duval</div>
+          <div class="role">Admin</div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main -->
+  <div class="main">
+    <a href="00-index.html" class="back-link">
+      <i data-lucide="arrow-left" style="width:14px;height:14px"></i> Prototype
+    </a>
+
+    <!-- Topbar -->
+    <div class="topbar">
+      <div class="topbar-left">
+        <h1>Bonjour Frederic</h1>
+        <p>Jeudi 3 avril 2026 — 4 projets actifs</p>
+      </div>
+      <div class="topbar-right">
+        <a href="19-admin-notifications.html" class="notif-btn">
+          <i data-lucide="bell" style="width:18px;height:18px"></i>
+          <span class="notif-badge">5</span>
+        </a>
+        <div class="topbar-avatar">FD</div>
+      </div>
+    </div>
+
+    <!-- Alerts -->
+    <div class="alerts-row">
+      <div class="alert-card red">
+        <div class="alert-icon red"><i data-lucide="alert-octagon" style="width:16px;height:16px"></i></div>
+        <div>
+          <div class="alert-title">Blocage — Les Oliviers</div>
+          <div class="alert-desc">Peinture facade bloquee depuis 3 jours, attente materiel.</div>
+        </div>
+      </div>
+      <div class="alert-card orange">
+        <div class="alert-icon orange"><i data-lucide="flag" style="width:16px;height:16px"></i></div>
+        <div>
+          <div class="alert-title">Jalon proche — Bureau Mistral</div>
+          <div class="alert-desc">Livraison phase 1 dans 5 jours, 3 taches restantes.</div>
+        </div>
+      </div>
+      <div class="alert-card orange">
+        <div class="alert-icon orange"><i data-lucide="trending-up" style="width:16px;height:16px"></i></div>
+        <div>
+          <div class="alert-title">Budget — Les Oliviers</div>
+          <div class="alert-desc">Depassement budget de 12%, verifier les postes.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-label">Projets actifs</div>
+        <div class="kpi-value indigo">4</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Operateurs</div>
+        <div class="kpi-value">18</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Taches bloquees</div>
+        <div class="kpi-value red">8</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">CR valides</div>
+        <div class="kpi-value green">92%</div>
+      </div>
+    </div>
+
+    <!-- Projects -->
+    <div class="section-header">
+      <div class="section-title">Portfolio projets</div>
+    </div>
+    <div class="project-grid">
+      <a class="project-card" href="16-admin-chantier-detail.html">
+        <div class="project-name">Les Oliviers</div>
+        <div class="project-client">Residence collective — SCI Provence</div>
+        <div class="project-progress">
+          <div class="progress-bar"><div class="progress-fill" style="width:35%;background:#EF4444"></div></div>
+          <span class="progress-pct" style="color:#EF4444">35%</span>
+        </div>
+        <div class="project-footer"><span>6 operateurs</span><span>Fin: 15 juin</span></div>
+      </a>
+      <a class="project-card" href="16-admin-chantier-detail.html">
+        <div class="project-name">Bureau Mistral</div>
+        <div class="project-client">Amenagement bureaux — Mistral SAS</div>
+        <div class="project-progress">
+          <div class="progress-bar"><div class="progress-fill" style="width:58%;background:#F59E0B"></div></div>
+          <span class="progress-pct" style="color:#F59E0B">58%</span>
+        </div>
+        <div class="project-footer"><span>4 operateurs</span><span>Fin: 30 mai</span></div>
+      </a>
+      <a class="project-card" href="16-admin-chantier-detail.html">
+        <div class="project-name">Local Vauban</div>
+        <div class="project-client">Renovation local — Mairie Aix</div>
+        <div class="project-progress">
+          <div class="progress-bar"><div class="progress-fill" style="width:45%;background:#6366F1"></div></div>
+          <span class="progress-pct" style="color:#6366F1">45%</span>
+        </div>
+        <div class="project-footer"><span>3 operateurs</span><span>Fin: 20 juil</span></div>
+      </a>
+      <a class="project-card" href="16-admin-chantier-detail.html">
+        <div class="project-name">Maison Dubois</div>
+        <div class="project-client">Maison individuelle — M. Dubois</div>
+        <div class="project-progress">
+          <div class="progress-bar"><div class="progress-fill" style="width:82%;background:#10B981"></div></div>
+          <span class="progress-pct" style="color:#10B981">82%</span>
+        </div>
+        <div class="project-footer"><span>3 operateurs</span><span>Fin: 10 avr</span></div>
+      </a>
+      <a class="project-card" href="16-admin-chantier-detail.html">
+        <div class="project-name">Appart Castellane</div>
+        <div class="project-client">Appartement — Mme Castellane</div>
+        <div class="project-progress">
+          <div class="progress-bar"><div class="progress-fill" style="width:95%;background:#10B981"></div></div>
+          <span class="progress-pct" style="color:#10B981">95%</span>
+        </div>
+        <div class="project-footer"><span>2 operateurs</span><span>Fin: 5 avr</span></div>
+      </a>
+      <a class="project-card dashed" href="17-admin-chantier-nouveau.html">
+        <i data-lucide="plus" style="width:24px;height:24px"></i>
+        <span style="font-size:14px;font-weight:600">Nouveau projet</span>
+      </a>
+    </div>
+  </div>
+
+  <script>lucide.createIcons();</script>
+</body>
+</html>

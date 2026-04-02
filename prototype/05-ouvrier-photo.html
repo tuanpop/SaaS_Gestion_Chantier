@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>ClawBTP — Ajouter une photo</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            heading: ['Outfit', 'sans-serif'],
+            sans: ['Public Sans', 'sans-serif']
+          },
+          colors: {
+            primary: { DEFAULT: '#334155', light: '#475569', dark: '#1E293B' },
+            accent: '#F97316',
+            danger: { DEFAULT: '#DC2626', bg: '#FEE2E2' },
+            warning: { DEFAULT: '#F59E0B', bg: '#FEF3C7' },
+            success: { DEFAULT: '#22C55E', bg: '#DCFCE7' },
+            surface: '#F1F5F9',
+            cream: '#FAFAF8',
+            muted: '#64748B',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    * { touch-action: manipulation; }
+    body {
+      overscroll-behavior: contain;
+      min-height: 100vh; min-height: 100dvh;
+      background: #FAFAF8;
+      font-family: 'Public Sans', sans-serif;
+      color: #0F172A;
+    }
+    .card-brutal {
+      border: 2px solid #000;
+      box-shadow: 4px 4px 0 #000;
+      border-radius: 6px;
+      background: #fff;
+      transition: transform 100ms, box-shadow 100ms;
+    }
+    .card-brutal:active {
+      box-shadow: 2px 2px 0 #000;
+      transform: translate(2px, 2px);
+    }
+    .btn-brutal {
+      border: 2px solid #000;
+      box-shadow: 3px 3px 0 #000;
+      border-radius: 6px;
+      min-height: 56px;
+      min-width: 56px;
+      font-weight: 700;
+      font-size: 18px;
+      font-family: 'Outfit', sans-serif;
+      transition: transform 100ms, box-shadow 100ms;
+      cursor: pointer;
+    }
+    .btn-brutal:active {
+      box-shadow: 1px 1px 0 #000;
+      transform: translate(2px, 2px);
+    }
+    .badge { border: 2px solid; border-radius: 4px; padding: 2px 10px; font-weight: 600; font-size: 14px; }
+    .badge-danger { background: #FEE2E2; border-color: #DC2626; color: #DC2626; }
+    .badge-success { background: #DCFCE7; border-color: #22C55E; color: #166534; }
+    .badge-warning { background: #FEF3C7; border-color: #F59E0B; color: #92400E; }
+    .badge-muted { background: #F1F5F9; border-color: #94A3B8; color: #64748B; }
+
+    .radio-brutal {
+      border: 2px solid #000;
+      box-shadow: 3px 3px 0 #000;
+      border-radius: 6px;
+      min-height: 56px;
+      font-weight: 700;
+      font-size: 16px;
+      font-family: 'Outfit', sans-serif;
+      cursor: pointer;
+      transition: transform 100ms, box-shadow 100ms;
+      background: #fff;
+    }
+    .radio-brutal:active {
+      box-shadow: 1px 1px 0 #000;
+      transform: translate(2px, 2px);
+    }
+    .radio-brutal.selected {
+      background: #F97316;
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+  <div class="max-w-[375px] mx-auto min-h-screen bg-cream">
+    <!-- Retour proto -->
+    <a href="00-index.html" class="block px-4 pt-3 text-sm text-muted hover:underline">&larr; Retour au prototype</a>
+
+    <!-- Bouton retour -->
+    <div class="px-4 pt-3">
+      <a href="04-ouvrier-tache-detail.html" class="inline-flex items-center gap-2 border-2 border-black rounded-md px-3 py-2 bg-white font-heading font-bold text-base no-underline text-inherit" style="box-shadow: 2px 2px 0 #000;">
+        <i data-lucide="arrow-left" class="w-5 h-5"></i>
+        Retour
+      </a>
+    </div>
+
+    <!-- Header -->
+    <div class="px-4 pt-4 pb-2">
+      <h1 class="font-heading text-2xl font-bold">Ajouter une photo</h1>
+    </div>
+
+    <div class="px-4 pb-8">
+      <!-- Boutons capture -->
+      <div class="flex flex-col gap-3 mb-5">
+        <button class="btn-brutal bg-accent text-white flex items-center justify-center gap-3 w-full">
+          <i data-lucide="camera" class="w-6 h-6"></i>
+          Prendre une photo
+        </button>
+        <button class="btn-brutal bg-white text-black flex items-center justify-center gap-3 w-full">
+          <i data-lucide="image" class="w-6 h-6"></i>
+          Depuis la galerie
+        </button>
+      </div>
+
+      <!-- Zone aperçu -->
+      <div class="card-brutal aspect-[4/3] flex items-center justify-center bg-surface mb-5">
+        <div class="text-center">
+          <i data-lucide="image" class="w-16 h-16 text-muted mx-auto mb-2"></i>
+          <p class="text-sm text-muted">Aperçu de la photo</p>
+        </div>
+      </div>
+
+      <!-- Type de photo -->
+      <div class="mb-5">
+        <p class="font-heading font-bold text-base mb-3">Type de photo</p>
+        <div class="grid grid-cols-3 gap-3">
+          <button onclick="selectType(this)" class="radio-brutal flex items-center justify-center selected">Avant</button>
+          <button onclick="selectType(this)" class="radio-brutal flex items-center justify-center">Après</button>
+          <button onclick="selectType(this)" class="radio-brutal flex items-center justify-center">Général</button>
+        </div>
+      </div>
+
+      <!-- Commentaire -->
+      <div class="mb-5">
+        <p class="font-heading font-bold text-base mb-3">Commentaire</p>
+        <textarea class="w-full border-2 border-black p-3 text-base resize-none" style="border-radius: 6px;" rows="3" placeholder="Ajoute un commentaire (optionnel)..."></textarea>
+      </div>
+
+      <!-- Bouton envoyer -->
+      <button class="btn-brutal bg-accent text-white flex items-center justify-center gap-3 w-full">
+        <i data-lucide="send" class="w-5 h-5"></i>
+        Envoyer
+      </button>
+    </div>
+  </div>
+
+  <script>
+    lucide.createIcons();
+
+    function selectType(el) {
+      document.querySelectorAll('.radio-brutal').forEach(function(btn) {
+        btn.classList.remove('selected');
+      });
+      el.classList.add('selected');
+    }
+  </script>
+</body>
+</html>

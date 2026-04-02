@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claw — Mes projets</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #F8FAFC;
+    color: #0F172A;
+    display: flex;
+    justify-content: center;
+    min-height: 100vh;
+  }
+  .mobile-frame {
+    width: 100%;
+    max-width: 390px;
+    min-height: 100vh;
+    background: #F8FAFC;
+    position: relative;
+    padding-bottom: 80px;
+  }
+  h1, h2, h3, h4 { font-family: 'Plus Jakarta Sans', sans-serif; }
+
+  /* Header */
+  .header {
+    background: linear-gradient(135deg, #6366F1, #8B5CF6);
+    color: white;
+    padding: 48px 20px 24px;
+    border-radius: 0 0 20px 20px;
+    position: relative;
+  }
+  .header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+  }
+  .header h1 { font-size: 24px; font-weight: 700; }
+  .header-sub { font-size: 14px; opacity: 0.85; }
+  .avatar {
+    width: 40px; height: 40px;
+    background: rgba(255,255,255,0.25);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 700; font-size: 14px; color: white;
+  }
+
+  /* Content */
+  .content { padding: 20px 16px; }
+  .section-label {
+    font-size: 12px; font-weight: 600; color: #94A3B8;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    margin-bottom: 12px;
+  }
+
+  /* Project Card */
+  .project-card {
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    padding: 16px;
+    margin-bottom: 12px;
+    border-left: 4px solid transparent;
+    text-decoration: none;
+    color: inherit;
+    display: block;
+    transition: box-shadow 0.15s;
+  }
+  .project-card:active { box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+  .project-card.priority-red { border-left-color: #EF4444; }
+  .project-card.priority-orange { border-left-color: #F59E0B; }
+  .project-card.priority-green { border-left-color: #10B981; }
+  .project-card.priority-indigo { border-left-color: #6366F1; }
+
+  .project-name { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 15px; margin-bottom: 2px; }
+  .project-client { font-size: 13px; color: #475569; margin-bottom: 12px; }
+
+  .progress-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .progress-bar { flex: 1; height: 8px; background: #F1F5F9; border-radius: 4px; overflow: hidden; }
+  .progress-fill { height: 100%; border-radius: 4px; transition: width 0.3s; }
+  .progress-fill.red { background: linear-gradient(90deg, #EF4444, #F87171); }
+  .progress-fill.orange { background: linear-gradient(90deg, #F59E0B, #FBBF24); }
+  .progress-fill.green { background: linear-gradient(90deg, #10B981, #34D399); }
+  .progress-fill.indigo { background: linear-gradient(90deg, #6366F1, #818CF8); }
+  .progress-pct { font-size: 13px; font-weight: 700; color: #0F172A; min-width: 36px; text-align: right; }
+
+  .badge-row { display: flex; align-items: center; gap: 8px; }
+  .badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 11px; font-weight: 600; padding: 4px 10px;
+    border-radius: 20px;
+  }
+  .badge.red { background: #FEF2F2; color: #EF4444; }
+  .badge.orange { background: #FFFBEB; color: #D97706; }
+  .badge.green { background: #ECFDF5; color: #059669; }
+  .badge.indigo { background: #EEF2FF; color: #6366F1; }
+  .badge-detail { font-size: 12px; color: #94A3B8; }
+
+  /* Bottom Nav */
+  .bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 390px;
+    background: #FFFFFF;
+    border-top: 1px solid #E2E8F0;
+    display: flex;
+    z-index: 50;
+    padding: 6px 0 env(safe-area-inset-bottom, 8px);
+  }
+  .nav-tab {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 6px 0;
+    text-decoration: none;
+    color: #94A3B8;
+    font-size: 10px;
+    font-weight: 500;
+    position: relative;
+    transition: color 0.15s;
+  }
+  .nav-tab.active { color: #6366F1; }
+  .nav-tab.active::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 50%; transform: translateX(-50%);
+    width: 24px; height: 3px;
+    background: #6366F1;
+    border-radius: 0 0 3px 3px;
+  }
+  .nav-tab i { width: 22px; height: 22px; }
+</style>
+</head>
+<body>
+<a href="00-index.html" style="position:fixed;top:12px;left:12px;z-index:100;background:white;color:#475569;font-size:12px;padding:6px 12px;border-radius:20px;text-decoration:none;display:flex;align-items:center;gap:4px;box-shadow:0 2px 8px rgba(0,0,0,0.1);font-family:'Inter',sans-serif">
+  <i data-lucide="arrow-left" style="width:14px;height:14px"></i> Index
+</a>
+
+<div class="mobile-frame">
+  <!-- Header -->
+  <div class="header">
+    <div class="header-top">
+      <div>
+        <h1>Mes projets</h1>
+        <div class="header-sub">4 projets actifs</div>
+      </div>
+      <div class="avatar">JM</div>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div class="content">
+    <div class="section-label">Triés par priorité</div>
+
+    <!-- Projet 1 — En retard -->
+    <a href="09-conducteur-chantier-detail.html" class="project-card priority-red">
+      <div class="project-name">Rés. Les Oliviers</div>
+      <div class="project-client">SCI Provence</div>
+      <div class="progress-row">
+        <div class="progress-bar"><div class="progress-fill red" style="width:35%"></div></div>
+        <div class="progress-pct">35%</div>
+      </div>
+      <div class="badge-row">
+        <span class="badge red"><i data-lucide="alert-triangle" style="width:12px;height:12px"></i> En retard</span>
+        <span class="badge-detail">6 blocages</span>
+      </div>
+    </a>
+
+    <!-- Projet 2 — A surveiller -->
+    <a href="09-conducteur-chantier-detail.html" class="project-card priority-orange">
+      <div class="project-name">Bureau Mistral</div>
+      <div class="project-client">Mistral Consulting</div>
+      <div class="progress-row">
+        <div class="progress-bar"><div class="progress-fill orange" style="width:58%"></div></div>
+        <div class="progress-pct">58%</div>
+      </div>
+      <div class="badge-row">
+        <span class="badge orange"><i data-lucide="eye" style="width:12px;height:12px"></i> A surveiller</span>
+        <span class="badge-detail">Budget +12%</span>
+      </div>
+    </a>
+
+    <!-- Projet 3 — En avance -->
+    <a href="09-conducteur-chantier-detail.html" class="project-card priority-green">
+      <div class="project-name">Maison Dubois</div>
+      <div class="project-client">M. et Mme Dubois</div>
+      <div class="progress-row">
+        <div class="progress-bar"><div class="progress-fill green" style="width:82%"></div></div>
+        <div class="progress-pct">82%</div>
+      </div>
+      <div class="badge-row">
+        <span class="badge green"><i data-lucide="trending-up" style="width:12px;height:12px"></i> En avance</span>
+      </div>
+    </a>
+
+    <!-- Projet 4 — Normal -->
+    <a href="09-conducteur-chantier-detail.html" class="project-card priority-indigo">
+      <div class="project-name">Local Vauban</div>
+      <div class="project-client">Boulangerie Vauban</div>
+      <div class="progress-row">
+        <div class="progress-bar"><div class="progress-fill indigo" style="width:45%"></div></div>
+        <div class="progress-pct">45%</div>
+      </div>
+      <div class="badge-row">
+        <span class="badge indigo"><i data-lucide="minus" style="width:12px;height:12px"></i> Normal</span>
+      </div>
+    </a>
+  </div>
+
+  <!-- Bottom Nav -->
+  <nav class="bottom-nav">
+    <a href="08-conducteur-chantiers.html" class="nav-tab active">
+      <i data-lucide="folder-kanban"></i>
+      <span>Projets</span>
+    </a>
+    <a href="10-conducteur-taches.html" class="nav-tab">
+      <i data-lucide="check-square"></i>
+      <span>Tâches</span>
+    </a>
+    <a href="11-conducteur-cr.html" class="nav-tab">
+      <i data-lucide="file-text"></i>
+      <span>CR</span>
+    </a>
+    <a href="12-conducteur-alertes.html" class="nav-tab">
+      <i data-lucide="bell"></i>
+      <span>Alertes</span>
+    </a>
+    <a href="13-conducteur-clawbot.html" class="nav-tab">
+      <i data-lucide="sparkles"></i>
+      <span>Bot</span>
+    </a>
+  </nav>
+</div>
+
+<script>lucide.createIcons();</script>
+</body>
+</html>

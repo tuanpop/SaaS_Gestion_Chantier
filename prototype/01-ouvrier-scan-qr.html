@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>ClawBTP — Scan QR Code</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            heading: ['Outfit', 'sans-serif'],
+            sans: ['Public Sans', 'sans-serif']
+          },
+          colors: {
+            primary: { DEFAULT: '#334155', light: '#475569', dark: '#1E293B' },
+            accent: '#F97316',
+            danger: { DEFAULT: '#DC2626', bg: '#FEE2E2' },
+            warning: { DEFAULT: '#F59E0B', bg: '#FEF3C7' },
+            success: { DEFAULT: '#22C55E', bg: '#DCFCE7' },
+            surface: '#F1F5F9',
+            cream: '#FAFAF8',
+            muted: '#64748B',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    * { touch-action: manipulation; }
+    body {
+      overscroll-behavior: contain;
+      min-height: 100vh; min-height: 100dvh;
+      background: #FAFAF8;
+      font-family: 'Public Sans', sans-serif;
+      color: #0F172A;
+    }
+    .card-brutal {
+      border: 2px solid #000;
+      box-shadow: 4px 4px 0 #000;
+      border-radius: 6px;
+      background: #fff;
+      transition: transform 100ms, box-shadow 100ms;
+    }
+    .card-brutal:active {
+      box-shadow: 2px 2px 0 #000;
+      transform: translate(2px, 2px);
+    }
+    .btn-brutal {
+      border: 2px solid #000;
+      box-shadow: 3px 3px 0 #000;
+      border-radius: 6px;
+      min-height: 56px;
+      min-width: 56px;
+      font-weight: 700;
+      font-size: 18px;
+      font-family: 'Outfit', sans-serif;
+      transition: transform 100ms, box-shadow 100ms;
+      cursor: pointer;
+    }
+    .btn-brutal:active {
+      box-shadow: 1px 1px 0 #000;
+      transform: translate(2px, 2px);
+    }
+    .badge { border: 2px solid; border-radius: 4px; padding: 2px 10px; font-weight: 600; font-size: 14px; }
+    .badge-danger { background: #FEE2E2; border-color: #DC2626; color: #DC2626; }
+    .badge-success { background: #DCFCE7; border-color: #22C55E; color: #166534; }
+    .badge-warning { background: #FEF3C7; border-color: #F59E0B; color: #92400E; }
+    .badge-muted { background: #F1F5F9; border-color: #94A3B8; color: #64748B; }
+
+    @keyframes dot-pulse {
+      0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
+      40% { opacity: 1; transform: scale(1); }
+    }
+    .dot-1 { animation: dot-pulse 1.4s infinite 0s; }
+    .dot-2 { animation: dot-pulse 1.4s infinite 0.2s; }
+    .dot-3 { animation: dot-pulse 1.4s infinite 0.4s; }
+  </style>
+</head>
+<body>
+  <div class="max-w-[375px] mx-auto min-h-screen bg-cream">
+    <!-- Retour proto -->
+    <a href="00-index.html" class="block px-4 pt-3 text-sm text-muted hover:underline">&larr; Retour au prototype</a>
+
+    <!-- Logo -->
+    <div class="text-center pt-8 pb-6">
+      <h1 class="font-heading text-3xl font-[800] tracking-tight">Claw<span class="text-accent">BTP</span></h1>
+    </div>
+
+    <!-- État loading -->
+    <div id="state-loading" class="px-4">
+      <div class="card-brutal p-8 text-center">
+        <div class="flex justify-center mb-4">
+          <div class="w-16 h-16 rounded-full border-2 border-black bg-surface flex items-center justify-center">
+            <i data-lucide="scan-line" class="w-8 h-8 text-primary"></i>
+          </div>
+        </div>
+        <p class="font-heading text-xl font-bold mb-3">Connexion en cours</p>
+        <div class="flex justify-center gap-2">
+          <span class="dot-1 w-3 h-3 rounded-full bg-accent inline-block"></span>
+          <span class="dot-2 w-3 h-3 rounded-full bg-accent inline-block"></span>
+          <span class="dot-3 w-3 h-3 rounded-full bg-accent inline-block"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- État connecté -->
+    <div id="state-connected" class="px-4 hidden">
+      <!-- Avatar + Bonjour -->
+      <div class="flex flex-col items-center mb-6">
+        <div class="w-20 h-20 rounded-full border-2 border-black bg-surface flex items-center justify-center mb-3">
+          <i data-lucide="user" class="w-10 h-10 text-primary"></i>
+        </div>
+        <h2 class="font-heading text-2xl font-bold">Bonjour Mohamed !</h2>
+      </div>
+
+      <!-- Card chantier -->
+      <div class="card-brutal p-5 mb-6">
+        <div class="flex items-start gap-3">
+          <div class="w-12 h-12 min-w-[48px] rounded-md border-2 border-black bg-warning-bg flex items-center justify-center">
+            <i data-lucide="building-2" class="w-6 h-6 text-warning"></i>
+          </div>
+          <div>
+            <p class="font-heading text-lg font-bold">Leclerc — Mérignac</p>
+            <p class="text-sm text-muted mt-0.5">12 rue du Commerce, 33700</p>
+            <div class="mt-2">
+              <span class="badge badge-warning">3 tâches</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CTA -->
+      <a href="03-ouvrier-taches.html" class="btn-brutal bg-accent text-white flex items-center justify-center gap-3 w-full">
+        <i data-lucide="list-checks" class="w-6 h-6"></i>
+        Voir mes tâches
+      </a>
+
+      <!-- Banner PWA -->
+      <div class="card-brutal p-4 mt-6 flex items-center gap-3">
+        <div class="w-12 h-12 min-w-[48px] rounded-md border-2 border-black bg-surface flex items-center justify-center">
+          <i data-lucide="download" class="w-6 h-6 text-primary"></i>
+        </div>
+        <div>
+          <p class="font-heading font-bold text-base">Ajouter à l'écran d'accueil</p>
+          <p class="text-sm text-muted">Accès rapide depuis ton téléphone</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="pb-8"></div>
+  </div>
+
+  <script>
+    lucide.createIcons();
+    setTimeout(function() {
+      document.getElementById('state-loading').classList.add('hidden');
+      document.getElementById('state-connected').classList.remove('hidden');
+    }, 2000);
+  </script>
+</body>
+</html>

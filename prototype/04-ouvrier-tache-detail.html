@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>ClawBTP — Détail tâche</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            heading: ['Outfit', 'sans-serif'],
+            sans: ['Public Sans', 'sans-serif']
+          },
+          colors: {
+            primary: { DEFAULT: '#334155', light: '#475569', dark: '#1E293B' },
+            accent: '#F97316',
+            danger: { DEFAULT: '#DC2626', bg: '#FEE2E2' },
+            warning: { DEFAULT: '#F59E0B', bg: '#FEF3C7' },
+            success: { DEFAULT: '#22C55E', bg: '#DCFCE7' },
+            surface: '#F1F5F9',
+            cream: '#FAFAF8',
+            muted: '#64748B',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    * { touch-action: manipulation; }
+    body {
+      overscroll-behavior: contain;
+      min-height: 100vh; min-height: 100dvh;
+      background: #FAFAF8;
+      font-family: 'Public Sans', sans-serif;
+      color: #0F172A;
+    }
+    .card-brutal {
+      border: 2px solid #000;
+      box-shadow: 4px 4px 0 #000;
+      border-radius: 6px;
+      background: #fff;
+      transition: transform 100ms, box-shadow 100ms;
+    }
+    .card-brutal:active {
+      box-shadow: 2px 2px 0 #000;
+      transform: translate(2px, 2px);
+    }
+    .btn-brutal {
+      border: 2px solid #000;
+      box-shadow: 3px 3px 0 #000;
+      border-radius: 6px;
+      min-height: 56px;
+      min-width: 56px;
+      font-weight: 700;
+      font-size: 18px;
+      font-family: 'Outfit', sans-serif;
+      transition: transform 100ms, box-shadow 100ms;
+      cursor: pointer;
+    }
+    .btn-brutal:active {
+      box-shadow: 1px 1px 0 #000;
+      transform: translate(2px, 2px);
+    }
+    .badge { border: 2px solid; border-radius: 4px; padding: 2px 10px; font-weight: 600; font-size: 14px; }
+    .badge-danger { background: #FEE2E2; border-color: #DC2626; color: #DC2626; }
+    .badge-success { background: #DCFCE7; border-color: #22C55E; color: #166534; }
+    .badge-warning { background: #FEF3C7; border-color: #F59E0B; color: #92400E; }
+    .badge-muted { background: #F1F5F9; border-color: #94A3B8; color: #64748B; }
+
+    @keyframes check-pop {
+      0% { transform: scale(0); opacity: 0; }
+      50% { transform: scale(1.2); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .check-anim { animation: check-pop 0.4s ease-out forwards; }
+  </style>
+</head>
+<body>
+  <div class="max-w-[375px] mx-auto min-h-screen bg-cream relative">
+    <!-- Retour proto -->
+    <a href="00-index.html" class="block px-4 pt-3 text-sm text-muted hover:underline">&larr; Retour au prototype</a>
+
+    <!-- Bouton retour -->
+    <div class="px-4 pt-3">
+      <a href="03-ouvrier-taches.html" class="inline-flex items-center gap-2 border-2 border-black rounded-md px-3 py-2 bg-white font-heading font-bold text-base no-underline text-inherit" style="box-shadow: 2px 2px 0 #000;">
+        <i data-lucide="arrow-left" class="w-5 h-5"></i>
+        Retour
+      </a>
+    </div>
+
+    <!-- Contenu -->
+    <div class="px-4 pt-4 pb-36">
+      <!-- Titre -->
+      <h1 class="font-heading text-[22px] font-bold mb-2">Pose carrelage cuisine</h1>
+
+      <!-- Description -->
+      <p class="text-base text-primary-light mb-4">Poser le carrelage 60x60 gris clair dans la cuisine. Joints de 3mm, colle flex.</p>
+
+      <!-- Badge + échéance -->
+      <div class="flex items-center gap-3 mb-5 flex-wrap">
+        <span class="badge badge-warning">En cours</span>
+        <div class="flex items-center gap-1.5 text-sm text-muted">
+          <i data-lucide="calendar" class="w-4 h-4"></i>
+          <span>Deadline : 3 avril 2026</span>
+        </div>
+      </div>
+
+      <!-- Section Photos -->
+      <div class="mb-5">
+        <h2 class="font-heading text-lg font-bold mb-3">Photos</h2>
+        <div class="grid grid-cols-2 gap-3">
+          <div class="card-brutal aspect-square flex items-center justify-center bg-surface">
+            <i data-lucide="image" class="w-10 h-10 text-muted"></i>
+          </div>
+          <div class="card-brutal aspect-square flex items-center justify-center bg-surface">
+            <i data-lucide="image" class="w-10 h-10 text-muted"></i>
+          </div>
+          <div class="card-brutal aspect-square flex items-center justify-center bg-surface">
+            <i data-lucide="image" class="w-10 h-10 text-muted"></i>
+          </div>
+          <a href="05-ouvrier-photo.html" class="card-brutal aspect-square flex flex-col items-center justify-center bg-white gap-1 no-underline text-inherit">
+            <i data-lucide="plus" class="w-8 h-8 text-accent"></i>
+            <span class="text-sm font-bold text-accent">Ajouter</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Zone blocage (cachée par défaut) -->
+      <div id="blocage-form" class="hidden mb-5">
+        <div class="card-brutal p-4">
+          <h3 class="font-heading font-bold text-base mb-2">Raison du blocage</h3>
+          <textarea class="w-full border-2 border-black rounded-md p-3 text-base resize-none" style="border-radius: 6px;" rows="3" placeholder="Décris le problème..."></textarea>
+          <button onclick="document.getElementById('blocage-form').classList.add('hidden');" class="btn-brutal bg-danger text-white w-full mt-3 flex items-center justify-center gap-2">
+            <i data-lucide="send" class="w-5 h-5"></i>
+            Envoyer
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Boutons action fixe bas -->
+    <div class="fixed bottom-0 left-0 right-0 flex justify-center">
+      <div class="max-w-[375px] w-full bg-cream border-t-2 border-black px-4 py-4">
+        <div class="flex gap-3">
+          <button onclick="document.getElementById('blocage-form').classList.toggle('hidden'); window.scrollTo(0, document.body.scrollHeight);" class="btn-brutal bg-danger text-white flex-1 flex items-center justify-center gap-2">
+            <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+            Bloqué
+          </button>
+          <button onclick="showDone()" class="btn-brutal bg-success text-white flex-1 flex items-center justify-center gap-2">
+            <i data-lucide="check" class="w-5 h-5"></i>
+            Terminé
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Overlay terminé -->
+    <div id="done-overlay" class="fixed inset-0 bg-success/90 flex flex-col items-center justify-center z-50 hidden">
+      <div class="check-anim">
+        <div class="w-24 h-24 rounded-full border-4 border-white flex items-center justify-center mb-6">
+          <i data-lucide="check" class="w-14 h-14 text-white"></i>
+        </div>
+      </div>
+      <p class="font-heading text-2xl font-bold text-white check-anim">Tâche terminée !</p>
+    </div>
+  </div>
+
+  <script>
+    lucide.createIcons();
+
+    function showDone() {
+      var overlay = document.getElementById('done-overlay');
+      overlay.classList.remove('hidden');
+      lucide.createIcons();
+      setTimeout(function() {
+        overlay.classList.add('hidden');
+      }, 1500);
+    }
+  </script>
+</body>
+</html>

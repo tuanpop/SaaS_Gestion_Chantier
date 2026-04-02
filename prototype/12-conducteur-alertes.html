@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ClawBTP — Conducteur — Alertes</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            heading: ['Outfit', 'sans-serif'],
+            sans: ['Public Sans', 'sans-serif']
+          },
+          colors: {
+            primary: { DEFAULT: '#334155', light: '#475569', dark: '#1E293B' },
+            accent: '#F97316',
+            danger: { DEFAULT: '#DC2626', bg: '#FEE2E2' },
+            warning: { DEFAULT: '#F59E0B', bg: '#FEF3C7' },
+            success: { DEFAULT: '#22C55E', bg: '#DCFCE7' },
+            surface: '#F1F5F9',
+            cream: '#FAFAF8',
+            muted: '#64748B',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    * { touch-action: manipulation; }
+    body {
+      min-height: 100vh; min-height: 100dvh;
+      background: #FAFAF8;
+      font-family: 'Public Sans', sans-serif;
+      color: #0F172A;
+    }
+    .card-brutal {
+      border: 2px solid #000;
+      box-shadow: 3px 3px 0 #000;
+      border-radius: 6px;
+      background: #fff;
+      transition: transform 100ms, box-shadow 100ms;
+    }
+    .card-brutal:active {
+      box-shadow: 1px 1px 0 #000;
+      transform: translate(2px, 2px);
+    }
+    .card-brutal-light {
+      border: 2px solid #000;
+      box-shadow: 2px 2px 0 #000;
+      border-radius: 6px;
+      background: #fff;
+      transition: transform 100ms, box-shadow 100ms;
+    }
+    .card-brutal-light:active {
+      box-shadow: 0px 0px 0 #000;
+      transform: translate(2px, 2px);
+    }
+    .btn-brutal {
+      border: 2px solid #000;
+      box-shadow: 3px 3px 0 #000;
+      border-radius: 6px;
+      font-weight: 700;
+      font-family: 'Outfit', sans-serif;
+      transition: transform 100ms, box-shadow 100ms;
+      cursor: pointer;
+    }
+    .btn-brutal:active {
+      box-shadow: 1px 1px 0 #000;
+      transform: translate(2px, 2px);
+    }
+    .badge { border: 2px solid; border-radius: 4px; padding: 2px 10px; font-weight: 600; font-size: 13px; display: inline-block; }
+    .badge-danger { background: #FEE2E2; border-color: #DC2626; color: #DC2626; }
+    .badge-success { background: #DCFCE7; border-color: #22C55E; color: #166534; }
+    .badge-warning { background: #FEF3C7; border-color: #F59E0B; color: #92400E; }
+    .badge-muted { background: #F1F5F9; border-color: #94A3B8; color: #64748B; }
+    .badge-primary { background: #E0F2FE; border-color: #0284C7; color: #0369A1; }
+    .bottom-nav {
+      position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+      width: 100%; max-width: 390px;
+      background: #fff; border-top: 2px solid #000;
+      display: flex; justify-content: space-around; align-items: center;
+      padding: 8px 0 env(safe-area-inset-bottom, 8px);
+      z-index: 50;
+    }
+    .bottom-nav a {
+      display: flex; flex-direction: column; align-items: center;
+      font-size: 11px; font-weight: 500; color: #64748B;
+      gap: 2px; text-decoration: none; padding: 4px 8px;
+      position: relative;
+    }
+    .bottom-nav a.active { color: #F97316; font-weight: 700; }
+    .bottom-nav a.active::after {
+      content: ''; position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
+      width: 24px; height: 3px; background: #F97316; border-radius: 2px;
+    }
+  </style>
+</head>
+<body>
+  <a href="00-index.html" style="position:fixed;top:12px;left:12px;z-index:100;background:rgba(255,255,255,0.95);color:#475569;font-size:12px;padding:6px 12px;border-radius:20px;text-decoration:none;display:inline-flex;align-items:center;gap:4px;box-shadow:0 2px 8px rgba(0,0,0,0.1)">&larr; Index</a>
+  <div class="max-w-[390px] mx-auto min-h-screen bg-cream relative">
+
+    <!-- Header -->
+    <header class="bg-primary-dark px-4 py-4 flex items-center gap-2">
+      <h1 class="font-heading text-white text-xl font-bold">Alertes</h1>
+      <span class="w-5 h-5 bg-danger text-white text-[11px] font-bold rounded-full flex items-center justify-center">3</span>
+    </header>
+
+    <!-- Contenu -->
+    <main class="px-4 pt-4 pb-40 flex flex-col gap-4">
+
+      <!-- Groupe Aujourd'hui -->
+      <div>
+        <h2 class="font-heading font-semibold text-sm mb-2">Aujourd'hui</h2>
+        <div class="flex flex-col gap-3">
+
+          <!-- Alerte Blocage -->
+          <div class="card-brutal p-3 border-l-[4px] border-l-danger">
+            <div class="flex items-start gap-2.5">
+              <i data-lucide="alert-triangle" class="w-5 h-5 text-danger shrink-0 mt-0.5"></i>
+              <div class="flex-1">
+                <div class="text-sm font-semibold">Mohamed a signalé un blocage : manque de matériel</div>
+                <div class="text-muted text-xs mt-1">Extension Leclerc — 09:15</div>
+              </div>
+              <span class="badge badge-danger shrink-0">Blocage</span>
+            </div>
+          </div>
+
+          <!-- Alerte Jalon dépassé -->
+          <div class="card-brutal p-3 border-l-[4px] border-l-danger">
+            <div class="flex items-start gap-2.5">
+              <i data-lucide="clock" class="w-5 h-5 text-danger shrink-0 mt-0.5"></i>
+              <div class="flex-1">
+                <div class="text-sm font-semibold">Échéance dépassée sur 2 tâches</div>
+                <div class="text-muted text-xs mt-1">Maison Martin — 08:00</div>
+              </div>
+              <span class="badge badge-danger shrink-0">Retard</span>
+            </div>
+          </div>
+
+          <!-- Alerte Dérive budget -->
+          <div class="card-brutal p-3 border-l-[4px] border-l-warning">
+            <div class="flex items-start gap-2.5">
+              <i data-lucide="trending-up" class="w-5 h-5 text-warning shrink-0 mt-0.5"></i>
+              <div class="flex-1">
+                <div class="text-sm font-semibold">Budget à 73% pour 45% d'avancement</div>
+                <div class="text-muted text-xs mt-1">Rénovation Bertrand — 07:30</div>
+              </div>
+              <span class="badge badge-warning shrink-0">Dérive</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Groupe Cette semaine -->
+      <div>
+        <h2 class="font-heading font-semibold text-sm text-muted mb-2">Cette semaine</h2>
+        <div class="flex flex-col gap-3">
+
+          <!-- CR validé -->
+          <div class="card-brutal-light p-3 border-l-[4px]" style="border-left-color: #0284C7;">
+            <div class="flex items-start gap-2.5">
+              <i data-lucide="file-check" class="w-5 h-5 shrink-0 mt-0.5" style="color: #0284C7;"></i>
+              <div class="flex-1">
+                <div class="text-sm font-semibold">CR chantier Dupont validé et envoyé</div>
+                <div class="text-muted text-xs mt-1">Dupont — 31/03</div>
+              </div>
+              <span class="badge badge-primary shrink-0">CR</span>
+            </div>
+          </div>
+
+          <!-- Invitation acceptée -->
+          <div class="card-brutal-light p-3 border-l-[4px] border-l-success">
+            <div class="flex items-start gap-2.5">
+              <i data-lucide="user-plus" class="w-5 h-5 text-success shrink-0 mt-0.5"></i>
+              <div class="flex-1">
+                <div class="text-sm font-semibold">Karim a rejoint l'équipe</div>
+                <div class="text-muted text-xs mt-1">30/03</div>
+              </div>
+              <span class="badge badge-success shrink-0">Nouveau</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </main>
+
+    <!-- Bottom Nav -->
+    <nav class="bottom-nav">
+      <a href="08-conducteur-chantiers.html">
+        <i data-lucide="building-2" class="w-5 h-5"></i>
+        <span>Chantiers</span>
+      </a>
+      <a href="10-conducteur-taches.html">
+        <i data-lucide="list-checks" class="w-5 h-5"></i>
+        <span>Tâches</span>
+      </a>
+      <a href="11-conducteur-cr.html">
+        <i data-lucide="file-text" class="w-5 h-5"></i>
+        <span>CR</span>
+      </a>
+      <a href="12-conducteur-alertes.html" class="active relative">
+        <i data-lucide="bell" class="w-5 h-5"></i>
+        <span>Alertes</span>
+        <span class="absolute -top-1 right-0 w-4 h-4 bg-danger text-white text-[10px] font-bold rounded-full flex items-center justify-center">3</span>
+      </a>
+      <a href="13-conducteur-clawbot.html">
+        <i data-lucide="bot" class="w-5 h-5"></i>
+        <span>ClawBot</span>
+      </a>
+    </nav>
+
+  </div>
+  <script>lucide.createIcons();</script>
+</body>
+</html>

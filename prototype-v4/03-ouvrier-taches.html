@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claw — Mes taches</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #F8FAFC;
+    display: flex;
+    justify-content: center;
+    min-height: 100vh;
+  }
+  h1, h2, h3, h4, h5 { font-family: 'Plus Jakarta Sans', sans-serif; }
+  .mobile-frame {
+    width: 100%;
+    max-width: 375px;
+    min-height: 100vh;
+    background: #F8FAFC;
+    position: relative;
+    padding-bottom: 80px;
+  }
+
+  /* Header */
+  .header {
+    background: linear-gradient(135deg, #6366F1, #8B5CF6);
+    color: white;
+    padding: 48px 24px 24px;
+    border-radius: 0 0 20px 20px;
+  }
+  .header-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: rgba(255,255,255,0.8);
+    text-decoration: none;
+    font-size: 13px;
+    margin-bottom: 12px;
+  }
+  .header-project {
+    font-size: 20px;
+    font-weight: 800;
+    margin-bottom: 2px;
+  }
+  .header-worker {
+    font-size: 13px;
+    opacity: 0.8;
+    margin-bottom: 16px;
+  }
+  .progress-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .progress-label {
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .progress-count {
+    font-size: 13px;
+    opacity: 0.85;
+  }
+  .progress-bar-bg {
+    height: 6px;
+    background: rgba(255,255,255,0.25);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    background: white;
+    border-radius: 3px;
+    transition: width 0.4s;
+  }
+
+  /* Content */
+  .content {
+    padding: 16px 16px 24px;
+  }
+  .section-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #94A3B8;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 12px;
+  }
+
+  /* Task card */
+  .task-card {
+    background: white;
+    border: 1px solid #E2E8F0;
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 10px;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    transition: box-shadow 0.2s, transform 0.15s;
+    border-left: 4px solid;
+  }
+  .task-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    transform: translateY(-1px);
+  }
+  .task-card:active { transform: scale(0.98); }
+  .task-card.termine { border-left-color: #10B981; }
+  .task-card.en-cours { border-left-color: #6366F1; }
+  .task-card.a-faire { border-left-color: #94A3B8; }
+  .task-card.bloque { border-left-color: #EF4444; }
+
+  .task-icon-wrap {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .termine .task-icon-wrap { background: #ECFDF5; color: #10B981; }
+  .en-cours .task-icon-wrap { background: #EEF2FF; color: #6366F1; }
+  .a-faire .task-icon-wrap { background: #F1F5F9; color: #94A3B8; }
+  .bloque .task-icon-wrap { background: #FEF2F2; color: #EF4444; }
+
+  .task-info { flex: 1; min-width: 0; }
+  .task-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #0F172A;
+    margin-bottom: 4px;
+  }
+  .task-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: #94A3B8;
+  }
+
+  .status-badge {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 6px;
+    flex-shrink: 0;
+  }
+  .badge-termine { background: #ECFDF5; color: #10B981; }
+  .badge-en-cours { background: #EEF2FF; color: #6366F1; }
+  .badge-a-faire { background: #F1F5F9; color: #64748B; }
+  .badge-bloque { background: #FEF2F2; color: #EF4444; }
+
+  /* FAB */
+  .fab {
+    position: fixed;
+    bottom: 88px;
+    right: calc(50% - 375px/2 + 16px);
+    width: 56px;
+    height: 56px;
+    background: linear-gradient(135deg, #6366F1, #8B5CF6);
+    color: white;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    box-shadow: 0 8px 24px rgba(99, 102, 241, 0.35);
+    transition: transform 0.2s;
+    z-index: 10;
+  }
+  .fab:hover { transform: scale(1.08); }
+
+  /* Bottom nav */
+  .bottom-nav {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    max-width: 375px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: white;
+    border-top: 1px solid #E2E8F0;
+    display: flex;
+    padding: 8px 0 12px;
+    z-index: 20;
+  }
+  .nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    text-decoration: none;
+    font-size: 11px;
+    color: #94A3B8;
+    position: relative;
+    padding-top: 6px;
+  }
+  .nav-item.active {
+    color: #6366F1;
+  }
+  .nav-item.active::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 24px;
+    height: 3px;
+    background: #6366F1;
+    border-radius: 0 0 3px 3px;
+  }
+  .nav-label { font-weight: 500; }
+</style>
+</head>
+<body>
+
+<a href="00-index.html" style="position:fixed;top:12px;left:12px;z-index:100;background:white;color:#475569;font-size:12px;padding:6px 12px;border-radius:20px;text-decoration:none;display:flex;align-items:center;gap:4px;box-shadow:0 2px 8px rgba(0,0,0,0.1);font-family:'Inter',sans-serif">
+  <i data-lucide="arrow-left" style="width:14px;height:14px"></i> Index
+</a>
+
+<div class="mobile-frame">
+  <div class="header">
+    <a href="02-ouvrier-selecteur-chantier.html" class="header-back">
+      <i data-lucide="chevron-left" style="width:16px;height:16px"></i> Mes chantiers
+    </a>
+    <h1 class="header-project">Leclerc — Merignac</h1>
+    <p class="header-worker">Mohamed B.</p>
+    <div class="progress-row">
+      <span class="progress-label">Progression</span>
+      <span class="progress-count">1 sur 4 terminees</span>
+    </div>
+    <div class="progress-bar-bg">
+      <div class="progress-bar-fill" style="width:25%"></div>
+    </div>
+  </div>
+
+  <div class="content">
+    <p class="section-label">Mes taches</p>
+
+    <a href="04-ouvrier-tache-detail.html" class="task-card termine">
+      <div class="task-icon-wrap">
+        <i data-lucide="check-circle-2" style="width:20px;height:20px"></i>
+      </div>
+      <div class="task-info">
+        <div class="task-name">Pose plinthes salle 102</div>
+        <div class="task-meta">
+          <span>RDC</span>
+        </div>
+      </div>
+      <span class="status-badge badge-termine">Termine</span>
+    </a>
+
+    <a href="04-ouvrier-tache-detail.html" class="task-card en-cours">
+      <div class="task-icon-wrap">
+        <i data-lucide="loader" style="width:20px;height:20px"></i>
+      </div>
+      <div class="task-info">
+        <div class="task-name">Carrelage cuisine 201</div>
+        <div class="task-meta">
+          <span>Etage 2</span>
+        </div>
+      </div>
+      <span class="status-badge badge-en-cours">En cours</span>
+    </a>
+
+    <a href="04-ouvrier-tache-detail.html" class="task-card a-faire">
+      <div class="task-icon-wrap">
+        <i data-lucide="circle" style="width:20px;height:20px"></i>
+      </div>
+      <div class="task-info">
+        <div class="task-name">Joints salle de bain 203</div>
+        <div class="task-meta">
+          <span>Etage 2</span>
+        </div>
+      </div>
+      <span class="status-badge badge-a-faire">A faire</span>
+    </a>
+
+    <a href="04-ouvrier-tache-detail.html" class="task-card bloque">
+      <div class="task-icon-wrap">
+        <i data-lucide="alert-triangle" style="width:20px;height:20px"></i>
+      </div>
+      <div class="task-info">
+        <div class="task-name">Peinture couloir etage 1</div>
+        <div class="task-meta">
+          <span>Materiel manquant</span>
+        </div>
+      </div>
+      <span class="status-badge badge-bloque">Bloque</span>
+    </a>
+  </div>
+
+  <a href="05-ouvrier-photo.html" class="fab">
+    <i data-lucide="camera" style="width:24px;height:24px"></i>
+  </a>
+
+  <nav class="bottom-nav">
+    <a href="03-ouvrier-taches.html" class="nav-item active">
+      <i data-lucide="check-square" style="width:20px;height:20px"></i>
+      <span class="nav-label">Taches</span>
+    </a>
+    <a href="05-ouvrier-photo.html" class="nav-item">
+      <i data-lucide="camera" style="width:20px;height:20px"></i>
+      <span class="nav-label">Photo</span>
+    </a>
+    <a href="07-ouvrier-clawbot.html" class="nav-item">
+      <i data-lucide="bot" style="width:20px;height:20px"></i>
+      <span class="nav-label">Bot</span>
+    </a>
+    <a href="02-ouvrier-selecteur-chantier.html" class="nav-item">
+      <i data-lucide="menu" style="width:20px;height:20px"></i>
+      <span class="nav-label">Menu</span>
+    </a>
+  </nav>
+</div>
+
+<script>lucide.createIcons()</script>
+</body>
+</html>

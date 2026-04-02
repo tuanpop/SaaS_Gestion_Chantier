@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>ClawBTP — Sélecteur chantier</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            heading: ['Outfit', 'sans-serif'],
+            sans: ['Public Sans', 'sans-serif']
+          },
+          colors: {
+            primary: { DEFAULT: '#334155', light: '#475569', dark: '#1E293B' },
+            accent: '#F97316',
+            danger: { DEFAULT: '#DC2626', bg: '#FEE2E2' },
+            warning: { DEFAULT: '#F59E0B', bg: '#FEF3C7' },
+            success: { DEFAULT: '#22C55E', bg: '#DCFCE7' },
+            surface: '#F1F5F9',
+            cream: '#FAFAF8',
+            muted: '#64748B',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    * { touch-action: manipulation; }
+    body {
+      overscroll-behavior: contain;
+      min-height: 100vh; min-height: 100dvh;
+      background: #FAFAF8;
+      font-family: 'Public Sans', sans-serif;
+      color: #0F172A;
+    }
+    .card-brutal {
+      border: 2px solid #000;
+      box-shadow: 4px 4px 0 #000;
+      border-radius: 6px;
+      background: #fff;
+      transition: transform 100ms, box-shadow 100ms;
+    }
+    .card-brutal:active {
+      box-shadow: 2px 2px 0 #000;
+      transform: translate(2px, 2px);
+    }
+    .btn-brutal {
+      border: 2px solid #000;
+      box-shadow: 3px 3px 0 #000;
+      border-radius: 6px;
+      min-height: 56px;
+      min-width: 56px;
+      font-weight: 700;
+      font-size: 18px;
+      font-family: 'Outfit', sans-serif;
+      transition: transform 100ms, box-shadow 100ms;
+      cursor: pointer;
+    }
+    .btn-brutal:active {
+      box-shadow: 1px 1px 0 #000;
+      transform: translate(2px, 2px);
+    }
+    .badge { border: 2px solid; border-radius: 4px; padding: 2px 10px; font-weight: 600; font-size: 14px; }
+    .badge-danger { background: #FEE2E2; border-color: #DC2626; color: #DC2626; }
+    .badge-success { background: #DCFCE7; border-color: #22C55E; color: #166534; }
+    .badge-warning { background: #FEF3C7; border-color: #F59E0B; color: #92400E; }
+    .badge-muted { background: #F1F5F9; border-color: #94A3B8; color: #64748B; }
+  </style>
+</head>
+<body>
+  <div class="max-w-[375px] mx-auto min-h-screen bg-cream">
+    <!-- Retour proto -->
+    <a href="00-index.html" class="block px-4 pt-3 text-sm text-muted hover:underline">&larr; Retour au prototype</a>
+
+    <!-- Header -->
+    <div class="px-4 pt-6 pb-4">
+      <h1 class="font-heading text-2xl font-bold">Sur quel chantier es-tu ?</h1>
+    </div>
+
+    <!-- Chantiers -->
+    <div class="px-4 flex flex-col gap-3">
+      <!-- Chantier 1 -->
+      <a href="03-ouvrier-taches.html" class="card-brutal p-4 flex items-center gap-4 border-l-[4px] border-l-accent no-underline text-inherit">
+        <div class="w-12 h-12 min-w-[48px] rounded-md border-2 border-black bg-warning-bg flex items-center justify-center">
+          <i data-lucide="building-2" class="w-6 h-6 text-warning"></i>
+        </div>
+        <div class="flex-1">
+          <p class="font-heading text-lg font-bold">Leclerc — Mérignac</p>
+          <p class="text-sm text-muted">12 rue du Commerce, 33700</p>
+          <div class="mt-1.5">
+            <span class="badge badge-warning">3 tâches</span>
+          </div>
+        </div>
+      </a>
+
+      <!-- Chantier 2 -->
+      <a href="03-ouvrier-taches.html" class="card-brutal p-4 flex items-center gap-4 border-l-[4px] border-l-accent no-underline text-inherit">
+        <div class="w-12 h-12 min-w-[48px] rounded-md border-2 border-black bg-surface flex items-center justify-center">
+          <i data-lucide="building-2" class="w-6 h-6 text-primary"></i>
+        </div>
+        <div class="flex-1">
+          <p class="font-heading text-lg font-bold">Résidence Les Pins</p>
+          <p class="text-sm text-muted">45 av. de la Forêt, 33600</p>
+          <div class="mt-1.5">
+            <span class="badge badge-muted">1 tâche</span>
+          </div>
+        </div>
+      </a>
+
+      <!-- Chantier 3 -->
+      <a href="03-ouvrier-taches.html" class="card-brutal p-4 flex items-center gap-4 border-l-[4px] border-l-accent no-underline text-inherit">
+        <div class="w-12 h-12 min-w-[48px] rounded-md border-2 border-black bg-success-bg flex items-center justify-center">
+          <i data-lucide="building-2" class="w-6 h-6 text-success"></i>
+        </div>
+        <div class="flex-1">
+          <p class="font-heading text-lg font-bold">École Jean Moulin</p>
+          <p class="text-sm text-muted">8 rue de la République, 33400</p>
+          <div class="mt-1.5">
+            <span class="badge badge-warning">5 tâches</span>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <div class="pb-8"></div>
+  </div>
+
+  <script>lucide.createIcons();</script>
+</body>
+</html>

@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ClawBTP — Mes Chantiers</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { heading: ['Space Grotesk','sans-serif'], sans: ['DM Sans','sans-serif'], mono: ['JetBrains Mono','monospace'] },
+          colors: {
+            bg: { DEFAULT:'#0F172A', card:'#1E293B', elevated:'#334155' },
+            accent:'#3B82F6',
+            danger: { DEFAULT:'#EF4444', glow:'rgba(239,68,68,0.2)' },
+            warning: { DEFAULT:'#F59E0B', glow:'rgba(245,158,11,0.2)' },
+            success: { DEFAULT:'#22C55E', glow:'rgba(34,197,94,0.2)' },
+            text: { DEFAULT:'#F8FAFC', muted:'#94A3B8', dim:'#64748B' },
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    * { touch-action: manipulation; }
+    body { min-height:100vh; min-height:100dvh; background:#0F172A; font-family:'DM Sans',sans-serif; color:#F8FAFC; }
+    .card-cockpit { background:#1E293B; border:1px solid rgba(148,163,184,0.2); border-radius:12px; transition:border-color 200ms, box-shadow 200ms; }
+    .card-cockpit:active { border-color:#3B82F6; box-shadow:0 0 12px rgba(59,130,246,0.3); }
+    .glow-danger { box-shadow:0 0 16px rgba(239,68,68,0.25); border-color:rgba(239,68,68,0.5); }
+    .glow-success { box-shadow:0 0 16px rgba(34,197,94,0.25); border-color:rgba(34,197,94,0.5); }
+    .glow-warning { box-shadow:0 0 16px rgba(245,158,11,0.25); border-color:rgba(245,158,11,0.5); }
+    .glow-accent { box-shadow:0 0 16px rgba(59,130,246,0.25); border-color:rgba(59,130,246,0.5); }
+    .badge-cockpit { border-radius:6px; padding:3px 10px; font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:0.5px; }
+    .progress-cockpit { height:6px; border-radius:3px; background:#334155; overflow:hidden; }
+    .progress-fill { height:100%; border-radius:3px; }
+    .bottom-nav { position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:100%; max-width:390px; background:#1E293B; border-top:1px solid rgba(148,163,184,0.2); display:flex; justify-content:space-around; align-items:center; padding:8px 0 env(safe-area-inset-bottom,8px); z-index:50; }
+    .bottom-nav a { display:flex; flex-direction:column; align-items:center; font-size:11px; font-weight:500; color:#64748B; gap:2px; text-decoration:none; padding:4px 8px; position:relative; }
+    .bottom-nav a.active { color:#3B82F6; font-weight:700; }
+    .bottom-nav a.active::after { content:''; position:absolute; top:-9px; left:50%; transform:translateX(-50%); width:24px; height:2px; background:#3B82F6; border-radius:1px; box-shadow:0 0 8px rgba(59,130,246,0.5); }
+  </style>
+</head>
+<body>
+
+<div class="max-w-[390px] mx-auto min-h-screen relative" style="background:#0F172A">
+
+  <!-- Link retour -->
+  <div class="px-4 pt-3">
+    <a href="00-index.html" class="text-text-dim text-sm hover:text-accent transition-colors">&larr; Prototype</a>
+  </div>
+
+  <!-- Header -->
+  <div class="bg-bg-card px-4 py-4 flex items-center justify-between border-b border-white/10">
+    <h1 class="text-xl font-heading font-bold">Mes chantiers</h1>
+    <div class="w-10 h-10 rounded-full border-2 border-accent flex items-center justify-center text-sm font-heading font-bold" style="box-shadow:0 0 10px rgba(59,130,246,0.4); background:#334155">
+      MC
+    </div>
+  </div>
+
+  <!-- Chantiers -->
+  <div class="px-4 pt-4 pb-40 space-y-3">
+
+    <!-- Chantier 1 - En retard -->
+    <a href="09-conducteur-chantier-detail.html" class="card-cockpit glow-danger block p-4" style="border-left:4px solid #EF4444">
+      <div class="flex items-start justify-between mb-2">
+        <div>
+          <div class="font-heading font-semibold text-base">Residence Les Ormes</div>
+          <div class="text-text-muted text-sm">Bouygues Immobilier</div>
+        </div>
+        <span class="badge-cockpit bg-danger/20 text-danger">En retard</span>
+      </div>
+      <div class="progress-cockpit mb-2">
+        <div class="progress-fill bg-danger" style="width:35%"></div>
+      </div>
+      <div class="flex items-center justify-between text-xs">
+        <span class="text-text-muted"><span class="font-mono text-danger font-bold">35%</span> avancement</span>
+        <span class="text-text-muted"><span class="font-mono">2</span> blocages</span>
+        <span class="text-text-muted font-mono">J-12</span>
+      </div>
+    </a>
+
+    <!-- Chantier 2 - Derive -->
+    <a href="09-conducteur-chantier-detail.html" class="card-cockpit glow-warning block p-4" style="border-left:4px solid #F59E0B">
+      <div class="flex items-start justify-between mb-2">
+        <div>
+          <div class="font-heading font-semibold text-base">Clinique Pasteur</div>
+          <div class="text-text-muted text-sm">Vinci Construction</div>
+        </div>
+        <span class="badge-cockpit bg-warning/20 text-warning">Derive</span>
+      </div>
+      <div class="progress-cockpit mb-2">
+        <div class="progress-fill bg-warning" style="width:58%"></div>
+      </div>
+      <div class="flex items-center justify-between text-xs">
+        <span class="text-text-muted"><span class="font-mono text-warning font-bold">58%</span> avancement</span>
+        <span class="text-text-muted"><span class="font-mono">1</span> blocage</span>
+        <span class="text-text-muted font-mono">J-28</span>
+      </div>
+    </a>
+
+    <!-- Chantier 3 - OK -->
+    <a href="09-conducteur-chantier-detail.html" class="card-cockpit glow-success block p-4" style="border-left:4px solid #22C55E">
+      <div class="flex items-start justify-between mb-2">
+        <div>
+          <div class="font-heading font-semibold text-base">Ecole Jules Ferry</div>
+          <div class="text-text-muted text-sm">Mairie de Lyon 3e</div>
+        </div>
+        <span class="badge-cockpit bg-success/20 text-success">En cours</span>
+      </div>
+      <div class="progress-cockpit mb-2">
+        <div class="progress-fill bg-success" style="width:72%"></div>
+      </div>
+      <div class="flex items-center justify-between text-xs">
+        <span class="text-text-muted"><span class="font-mono text-success font-bold">72%</span> avancement</span>
+        <span class="text-text-muted"><span class="font-mono">0</span> blocage</span>
+        <span class="text-text-muted font-mono">J-45</span>
+      </div>
+    </a>
+
+    <!-- Chantier 4 - OK -->
+    <a href="09-conducteur-chantier-detail.html" class="card-cockpit glow-success block p-4" style="border-left:4px solid #22C55E">
+      <div class="flex items-start justify-between mb-2">
+        <div>
+          <div class="font-heading font-semibold text-base">Bureaux Technoparc</div>
+          <div class="text-text-muted text-sm">Nexity Entreprises</div>
+        </div>
+        <span class="badge-cockpit bg-success/20 text-success">En cours</span>
+      </div>
+      <div class="progress-cockpit mb-2">
+        <div class="progress-fill bg-success" style="width:91%"></div>
+      </div>
+      <div class="flex items-center justify-between text-xs">
+        <span class="text-text-muted"><span class="font-mono text-success font-bold">91%</span> avancement</span>
+        <span class="text-text-muted"><span class="font-mono">0</span> blocage</span>
+        <span class="text-text-muted font-mono">J-8</span>
+      </div>
+    </a>
+
+  </div>
+
+  <!-- Bottom Nav -->
+  <nav class="bottom-nav">
+    <a href="08-conducteur-chantiers.html" class="active">
+      <i data-lucide="building-2" class="w-5 h-5"></i>
+      <span>Chantiers</span>
+    </a>
+    <a href="10-conducteur-taches.html">
+      <i data-lucide="check-square" class="w-5 h-5"></i>
+      <span>Taches</span>
+    </a>
+    <a href="11-conducteur-cr.html">
+      <i data-lucide="file-text" class="w-5 h-5"></i>
+      <span>CR</span>
+    </a>
+    <a href="12-conducteur-alertes.html" class="relative">
+      <i data-lucide="bell" class="w-5 h-5"></i>
+      <span>Alertes</span>
+      <span class="absolute -top-1 right-0 w-4 h-4 rounded-full bg-danger text-white text-[9px] font-bold flex items-center justify-center" style="box-shadow:0 0 8px rgba(239,68,68,0.5)">3</span>
+    </a>
+    <a href="13-conducteur-clawbot.html">
+      <i data-lucide="bot" class="w-5 h-5"></i>
+      <span>ClawBot</span>
+    </a>
+  </nav>
+
+</div>
+
+<script>lucide.createIcons();</script>
+</body>
+</html>

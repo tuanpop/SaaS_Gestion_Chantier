@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ClawBTP — ClawBot</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { heading: ['Space Grotesk','sans-serif'], sans: ['DM Sans','sans-serif'], mono: ['JetBrains Mono','monospace'] },
+          colors: {
+            bg: { DEFAULT:'#0F172A', card:'#1E293B', elevated:'#334155' },
+            accent:'#3B82F6',
+            danger: { DEFAULT:'#EF4444', glow:'rgba(239,68,68,0.2)' },
+            warning: { DEFAULT:'#F59E0B', glow:'rgba(245,158,11,0.2)' },
+            success: { DEFAULT:'#22C55E', glow:'rgba(34,197,94,0.2)' },
+            text: { DEFAULT:'#F8FAFC', muted:'#94A3B8', dim:'#64748B' },
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    * { touch-action: manipulation; }
+    body { min-height:100vh; min-height:100dvh; background:#0F172A; font-family:'DM Sans',sans-serif; color:#F8FAFC; }
+    .card-cockpit { background:#1E293B; border:1px solid rgba(148,163,184,0.2); border-radius:12px; transition:border-color 200ms, box-shadow 200ms; }
+    .card-cockpit:active { border-color:#3B82F6; box-shadow:0 0 12px rgba(59,130,246,0.3); }
+    .glow-accent { box-shadow:0 0 16px rgba(59,130,246,0.25); border-color:rgba(59,130,246,0.5); }
+    .btn-cockpit { border:1px solid rgba(148,163,184,0.3); border-radius:10px; font-weight:600; font-family:'Space Grotesk',sans-serif; transition:all 150ms; cursor:pointer; }
+    .btn-cockpit:active { transform:scale(0.97); }
+    .bottom-nav { position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:100%; max-width:390px; background:#1E293B; border-top:1px solid rgba(148,163,184,0.2); display:flex; justify-content:space-around; align-items:center; padding:8px 0 env(safe-area-inset-bottom,8px); z-index:50; }
+    .bottom-nav a { display:flex; flex-direction:column; align-items:center; font-size:11px; font-weight:500; color:#64748B; gap:2px; text-decoration:none; padding:4px 8px; position:relative; }
+    .bottom-nav a.active { color:#3B82F6; font-weight:700; }
+    .bottom-nav a.active::after { content:''; position:absolute; top:-9px; left:50%; transform:translateX(-50%); width:24px; height:2px; background:#3B82F6; border-radius:1px; box-shadow:0 0 8px rgba(59,130,246,0.5); }
+    @keyframes pulse-glow { 0%,100%{opacity:1} 50%{opacity:0.4} }
+    .dot-pulse { animation:pulse-glow 1.5s ease-in-out infinite; }
+    .dot-pulse:nth-child(2) { animation-delay:0.2s; }
+    .dot-pulse:nth-child(3) { animation-delay:0.4s; }
+  </style>
+</head>
+<body>
+
+<div class="max-w-[390px] mx-auto min-h-screen relative" style="background:#0F172A">
+
+  <!-- Link retour -->
+  <div class="px-4 pt-3">
+    <a href="00-index.html" class="text-text-dim text-sm hover:text-accent transition-colors">&larr; Prototype</a>
+  </div>
+
+  <!-- Header -->
+  <div class="bg-bg-card px-4 py-4 border-b border-white/10 flex items-center gap-3">
+    <div class="w-9 h-9 rounded-lg bg-accent/20 flex items-center justify-center" style="box-shadow:0 0 10px rgba(59,130,246,0.3)">
+      <i data-lucide="bot" class="w-5 h-5 text-accent"></i>
+    </div>
+    <div>
+      <h1 class="text-lg font-heading font-bold">ClawBot</h1>
+      <p class="text-text-muted text-xs">Assistant conducteur de travaux</p>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  <div class="px-4 pt-4 pb-[160px] space-y-4">
+
+    <!-- Bot message 1 -->
+    <div class="flex gap-3">
+      <div class="w-7 h-7 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0 mt-1">
+        <i data-lucide="bot" class="w-4 h-4 text-accent"></i>
+      </div>
+      <div class="card-cockpit glow-accent p-3 max-w-[85%]" style="border-left:3px solid #3B82F6">
+        <div class="text-sm">Bonjour Marc ! Voici le point du matin sur vos chantiers :</div>
+        <div class="text-sm mt-2">
+          <div class="flex items-center gap-2 mt-1">
+            <div class="w-2 h-2 rounded-full bg-danger"></div>
+            <span><strong>Residence Les Ormes</strong> — <span class="font-mono text-danger">2 blocages</span>, retard <span class="font-mono">3j</span></span>
+          </div>
+          <div class="flex items-center gap-2 mt-1">
+            <div class="w-2 h-2 rounded-full bg-warning"></div>
+            <span><strong>Clinique Pasteur</strong> — derive meteo sur toiture</span>
+          </div>
+          <div class="flex items-center gap-2 mt-1">
+            <div class="w-2 h-2 rounded-full bg-success"></div>
+            <span><strong>Ecole Jules Ferry</strong> — dans les temps</span>
+          </div>
+        </div>
+        <div class="text-xs text-text-dim mt-2 font-mono">08:02</div>
+      </div>
+    </div>
+
+    <!-- User message -->
+    <div class="flex justify-end">
+      <div class="bg-accent text-white rounded-2xl rounded-br-sm px-4 py-2.5 max-w-[80%]">
+        <div class="text-sm">Peux-tu decaler la tache "Pose menuiseries ext." au 10/04 et l'assigner a Leroy ?</div>
+        <div class="text-xs text-white/60 mt-1 text-right font-mono">08:05</div>
+      </div>
+    </div>
+
+    <!-- Bot message 2 avec actions -->
+    <div class="flex gap-3">
+      <div class="w-7 h-7 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0 mt-1">
+        <i data-lucide="bot" class="w-4 h-4 text-accent"></i>
+      </div>
+      <div class="card-cockpit glow-accent p-3 max-w-[85%]" style="border-left:3px solid #3B82F6">
+        <div class="text-sm">Je vais effectuer les modifications suivantes :</div>
+        <div class="mt-2 bg-bg-elevated rounded-lg p-2.5 text-sm space-y-1">
+          <div class="flex items-center gap-2">
+            <i data-lucide="calendar" class="w-3.5 h-3.5 text-accent"></i>
+            <span>Date debut : <span class="font-mono">08/04</span> → <span class="font-mono text-accent">10/04</span></span>
+          </div>
+          <div class="flex items-center gap-2">
+            <i data-lucide="user" class="w-3.5 h-3.5 text-accent"></i>
+            <span>Assignation : Non affecte → <span class="text-accent">A. Leroy</span></span>
+          </div>
+          <div class="flex items-center gap-2">
+            <i data-lucide="building-2" class="w-3.5 h-3.5 text-text-muted"></i>
+            <span class="text-text-muted">Chantier : Residence Les Ormes</span>
+          </div>
+        </div>
+        <!-- Boutons dans la bulle -->
+        <div class="flex gap-2 mt-3">
+          <button class="btn-cockpit flex-1 py-2 bg-success text-white text-xs flex items-center justify-center gap-1.5">
+            <i data-lucide="check" class="w-3.5 h-3.5"></i>
+            Confirmer
+          </button>
+          <button class="btn-cockpit flex-1 py-2 bg-bg-card text-text-muted text-xs flex items-center justify-center gap-1.5">
+            <i data-lucide="x" class="w-3.5 h-3.5"></i>
+            Annuler
+          </button>
+        </div>
+        <div class="text-xs text-text-dim mt-2 font-mono">08:05</div>
+      </div>
+    </div>
+
+    <!-- Indicateur streaming -->
+    <div class="flex gap-3">
+      <div class="w-7 h-7 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0 mt-1">
+        <i data-lucide="bot" class="w-4 h-4 text-accent"></i>
+      </div>
+      <div class="card-cockpit p-3" style="border-left:3px solid #3B82F6">
+        <div class="flex items-center gap-1.5 py-1">
+          <div class="w-2 h-2 rounded-full bg-accent dot-pulse"></div>
+          <div class="w-2 h-2 rounded-full bg-accent dot-pulse"></div>
+          <div class="w-2 h-2 rounded-full bg-accent dot-pulse"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Input bar -->
+  <div class="fixed bottom-[60px] left-1/2 -translate-x-1/2 w-full max-w-[390px] px-4 py-3 bg-bg border-t border-white/10" style="z-index:45">
+    <div class="flex items-center gap-2">
+      <input type="text" placeholder="Demander a ClawBot..." class="flex-1 bg-bg-card border border-white/10 rounded-xl px-4 py-3 text-sm text-text placeholder:text-text-dim focus:outline-none focus:border-accent/50" style="box-shadow:inset 0 0 6px rgba(0,0,0,0.2)">
+      <button class="w-11 h-11 rounded-full bg-accent flex items-center justify-center flex-shrink-0" style="box-shadow:0 0 12px rgba(59,130,246,0.4)">
+        <i data-lucide="send" class="w-5 h-5 text-white"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Bottom Nav -->
+  <nav class="bottom-nav">
+    <a href="08-conducteur-chantiers.html">
+      <i data-lucide="building-2" class="w-5 h-5"></i>
+      <span>Chantiers</span>
+    </a>
+    <a href="10-conducteur-taches.html">
+      <i data-lucide="check-square" class="w-5 h-5"></i>
+      <span>Taches</span>
+    </a>
+    <a href="11-conducteur-cr.html">
+      <i data-lucide="file-text" class="w-5 h-5"></i>
+      <span>CR</span>
+    </a>
+    <a href="12-conducteur-alertes.html" class="relative">
+      <i data-lucide="bell" class="w-5 h-5"></i>
+      <span>Alertes</span>
+      <span class="absolute -top-1 right-0 w-4 h-4 rounded-full bg-danger text-white text-[9px] font-bold flex items-center justify-center" style="box-shadow:0 0 8px rgba(239,68,68,0.5)">3</span>
+    </a>
+    <a href="13-conducteur-clawbot.html" class="active">
+      <i data-lucide="bot" class="w-5 h-5"></i>
+      <span>ClawBot</span>
+    </a>
+  </nav>
+
+</div>
+
+<script>lucide.createIcons();</script>
+</body>
+</html>

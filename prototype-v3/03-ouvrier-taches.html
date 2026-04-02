@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>ClawBTP — Mes tâches</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { heading: ['Lexend', 'sans-serif'], sans: ['Source Sans 3', 'sans-serif'] },
+          colors: {
+            primary: { DEFAULT: '#78350F', light: '#92400E', dark: '#451A03' },
+            accent: '#C2703E',
+            terra: '#B45309',
+            sand: { DEFAULT: '#FEF3C7', light: '#FFFBEB', dark: '#FDE68A' },
+            cream: '#FAF6F1',
+            warmgray: { DEFAULT: '#78716C', light: '#A8A29E', dark: '#57534E' },
+            danger: { DEFAULT: '#DC2626', bg: '#FEE2E2' },
+            warning: { DEFAULT: '#D97706', bg: '#FEF3C7' },
+            success: { DEFAULT: '#15803D', bg: '#DCFCE7' },
+            surface: '#F5F0E8',
+            text: { DEFAULT: '#292524', muted: '#78716C', light: '#A8A29E' },
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    * { touch-action: manipulation; }
+    body { overscroll-behavior: contain; min-height: 100vh; min-height: 100dvh; background: #FAF6F1; font-family: 'Source Sans 3', sans-serif; color: #292524; }
+    .card-warm { background: #fff; border: 1px solid #E7E0D6; border-radius: 14px; box-shadow: 0 2px 8px rgba(120,53,15,0.08); transition: box-shadow 200ms, transform 200ms; }
+    .card-warm:active { box-shadow: 0 1px 3px rgba(120,53,15,0.1); transform: translateY(1px); }
+    .btn-warm { border: none; border-radius: 12px; font-weight: 600; font-family: 'Lexend', sans-serif; min-height: 56px; min-width: 56px; box-shadow: 0 2px 8px rgba(120,53,15,0.15); transition: all 150ms; cursor: pointer; }
+    .btn-warm:active { transform: translateY(2px); box-shadow: 0 1px 3px rgba(120,53,15,0.1); }
+    .badge-warm { border-radius: 8px; padding: 4px 12px; font-weight: 600; font-size: 13px; }
+    .progress-warm { height: 10px; border-radius: 5px; overflow: hidden; }
+    .progress-fill { height: 100%; border-radius: 5px; }
+    .border-left-accent { border-left: 4px solid #C2703E; border-radius: 14px; }
+    .border-left-danger { border-left: 4px solid #DC2626; border-radius: 14px; }
+    .border-left-success { border-left: 4px solid #15803D; border-radius: 14px; }
+    .border-left-warmgray { border-left: 4px solid #A8A29E; border-radius: 14px; }
+  </style>
+</head>
+<body>
+  <div class="max-w-[375px] mx-auto min-h-screen bg-cream relative">
+    <!-- Retour discret -->
+    <div class="absolute top-3 left-4 z-20">
+      <a href="00-index.html" class="text-white/70 text-sm flex items-center gap-1 no-underline">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+        Retour
+      </a>
+    </div>
+
+    <!-- Header terracotta -->
+    <div class="bg-accent px-5 pt-12 pb-6" style="border-radius: 0 0 20px 20px;">
+      <!-- Nom chantier + statut -->
+      <div class="flex items-center justify-between mb-3">
+        <h1 class="font-heading text-lg font-bold text-white">Leclerc — Mérignac</h1>
+        <span class="flex items-center gap-1.5 text-white/80 text-xs font-medium">
+          <span class="w-2 h-2 rounded-full bg-green-400 inline-block"></span>
+          En ligne
+        </span>
+      </div>
+      <!-- Nom ouvrier -->
+      <p class="text-white/80 text-sm mb-2">Mohamed B.</p>
+      <!-- Barre de progression -->
+      <div class="progress-warm" style="background: rgba(255,255,255,0.25);">
+        <div class="progress-fill bg-white" style="width: 25%;"></div>
+      </div>
+      <p class="text-white/70 text-xs mt-1.5">1 sur 4 terminées</p>
+    </div>
+
+    <!-- Liste des tâches -->
+    <div class="px-4 pt-5 pb-28 flex flex-col gap-2.5">
+
+      <!-- Tâche terminée -->
+      <a href="04-ouvrier-tache-detail.html" class="card-warm border-left-success p-4 flex items-center gap-3 no-underline text-text" style="background: #f7fdf9;">
+        <div class="w-10 h-10 rounded-xl bg-success/10 flex items-center justify-center flex-shrink-0">
+          <svg class="w-5 h-5 text-success" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="font-heading font-semibold text-sm text-text-muted line-through">Pose plinthes salle 102</p>
+          <p class="text-text-light text-xs mt-0.5">RDC — Terminée ce matin</p>
+        </div>
+        <svg class="w-4 h-4 text-text-light flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+      </a>
+
+      <!-- Tâche en cours -->
+      <a href="04-ouvrier-tache-detail.html" class="card-warm border-left-accent p-4 flex items-center gap-3 no-underline text-text" style="background: #FFFBEB;">
+        <div class="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center flex-shrink-0">
+          <svg class="w-5 h-5 text-accent" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polygon points="10,8 16,12 10,16" fill="currentColor" stroke="none"/></svg>
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="font-heading font-semibold text-sm">Carrelage cuisine 201</p>
+          <p class="text-text-muted text-xs mt-0.5">Étage 2 — Commencée hier</p>
+        </div>
+        <svg class="w-4 h-4 text-text-light flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+      </a>
+
+      <!-- Tâche à faire -->
+      <a href="04-ouvrier-tache-detail.html" class="card-warm p-4 flex items-center gap-3 no-underline text-text" style="border-left: 4px solid #A8A29E; border-radius: 14px;">
+        <div class="w-10 h-10 rounded-xl bg-surface flex items-center justify-center flex-shrink-0">
+          <svg class="w-5 h-5 text-warmgray-light" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg>
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="font-heading font-semibold text-sm">Joints salle de bain 203</p>
+          <p class="text-text-muted text-xs mt-0.5">Étage 2 — Prévu demain</p>
+        </div>
+        <svg class="w-4 h-4 text-text-light flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+      </a>
+
+      <!-- Tâche bloquée -->
+      <a href="04-ouvrier-tache-detail.html" class="card-warm border-left-danger p-4 flex items-center gap-3 no-underline text-text" style="background: #fef2f2;">
+        <div class="w-10 h-10 rounded-xl bg-danger/10 flex items-center justify-center flex-shrink-0">
+          <svg class="w-5 h-5 text-danger" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="font-heading font-semibold text-sm">Peinture couloir étage 1</p>
+          <p class="text-text-muted text-xs mt-0.5">Étage 1 — Matériel manquant</p>
+        </div>
+        <span class="badge-warm bg-danger/10 text-danger text-xs flex-shrink-0">Bloqué</span>
+      </a>
+
+    </div>
+
+    <!-- FAB Camera -->
+    <div class="fixed bottom-6 right-6 z-30" style="max-width: 375px;">
+      <a href="05-ouvrier-photo.html" class="btn-warm bg-accent text-white w-14 h-14 rounded-full flex items-center justify-center no-underline" style="box-shadow: 0 4px 16px rgba(194,112,62,0.35);">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      </a>
+    </div>
+  </div>
+</body>
+</html>

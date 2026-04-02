@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>ClawBTP — Photo</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { heading: ['Lexend', 'sans-serif'], sans: ['Source Sans 3', 'sans-serif'] },
+          colors: {
+            primary: { DEFAULT: '#78350F', light: '#92400E', dark: '#451A03' },
+            accent: '#C2703E',
+            terra: '#B45309',
+            sand: { DEFAULT: '#FEF3C7', light: '#FFFBEB', dark: '#FDE68A' },
+            cream: '#FAF6F1',
+            warmgray: { DEFAULT: '#78716C', light: '#A8A29E', dark: '#57534E' },
+            danger: { DEFAULT: '#DC2626', bg: '#FEE2E2' },
+            warning: { DEFAULT: '#D97706', bg: '#FEF3C7' },
+            success: { DEFAULT: '#15803D', bg: '#DCFCE7' },
+            surface: '#F5F0E8',
+            text: { DEFAULT: '#292524', muted: '#78716C', light: '#A8A29E' },
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    * { touch-action: manipulation; }
+    body { overscroll-behavior: contain; min-height: 100vh; min-height: 100dvh; background: #FAF6F1; font-family: 'Source Sans 3', sans-serif; color: #292524; }
+    .card-warm { background: #fff; border: 1px solid #E7E0D6; border-radius: 14px; box-shadow: 0 2px 8px rgba(120,53,15,0.08); transition: box-shadow 200ms, transform 200ms; }
+    .btn-warm { border: none; border-radius: 12px; font-weight: 600; font-family: 'Lexend', sans-serif; min-height: 56px; min-width: 56px; box-shadow: 0 2px 8px rgba(120,53,15,0.15); transition: all 150ms; cursor: pointer; }
+    .btn-warm:active { transform: translateY(2px); box-shadow: 0 1px 3px rgba(120,53,15,0.1); }
+  </style>
+</head>
+<body>
+  <div class="max-w-[375px] mx-auto min-h-screen bg-cream">
+    <!-- Header -->
+    <div class="px-5 pt-4 flex items-center gap-3">
+      <a href="04-ouvrier-tache-detail.html" class="w-10 h-10 rounded-xl bg-surface flex items-center justify-center no-underline" style="box-shadow: 0 2px 6px rgba(120,53,15,0.08);">
+        <svg class="w-5 h-5 text-text-muted" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+      </a>
+      <a href="00-index.html" class="text-text-muted text-sm no-underline">Retour</a>
+    </div>
+
+    <div class="px-5 pt-5">
+      <h1 class="font-heading text-xl font-bold text-text">Ajouter une photo</h1>
+      <p class="text-text-muted text-sm mt-1">Carrelage cuisine 201</p>
+    </div>
+
+    <!-- Boutons capture -->
+    <div class="px-5 pt-5 flex flex-col gap-3">
+      <button class="btn-warm bg-accent text-white w-full flex items-center justify-center gap-3 text-base px-6">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        Prendre une photo
+      </button>
+      <button class="btn-warm bg-surface text-primary w-full flex items-center justify-center gap-3 text-base px-6">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        Depuis la galerie
+      </button>
+    </div>
+
+    <!-- Zone aperçu -->
+    <div class="px-5 pt-5">
+      <div class="card-warm bg-surface aspect-[4/3] flex flex-col items-center justify-center gap-3">
+        <svg class="w-12 h-12 text-warmgray-light" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        <p class="text-text-light text-sm">Aperçu de la photo</p>
+      </div>
+    </div>
+
+    <!-- Type de photo -->
+    <div class="px-5 pt-5">
+      <p class="text-text-muted text-sm font-semibold mb-3 uppercase tracking-wide">Type de photo</p>
+      <div class="flex gap-2">
+        <button class="flex-1 py-2.5 px-3 rounded-xl text-sm font-semibold bg-accent text-white" style="font-family: 'Lexend', sans-serif;">Avancement</button>
+        <button class="flex-1 py-2.5 px-3 rounded-xl text-sm font-semibold bg-surface text-text-muted" style="font-family: 'Lexend', sans-serif;">Problème</button>
+        <button class="flex-1 py-2.5 px-3 rounded-xl text-sm font-semibold bg-surface text-text-muted" style="font-family: 'Lexend', sans-serif;">Finition</button>
+      </div>
+    </div>
+
+    <!-- Commentaire -->
+    <div class="px-5 pt-5">
+      <textarea rows="3" placeholder="Ajoute un commentaire si tu veux..." class="w-full bg-surface border border-warmgray-light/30 text-text text-base p-3 resize-none focus:outline-none focus:border-accent" style="border-radius: 12px; font-family: 'Source Sans 3', sans-serif;"></textarea>
+    </div>
+
+    <!-- Bouton envoyer -->
+    <div class="px-5 pt-5 pb-8">
+      <button class="btn-warm bg-accent text-white w-full flex items-center justify-center gap-3 text-base">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        Envoyer
+      </button>
+    </div>
+  </div>
+</body>
+</html>

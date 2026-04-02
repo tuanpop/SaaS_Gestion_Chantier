@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claw — Alertes</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #F8FAFC;
+    color: #0F172A;
+    display: flex;
+    justify-content: center;
+    min-height: 100vh;
+  }
+  .mobile-frame {
+    width: 100%;
+    max-width: 390px;
+    min-height: 100vh;
+    background: #F8FAFC;
+    position: relative;
+    padding-bottom: 80px;
+  }
+  h1, h2, h3, h4 { font-family: 'Plus Jakarta Sans', sans-serif; }
+
+  .header {
+    background: linear-gradient(135deg, #6366F1, #8B5CF6);
+    color: white;
+    padding: 48px 20px 20px;
+    border-radius: 0 0 20px 20px;
+  }
+  .header-top {
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .header h1 { font-size: 22px; font-weight: 700; }
+  .header-sub { font-size: 13px; opacity: 0.85; margin-top: 4px; }
+  .notif-icon {
+    position: relative;
+    width: 40px; height: 40px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .notif-icon i { width: 20px; height: 20px; color: white; }
+  .notif-count {
+    position: absolute; top: -2px; right: -2px;
+    width: 20px; height: 20px;
+    background: #EF4444; color: white;
+    font-size: 11px; font-weight: 700;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    border: 2px solid #8B5CF6;
+  }
+
+  .content { padding: 20px 16px; }
+
+  .section-label {
+    font-size: 12px; font-weight: 600; color: #94A3B8;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    margin-bottom: 10px;
+  }
+  .section-label:not(:first-child) { margin-top: 20px; }
+
+  /* Alert card */
+  .alert-card {
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    display: flex; gap: 12px;
+    border-left: 4px solid transparent;
+  }
+  .alert-card.danger { border-left-color: #EF4444; }
+  .alert-card.warning { border-left-color: #F59E0B; }
+  .alert-card.success { border-left-color: #10B981; }
+
+  .alert-icon {
+    width: 40px; height: 40px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .alert-icon.danger { background: #FEF2F2; color: #EF4444; }
+  .alert-icon.warning { background: #FFFBEB; color: #F59E0B; }
+  .alert-icon.success { background: #ECFDF5; color: #10B981; }
+  .alert-icon i { width: 20px; height: 20px; }
+
+  .alert-content { flex: 1; min-width: 0; }
+  .alert-title { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+  .alert-desc { font-size: 12px; color: #475569; line-height: 1.4; margin-bottom: 4px; }
+  .alert-time { font-size: 11px; color: #94A3B8; }
+
+  /* Bottom Nav */
+  .bottom-nav {
+    position: fixed;
+    bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 100%; max-width: 390px;
+    background: #FFFFFF;
+    border-top: 1px solid #E2E8F0;
+    display: flex; z-index: 50;
+    padding: 6px 0 env(safe-area-inset-bottom, 8px);
+  }
+  .nav-tab {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; gap: 2px; padding: 6px 0;
+    text-decoration: none; color: #94A3B8;
+    font-size: 10px; font-weight: 500; position: relative;
+  }
+  .nav-tab.active { color: #6366F1; }
+  .nav-tab.active::before {
+    content: '';
+    position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+    width: 24px; height: 3px; background: #6366F1; border-radius: 0 0 3px 3px;
+  }
+  .nav-tab i { width: 22px; height: 22px; }
+</style>
+</head>
+<body>
+<a href="00-index.html" style="position:fixed;top:12px;left:12px;z-index:100;background:white;color:#475569;font-size:12px;padding:6px 12px;border-radius:20px;text-decoration:none;display:flex;align-items:center;gap:4px;box-shadow:0 2px 8px rgba(0,0,0,0.1);font-family:'Inter',sans-serif">
+  <i data-lucide="arrow-left" style="width:14px;height:14px"></i> Index
+</a>
+
+<div class="mobile-frame">
+  <div class="header">
+    <div class="header-top">
+      <div>
+        <h1>Alertes</h1>
+        <div class="header-sub">5 nouvelles notifications</div>
+      </div>
+      <div class="notif-icon">
+        <i data-lucide="bell"></i>
+        <span class="notif-count">5</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="section-label">Aujourd'hui</div>
+
+    <!-- Blocage critique -->
+    <div class="alert-card danger">
+      <div class="alert-icon danger"><i data-lucide="alert-octagon"></i></div>
+      <div class="alert-content">
+        <div class="alert-title">Blocage critique</div>
+        <div class="alert-desc">Livraison menuiseries AluPro reportée. Pose carrelage RDC impactée — Les Oliviers.</div>
+        <div class="alert-time">Il y a 2h</div>
+      </div>
+    </div>
+
+    <!-- Jalon dépassé -->
+    <div class="alert-card danger">
+      <div class="alert-icon danger"><i data-lucide="flag"></i></div>
+      <div class="alert-content">
+        <div class="alert-title">Jalon dépassé</div>
+        <div class="alert-desc">Étape "Menuiseries posées" prévue le 1er avril — toujours en attente. Rés. Les Oliviers.</div>
+        <div class="alert-time">Il y a 4h</div>
+      </div>
+    </div>
+
+    <!-- Budget dérivé -->
+    <div class="alert-card warning">
+      <div class="alert-icon warning"><i data-lucide="trending-up"></i></div>
+      <div class="alert-content">
+        <div class="alert-title">Budget dérivé +12%</div>
+        <div class="alert-desc">Le budget Bureau Mistral dépasse les prévisions de 12%. Principalement dû aux cloisons.</div>
+        <div class="alert-time">Il y a 6h</div>
+      </div>
+    </div>
+
+    <div class="section-label">Hier</div>
+
+    <!-- Météo -->
+    <div class="alert-card warning">
+      <div class="alert-icon warning"><i data-lucide="cloud-rain"></i></div>
+      <div class="alert-content">
+        <div class="alert-title">Alerte météo</div>
+        <div class="alert-desc">Fortes pluies prévues demain. Travaux extérieurs Maison Dubois potentiellement impactés.</div>
+        <div class="alert-time">Hier, 17h30</div>
+      </div>
+    </div>
+
+    <!-- Tâche terminée -->
+    <div class="alert-card success">
+      <div class="alert-icon success"><i data-lucide="check-circle"></i></div>
+      <div class="alert-content">
+        <div class="alert-title">Tâche terminée</div>
+        <div class="alert-desc">Isolation combles terminée par Thomas Durand — Rés. Les Oliviers. En avance de 2 jours.</div>
+        <div class="alert-time">Hier, 16h00</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Nav -->
+  <nav class="bottom-nav">
+    <a href="08-conducteur-chantiers.html" class="nav-tab">
+      <i data-lucide="folder-kanban"></i><span>Projets</span>
+    </a>
+    <a href="10-conducteur-taches.html" class="nav-tab">
+      <i data-lucide="check-square"></i><span>Tâches</span>
+    </a>
+    <a href="11-conducteur-cr.html" class="nav-tab">
+      <i data-lucide="file-text"></i><span>CR</span>
+    </a>
+    <a href="12-conducteur-alertes.html" class="nav-tab active">
+      <i data-lucide="bell"></i><span>Alertes</span>
+    </a>
+    <a href="13-conducteur-clawbot.html" class="nav-tab">
+      <i data-lucide="sparkles"></i><span>Bot</span>
+    </a>
+  </nav>
+</div>
+
+<script>lucide.createIcons();</script>
+</body>
+</html>

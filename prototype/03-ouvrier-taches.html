@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>ClawBTP — Mes tâches</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            heading: ['Outfit', 'sans-serif'],
+            sans: ['Public Sans', 'sans-serif']
+          },
+          colors: {
+            primary: { DEFAULT: '#334155', light: '#475569', dark: '#1E293B' },
+            accent: '#F97316',
+            danger: { DEFAULT: '#DC2626', bg: '#FEE2E2' },
+            warning: { DEFAULT: '#F59E0B', bg: '#FEF3C7' },
+            success: { DEFAULT: '#22C55E', bg: '#DCFCE7' },
+            surface: '#F1F5F9',
+            cream: '#FAFAF8',
+            muted: '#64748B',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    * { touch-action: manipulation; }
+    body {
+      overscroll-behavior: contain;
+      min-height: 100vh; min-height: 100dvh;
+      background: #FAFAF8;
+      font-family: 'Public Sans', sans-serif;
+      color: #0F172A;
+    }
+    .card-brutal {
+      border: 2px solid #000;
+      box-shadow: 4px 4px 0 #000;
+      border-radius: 6px;
+      background: #fff;
+      transition: transform 100ms, box-shadow 100ms;
+    }
+    .card-brutal:active {
+      box-shadow: 2px 2px 0 #000;
+      transform: translate(2px, 2px);
+    }
+    .btn-brutal {
+      border: 2px solid #000;
+      box-shadow: 3px 3px 0 #000;
+      border-radius: 6px;
+      min-height: 56px;
+      min-width: 56px;
+      font-weight: 700;
+      font-size: 18px;
+      font-family: 'Outfit', sans-serif;
+      transition: transform 100ms, box-shadow 100ms;
+      cursor: pointer;
+    }
+    .btn-brutal:active {
+      box-shadow: 1px 1px 0 #000;
+      transform: translate(2px, 2px);
+    }
+    .badge { border: 2px solid; border-radius: 4px; padding: 2px 10px; font-weight: 600; font-size: 14px; }
+    .badge-danger { background: #FEE2E2; border-color: #DC2626; color: #DC2626; }
+    .badge-success { background: #DCFCE7; border-color: #22C55E; color: #166534; }
+    .badge-warning { background: #FEF3C7; border-color: #F59E0B; color: #92400E; }
+    .badge-muted { background: #F1F5F9; border-color: #94A3B8; color: #64748B; }
+
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    .pulse-green { animation: pulse-dot 2s infinite; }
+
+    .fab-brutal {
+      border: 2px solid #000;
+      box-shadow: 4px 4px 0 #000;
+      border-radius: 50%;
+      width: 56px;
+      height: 56px;
+      transition: transform 100ms, box-shadow 100ms;
+      cursor: pointer;
+    }
+    .fab-brutal:active {
+      box-shadow: 2px 2px 0 #000;
+      transform: translate(2px, 2px);
+    }
+  </style>
+</head>
+<body>
+  <div class="max-w-[375px] mx-auto min-h-screen bg-cream relative">
+    <!-- Retour proto -->
+    <a href="00-index.html" class="block px-4 pt-3 text-sm text-white/60 hover:underline relative z-10">&larr; Retour au prototype</a>
+
+    <!-- Header -->
+    <div class="bg-primary-dark text-white px-4 py-4 -mt-8 pt-12">
+      <div class="flex items-center justify-between mb-3">
+        <div>
+          <h1 class="font-heading text-xl font-bold">Leclerc</h1>
+          <div class="flex items-center gap-2 mt-1">
+            <p class="text-sm text-white/80">Mohamed</p>
+            <span class="w-2.5 h-2.5 rounded-full bg-success inline-block pulse-green"></span>
+          </div>
+        </div>
+        <a href="07-ouvrier-clawbot.html" class="w-14 h-14 min-w-[56px] rounded-md border-2 border-white/30 flex items-center justify-center">
+          <i data-lucide="bot" class="w-6 h-6 text-white"></i>
+        </a>
+      </div>
+      <!-- Barre progression -->
+      <div>
+        <div class="flex items-center justify-between text-sm mb-1.5">
+          <span class="text-white/80">Progression</span>
+          <span class="font-heading font-bold">1/4 terminées</span>
+        </div>
+        <div class="w-full h-3 bg-white/20 rounded-sm border border-white/30">
+          <div class="h-full bg-success rounded-sm" style="width: 25%;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tâches -->
+    <div class="px-4 pt-4 pb-24 flex flex-col gap-3">
+
+      <!-- Tâche terminée -->
+      <a href="04-ouvrier-tache-detail.html" class="card-brutal p-4 flex items-center gap-3 border-l-[4px] border-l-success bg-success-bg no-underline text-inherit min-h-[72px]">
+        <div class="w-10 h-10 min-w-[40px] flex items-center justify-center">
+          <i data-lucide="check-circle-2" class="w-7 h-7 text-success"></i>
+        </div>
+        <div class="flex-1">
+          <p class="font-heading font-bold text-base line-through text-muted">Démolition cloison RDC</p>
+          <p class="text-sm text-muted mt-0.5">Terminé hier</p>
+        </div>
+      </a>
+
+      <!-- Tâche en cours -->
+      <a href="04-ouvrier-tache-detail.html" class="card-brutal p-4 flex items-center gap-3 border-l-[4px] border-l-accent no-underline text-inherit min-h-[72px]" style="background: rgba(254,243,199,0.4);">
+        <div class="w-10 h-10 min-w-[40px] flex items-center justify-center">
+          <i data-lucide="clock" class="w-7 h-7 text-accent"></i>
+        </div>
+        <div class="flex-1">
+          <p class="font-heading font-bold text-base">Pose carrelage cuisine</p>
+          <p class="text-sm text-muted mt-0.5">Deadline : demain</p>
+        </div>
+      </a>
+
+      <!-- Tâche à faire -->
+      <a href="04-ouvrier-tache-detail.html" class="card-brutal p-4 flex items-center gap-3 border-l-[4px] border-l-gray-300 no-underline text-inherit min-h-[72px]">
+        <div class="w-10 h-10 min-w-[40px] flex items-center justify-center">
+          <i data-lucide="circle" class="w-7 h-7 text-gray-400"></i>
+        </div>
+        <div class="flex-1">
+          <p class="font-heading font-bold text-base">Ragréage sol salle de bain</p>
+          <p class="text-sm text-muted mt-0.5">Pas encore commencé</p>
+        </div>
+      </a>
+
+      <!-- Tâche bloquée -->
+      <a href="04-ouvrier-tache-detail.html" class="card-brutal p-4 flex items-center gap-3 border-l-[4px] border-l-danger bg-danger-bg no-underline text-inherit min-h-[72px]">
+        <div class="w-10 h-10 min-w-[40px] flex items-center justify-center">
+          <i data-lucide="alert-triangle" class="w-7 h-7 text-danger"></i>
+        </div>
+        <div class="flex-1">
+          <div class="flex items-center gap-2 flex-wrap">
+            <p class="font-heading font-bold text-base">Peinture hall d'entrée</p>
+            <span class="badge badge-danger text-xs">BLOQUÉ</span>
+          </div>
+          <p class="text-sm text-danger mt-0.5">Matériel manquant</p>
+        </div>
+      </a>
+    </div>
+
+    <!-- FAB photo -->
+    <div class="fixed bottom-0 left-0 right-0 flex justify-center pointer-events-none">
+      <div class="max-w-[375px] w-full relative">
+        <a href="05-ouvrier-photo.html" class="fab-brutal bg-accent flex items-center justify-center absolute bottom-6 right-4 pointer-events-auto">
+          <i data-lucide="camera" class="w-6 h-6 text-white"></i>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <script>lucide.createIcons();</script>
+</body>
+</html>

@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ClawBTP — Selecteur chantier</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            heading: ['Space Grotesk', 'sans-serif'],
+            sans: ['DM Sans', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace']
+          },
+          colors: {
+            bg: { DEFAULT: '#0F172A', card: '#1E293B', elevated: '#334155' },
+            accent: '#3B82F6',
+            danger: { DEFAULT: '#EF4444', glow: 'rgba(239,68,68,0.2)' },
+            warning: { DEFAULT: '#F59E0B', glow: 'rgba(245,158,11,0.2)' },
+            success: { DEFAULT: '#22C55E', glow: 'rgba(34,197,94,0.2)' },
+            text: { DEFAULT: '#F8FAFC', muted: '#94A3B8', dim: '#64748B' },
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    * { touch-action: manipulation; }
+    body {
+      overscroll-behavior: contain;
+      min-height: 100vh; min-height: 100dvh;
+      background: #0F172A;
+      font-family: 'DM Sans', sans-serif;
+      color: #F8FAFC;
+    }
+    .card-cockpit {
+      background: #1E293B;
+      border: 1px solid rgba(148,163,184,0.2);
+      border-radius: 12px;
+      transition: border-color 200ms, box-shadow 200ms;
+    }
+    .card-cockpit:active {
+      border-color: #3B82F6;
+      box-shadow: 0 0 12px rgba(59,130,246,0.3);
+    }
+    .glow-accent { box-shadow: 0 0 16px rgba(59,130,246,0.25); border-color: rgba(59,130,246,0.5); }
+    .card-selected {
+      border-color: rgba(59,130,246,0.5);
+      box-shadow: 0 0 16px rgba(59,130,246,0.25);
+    }
+    .badge-cockpit {
+      border-radius: 6px; padding: 3px 10px; font-weight: 600; font-size: 12px;
+      text-transform: uppercase; letter-spacing: 0.5px;
+    }
+  </style>
+</head>
+<body class="bg-bg">
+  <div class="max-w-[375px] mx-auto min-h-screen" style="background:#0F172A">
+    <!-- Retour -->
+    <div class="px-4 pt-4">
+      <a href="00-index.html" class="text-text-dim text-sm flex items-center gap-1">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+        Retour au prototype
+      </a>
+    </div>
+
+    <div class="px-6 pt-8 pb-6">
+      <!-- Header -->
+      <div class="mb-2">
+        <p class="text-text-muted text-sm mb-1">Bonjour Mohamed</p>
+        <h1 class="font-heading text-2xl font-bold">Sur quel chantier es-tu ?</h1>
+      </div>
+      <p class="text-text-dim text-sm mb-6">Selectionne ton chantier pour voir tes taches</p>
+
+      <!-- Chantiers -->
+      <div class="space-y-3">
+        <!-- Chantier 1 -->
+        <div class="card-cockpit p-4 cursor-pointer chantier-card" onclick="selectChantier(this)">
+          <div class="flex items-center gap-3">
+            <div class="w-1 self-stretch rounded-full bg-accent" style="box-shadow: 0 0 8px rgba(59,130,246,0.4);"></div>
+            <div class="w-11 h-11 rounded-lg bg-accent/20 flex items-center justify-center flex-shrink-0">
+              <svg class="w-5 h-5 text-accent" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M3 21h18M9 8h1M9 12h1M9 16h1M14 8h1M14 12h1M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"/>
+              </svg>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="font-heading font-semibold text-base">Leclerc — Merignac</p>
+              <p class="text-text-muted text-sm">12 rue du Commerce, 33700</p>
+            </div>
+            <span class="badge-cockpit bg-accent/20 text-accent font-mono">3</span>
+          </div>
+        </div>
+
+        <!-- Chantier 2 -->
+        <div class="card-cockpit p-4 cursor-pointer chantier-card" onclick="selectChantier(this)">
+          <div class="flex items-center gap-3">
+            <div class="w-1 self-stretch rounded-full bg-accent" style="box-shadow: 0 0 8px rgba(59,130,246,0.4);"></div>
+            <div class="w-11 h-11 rounded-lg bg-accent/20 flex items-center justify-center flex-shrink-0">
+              <svg class="w-5 h-5 text-accent" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M3 21h18M9 8h1M9 12h1M9 16h1M14 8h1M14 12h1M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"/>
+              </svg>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="font-heading font-semibold text-base">Residence Les Pins</p>
+              <p class="text-text-muted text-sm">45 av. de la Foret, 33600</p>
+            </div>
+            <span class="badge-cockpit bg-accent/20 text-accent font-mono">5</span>
+          </div>
+        </div>
+
+        <!-- Chantier 3 -->
+        <div class="card-cockpit p-4 cursor-pointer chantier-card" onclick="selectChantier(this)">
+          <div class="flex items-center gap-3">
+            <div class="w-1 self-stretch rounded-full bg-accent" style="box-shadow: 0 0 8px rgba(59,130,246,0.4);"></div>
+            <div class="w-11 h-11 rounded-lg bg-accent/20 flex items-center justify-center flex-shrink-0">
+              <svg class="w-5 h-5 text-accent" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M3 21h18M9 8h1M9 12h1M9 16h1M14 8h1M14 12h1M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"/>
+              </svg>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="font-heading font-semibold text-base">Bureau Thales</p>
+              <p class="text-text-muted text-sm">8 rue Laplace, 33400</p>
+            </div>
+            <span class="badge-cockpit bg-accent/20 text-accent font-mono">2</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function selectChantier(el) {
+      document.querySelectorAll('.chantier-card').forEach(c => {
+        c.classList.remove('card-selected');
+      });
+      el.classList.add('card-selected');
+      setTimeout(() => {
+        window.location.href = 'ouvrier-taches.html';
+      }, 300);
+    }
+  </script>
+</body>
+</html>

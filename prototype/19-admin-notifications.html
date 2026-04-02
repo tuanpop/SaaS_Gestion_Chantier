@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ClawBTP — Notifications</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            heading: ['Outfit', 'sans-serif'],
+            sans: ['Public Sans', 'sans-serif']
+          },
+          colors: {
+            primary: { DEFAULT: '#334155', light: '#475569', dark: '#1E293B' },
+            accent: '#F97316',
+            danger: { DEFAULT: '#DC2626', bg: '#FEE2E2' },
+            warning: { DEFAULT: '#F59E0B', bg: '#FEF3C7' },
+            success: { DEFAULT: '#22C55E', bg: '#DCFCE7' },
+            surface: '#F1F5F9',
+            cream: '#FAFAF8',
+            muted: '#64748B',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background: #FAFAF8;
+      font-family: 'Public Sans', sans-serif;
+      color: #0F172A;
+    }
+    .sidebar {
+      position: fixed; left: 0; top: 0; bottom: 0;
+      width: 240px; background: #1E293B; color: #fff;
+      padding: 24px 0; z-index: 40;
+      border-right: 2px solid #000;
+    }
+    .sidebar a {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 24px; color: #94A3B8; text-decoration: none;
+      font-weight: 500; font-size: 15px;
+      transition: background 150ms, color 150ms;
+    }
+    .sidebar a:hover { background: #334155; color: #fff; }
+    .sidebar a.active {
+      background: #F97316; color: #fff; font-weight: 700;
+      border-left: 4px solid #fff;
+    }
+    .main-content {
+      margin-left: 240px; padding: 32px; min-height: 100vh;
+    }
+    .card-brutal {
+      border: 2px solid #000;
+      box-shadow: 4px 4px 0 #000;
+      border-radius: 6px;
+      background: #fff;
+    }
+    .btn-brutal {
+      border: 2px solid #000;
+      box-shadow: 3px 3px 0 #000;
+      border-radius: 6px;
+      font-weight: 700;
+      font-family: 'Outfit', sans-serif;
+      transition: transform 100ms, box-shadow 100ms;
+      cursor: pointer;
+      padding: 10px 20px;
+    }
+    .btn-brutal:hover {
+      box-shadow: 2px 2px 0 #000;
+      transform: translate(1px, 1px);
+    }
+  </style>
+</head>
+<body>
+  <!-- Sidebar -->
+  <nav class="sidebar">
+    <div class="px-6 mb-2">
+      <a href="00-index.html" class="text-xs !text-[#64748B] !p-0 mb-4 hover:!text-white !font-normal"><i data-lucide="arrow-left" class="w-3 h-3"></i> Prototype</a>
+    </div>
+    <div class="px-6 mb-8">
+      <h1 class="font-heading font-[800] text-[22px]"><span class="text-accent">Claw</span>BTP</h1>
+    </div>
+    <a href="15-admin-dashboard.html"><i data-lucide="layout-dashboard" class="w-5 h-5"></i> Dashboard</a>
+    <a href="16-admin-chantier-detail.html"><i data-lucide="building-2" class="w-5 h-5"></i> Chantiers</a>
+    <a href="18-admin-equipe.html"><i data-lucide="users" class="w-5 h-5"></i> Équipe</a>
+    <a href="19-admin-notifications.html" class="active"><i data-lucide="bell" class="w-5 h-5"></i> Notifications</a>
+    <a href="20-admin-clawbot.html"><i data-lucide="bot" class="w-5 h-5"></i> ClawBot</a>
+  </nav>
+
+  <!-- Main Content -->
+  <div class="main-content max-w-3xl">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-6">
+      <h1 class="font-heading font-bold text-[28px]">Notifications</h1>
+      <button class="btn-brutal bg-white text-primary text-sm py-2 px-4 inline-flex items-center gap-2">
+        <i data-lucide="check-check" class="w-4 h-4"></i> Tout marquer comme lu
+      </button>
+    </div>
+
+    <!-- Aujourd'hui -->
+    <h3 class="font-heading font-semibold text-[16px] text-muted mb-3">Aujourd'hui</h3>
+    <div class="space-y-2 mb-6">
+      <!-- Non lue 1 -->
+      <div class="card-brutal !shadow-[3px_3px_0_#000] p-4 flex items-start gap-4 border-l-4 !border-l-accent bg-cream">
+        <div class="w-9 h-9 rounded-md bg-warning-bg flex items-center justify-center flex-shrink-0 border border-warning">
+          <i data-lucide="trending-up" class="w-5 h-5 text-warning"></i>
+        </div>
+        <div class="flex-1">
+          <p class="font-bold text-sm">Dérive détectée — Bertrand</p>
+          <p class="text-muted text-sm mt-0.5">Budget 73%, avancement 45%</p>
+        </div>
+        <span class="text-muted text-xs whitespace-nowrap mt-1">il y a 2h</span>
+      </div>
+      <!-- Non lue 2 -->
+      <div class="card-brutal !shadow-[3px_3px_0_#000] p-4 flex items-start gap-4 border-l-4 !border-l-accent bg-cream">
+        <div class="w-9 h-9 rounded-md bg-danger-bg flex items-center justify-center flex-shrink-0 border border-danger">
+          <i data-lucide="clock" class="w-5 h-5 text-danger"></i>
+        </div>
+        <div class="flex-1">
+          <p class="font-bold text-sm">2 tâches en retard — Martin</p>
+          <p class="text-muted text-sm mt-0.5">Jalon dépassé depuis hier</p>
+        </div>
+        <span class="text-muted text-xs whitespace-nowrap mt-1">il y a 4h</span>
+      </div>
+      <!-- Non lue 3 -->
+      <div class="card-brutal !shadow-[3px_3px_0_#000] p-4 flex items-start gap-4 border-l-4 !border-l-accent bg-cream">
+        <div class="w-9 h-9 rounded-md bg-danger-bg flex items-center justify-center flex-shrink-0 border border-danger">
+          <i data-lucide="alert-triangle" class="w-5 h-5 text-danger"></i>
+        </div>
+        <div class="flex-1">
+          <p class="font-bold text-sm">Blocage signalé par Mohamed — Leclerc</p>
+          <p class="text-muted text-sm mt-0.5">Manque de matériaux, photo ajoutée</p>
+        </div>
+        <span class="text-muted text-xs whitespace-nowrap mt-1">il y a 5h</span>
+      </div>
+    </div>
+
+    <!-- Hier -->
+    <h3 class="font-heading font-semibold text-[16px] text-muted mb-3">Hier</h3>
+    <div class="space-y-2 mb-6">
+      <!-- Lue -->
+      <div class="card-brutal !shadow-[3px_3px_0_#000] p-4 flex items-start gap-4">
+        <div class="w-9 h-9 rounded-md bg-blue-50 flex items-center justify-center flex-shrink-0 border border-blue-400">
+          <i data-lucide="file-text" class="w-5 h-5 text-blue-500"></i>
+        </div>
+        <div class="flex-1">
+          <p class="font-semibold text-sm text-muted">CR validé — Dupont — 01/04</p>
+          <p class="text-muted text-sm mt-0.5">Compte-rendu envoyé au client</p>
+        </div>
+        <span class="text-muted text-xs whitespace-nowrap mt-1">hier 18h</span>
+      </div>
+      <!-- Lue -->
+      <div class="card-brutal !shadow-[3px_3px_0_#000] p-4 flex items-start gap-4">
+        <div class="w-9 h-9 rounded-md bg-success-bg flex items-center justify-center flex-shrink-0 border border-success">
+          <i data-lucide="user-check" class="w-5 h-5 text-success"></i>
+        </div>
+        <div class="flex-1">
+          <p class="font-semibold text-sm text-muted">Karim a rejoint l'équipe</p>
+          <p class="text-muted text-sm mt-0.5">QR code scanné avec succès</p>
+        </div>
+        <span class="text-muted text-xs whitespace-nowrap mt-1">hier 14h</span>
+      </div>
+    </div>
+
+    <!-- Cette semaine -->
+    <h3 class="font-heading font-semibold text-[16px] text-muted mb-3">Cette semaine</h3>
+    <div class="space-y-2">
+      <div class="card-brutal !shadow-[3px_3px_0_#000] p-4 flex items-start gap-4">
+        <div class="w-9 h-9 rounded-md bg-blue-50 flex items-center justify-center flex-shrink-0 border border-blue-400">
+          <i data-lucide="file-text" class="w-5 h-5 text-blue-500"></i>
+        </div>
+        <div class="flex-1">
+          <p class="font-semibold text-sm text-muted">CR généré — Bertrand — 30/03</p>
+          <p class="text-muted text-sm mt-0.5">En attente de validation</p>
+        </div>
+        <span class="text-muted text-xs whitespace-nowrap mt-1">lun. 19h</span>
+      </div>
+      <div class="card-brutal !shadow-[3px_3px_0_#000] p-4 flex items-start gap-4">
+        <div class="w-9 h-9 rounded-md bg-success-bg flex items-center justify-center flex-shrink-0 border border-success">
+          <i data-lucide="check-circle" class="w-5 h-5 text-success"></i>
+        </div>
+        <div class="flex-1">
+          <p class="font-semibold text-sm text-muted">Tâche terminée — Moreau</p>
+          <p class="text-muted text-sm mt-0.5">Pose carrelage terminée par Ali</p>
+        </div>
+        <span class="text-muted text-xs whitespace-nowrap mt-1">lun. 16h</span>
+      </div>
+      <div class="card-brutal !shadow-[3px_3px_0_#000] p-4 flex items-start gap-4">
+        <div class="w-9 h-9 rounded-md bg-warning-bg flex items-center justify-center flex-shrink-0 border border-warning">
+          <i data-lucide="alert-triangle" class="w-5 h-5 text-warning"></i>
+        </div>
+        <div class="flex-1">
+          <p class="font-semibold text-sm text-muted">Budget 70% atteint — Leclerc</p>
+          <p class="text-muted text-sm mt-0.5">Seuil d'alerte franchi</p>
+        </div>
+        <span class="text-muted text-xs whitespace-nowrap mt-1">dim. 09h</span>
+      </div>
+    </div>
+  </div>
+
+  <script>lucide.createIcons();</script>
+</body>
+</html>

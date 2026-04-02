@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Claw — Nouveau projet</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', sans-serif; color: #0F172A; background: #F8FAFC; display: flex; min-height: 100vh; }
+
+    .sidebar { width: 240px; min-height: 100vh; background: linear-gradient(to bottom, #4338CA, #6D28D9); color: #fff; display: flex; flex-direction: column; position: fixed; top: 0; left: 0; bottom: 0; }
+    .sidebar-logo { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 24px; font-weight: 800; padding: 24px 24px 32px; }
+    .sidebar-nav { flex: 1; display: flex; flex-direction: column; gap: 2px; padding: 0 12px; }
+    .nav-item { display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-radius: 10px; font-size: 14px; font-weight: 500; color: rgba(255,255,255,0.7); text-decoration: none; transition: all .15s; }
+    .nav-item:hover { background: rgba(255,255,255,0.1); color: #fff; }
+    .nav-item.active { background: rgba(255,255,255,0.18); color: #fff; font-weight: 600; }
+    .sidebar-bottom { padding: 16px; border-top: 1px solid rgba(255,255,255,0.15); }
+    .sidebar-user { display: flex; align-items: center; gap: 10px; }
+    .user-avatar { width: 36px; height: 36px; border-radius: 10px; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; }
+    .user-info .name { font-size: 13px; font-weight: 600; }
+    .user-info .role { font-size: 11px; opacity: 0.65; }
+
+    .main { margin-left: 240px; flex: 1; padding: 32px; max-width: 800px; }
+    .back-link { display: inline-flex; align-items: center; gap: 6px; color: #94A3B8; font-size: 13px; text-decoration: none; margin-bottom: 16px; font-family: 'Inter', sans-serif; }
+
+    h1 { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 24px; font-weight: 700; margin-bottom: 4px; }
+    .subtitle { font-size: 14px; color: #475569; margin-bottom: 28px; }
+
+    .form-card { background: #fff; border: 1px solid #E2E8F0; border-radius: 16px; padding: 32px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+    .field { margin-bottom: 20px; }
+    .field label { display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px; }
+    .field input, .field select, .field textarea { width: 100%; padding: 11px 14px; border: 1px solid #E2E8F0; border-radius: 10px; font-size: 14px; font-family: 'Inter', sans-serif; outline: none; transition: border-color .15s; background: #fff; color: #0F172A; }
+    .field input:focus, .field select:focus, .field textarea:focus { border-color: #6366F1; box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
+    .field textarea { resize: vertical; min-height: 80px; }
+    .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .field .hint { font-size: 12px; color: #94A3B8; margin-top: 4px; }
+
+    .form-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 28px; padding-top: 20px; border-top: 1px solid #E2E8F0; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 11px 24px; border-radius: 10px; font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 600; border: none; cursor: pointer; transition: all .15s; }
+    .btn-outline { background: transparent; color: #475569; border: 1.5px solid #E2E8F0; }
+    .btn-outline:hover { border-color: #CBD5E1; }
+    .btn-primary { background: #6366F1; color: #fff; }
+    .btn-primary:hover { background: #4F46E5; }
+  </style>
+</head>
+<body>
+  <nav class="sidebar">
+    <div class="sidebar-logo">Claw</div>
+    <div class="sidebar-nav">
+      <a class="nav-item" href="15-admin-dashboard.html"><i data-lucide="bar-chart-3" style="width:18px;height:18px"></i> Dashboard</a>
+      <a class="nav-item active" href="16-admin-chantier-detail.html"><i data-lucide="folder-open" style="width:18px;height:18px"></i> Projets</a>
+      <a class="nav-item" href="18-admin-equipe.html"><i data-lucide="users" style="width:18px;height:18px"></i> Equipe</a>
+      <a class="nav-item" href="19-admin-notifications.html"><i data-lucide="bell" style="width:18px;height:18px"></i> Notifications</a>
+      <a class="nav-item" href="20-admin-clawbot.html"><i data-lucide="bot" style="width:18px;height:18px"></i> ClawBot</a>
+    </div>
+    <div class="sidebar-bottom">
+      <div class="sidebar-user">
+        <div class="user-avatar">FD</div>
+        <div class="user-info"><div class="name">Frederic Duval</div><div class="role">Admin</div></div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="main">
+    <a href="00-index.html" class="back-link"><i data-lucide="arrow-left" style="width:14px;height:14px"></i> Prototype</a>
+
+    <h1>Nouveau projet</h1>
+    <p class="subtitle">Remplissez les informations pour creer un nouveau projet</p>
+
+    <div class="form-card">
+      <div class="field">
+        <label>Nom du projet</label>
+        <input type="text" placeholder="Ex: Renovation Bureau Centre">
+      </div>
+
+      <div class="field">
+        <label>Client</label>
+        <input type="text" placeholder="Nom du client ou de la societe">
+      </div>
+
+      <div class="field">
+        <label>Responsable (Superviseur)</label>
+        <select>
+          <option value="">Selectionner un superviseur</option>
+          <option>Marc Leroy</option>
+          <option>Sophie Bernard</option>
+          <option>Thomas Garcia</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Adresse</label>
+        <input type="text" placeholder="Adresse du projet">
+      </div>
+
+      <div class="field">
+        <label>Budget previsionnel</label>
+        <input type="text" placeholder="Ex: 150 000">
+        <div class="hint">En euros, hors taxes</div>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label>Date debut</label>
+          <input type="date" value="2026-04-15">
+        </div>
+        <div class="field">
+          <label>Date fin prevue</label>
+          <input type="date" value="2026-09-30">
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Description</label>
+        <textarea placeholder="Description du projet, objectifs, particularites..."></textarea>
+      </div>
+
+      <div class="form-actions">
+        <a href="15-admin-dashboard.html" class="btn btn-outline">Annuler</a>
+        <button class="btn btn-primary"><i data-lucide="plus" style="width:16px;height:16px"></i> Creer le projet</button>
+      </div>
+    </div>
+  </div>
+
+  <script>lucide.createIcons();</script>
+</body>
+</html>

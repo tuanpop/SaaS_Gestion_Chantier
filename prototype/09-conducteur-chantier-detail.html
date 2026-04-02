@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ClawBTP — Conducteur — Détail Chantier</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            heading: ['Outfit', 'sans-serif'],
+            sans: ['Public Sans', 'sans-serif']
+          },
+          colors: {
+            primary: { DEFAULT: '#334155', light: '#475569', dark: '#1E293B' },
+            accent: '#F97316',
+            danger: { DEFAULT: '#DC2626', bg: '#FEE2E2' },
+            warning: { DEFAULT: '#F59E0B', bg: '#FEF3C7' },
+            success: { DEFAULT: '#22C55E', bg: '#DCFCE7' },
+            surface: '#F1F5F9',
+            cream: '#FAFAF8',
+            muted: '#64748B',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    * { touch-action: manipulation; }
+    body {
+      min-height: 100vh; min-height: 100dvh;
+      background: #FAFAF8;
+      font-family: 'Public Sans', sans-serif;
+      color: #0F172A;
+    }
+    .card-brutal {
+      border: 2px solid #000;
+      box-shadow: 3px 3px 0 #000;
+      border-radius: 6px;
+      background: #fff;
+      transition: transform 100ms, box-shadow 100ms;
+    }
+    .card-brutal:active {
+      box-shadow: 1px 1px 0 #000;
+      transform: translate(2px, 2px);
+    }
+    .btn-brutal {
+      border: 2px solid #000;
+      box-shadow: 3px 3px 0 #000;
+      border-radius: 6px;
+      font-weight: 700;
+      font-family: 'Outfit', sans-serif;
+      transition: transform 100ms, box-shadow 100ms;
+      cursor: pointer;
+    }
+    .btn-brutal:active {
+      box-shadow: 1px 1px 0 #000;
+      transform: translate(2px, 2px);
+    }
+    .badge { border: 2px solid; border-radius: 4px; padding: 2px 10px; font-weight: 600; font-size: 13px; display: inline-block; }
+    .badge-danger { background: #FEE2E2; border-color: #DC2626; color: #DC2626; }
+    .badge-success { background: #DCFCE7; border-color: #22C55E; color: #166534; }
+    .badge-warning { background: #FEF3C7; border-color: #F59E0B; color: #92400E; }
+    .badge-muted { background: #F1F5F9; border-color: #94A3B8; color: #64748B; }
+    .badge-primary { background: #E0F2FE; border-color: #0284C7; color: #0369A1; }
+    .bottom-nav {
+      position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+      width: 100%; max-width: 390px;
+      background: #fff; border-top: 2px solid #000;
+      display: flex; justify-content: space-around; align-items: center;
+      padding: 8px 0 env(safe-area-inset-bottom, 8px);
+      z-index: 50;
+    }
+    .bottom-nav a {
+      display: flex; flex-direction: column; align-items: center;
+      font-size: 11px; font-weight: 500; color: #64748B;
+      gap: 2px; text-decoration: none; padding: 4px 8px;
+      position: relative;
+    }
+    .bottom-nav a.active { color: #F97316; font-weight: 700; }
+    .bottom-nav a.active::after {
+      content: ''; position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
+      width: 24px; height: 3px; background: #F97316; border-radius: 2px;
+    }
+    .tab-btn { border: 2px solid #000; border-radius: 6px; font-family: 'Outfit', sans-serif; font-weight: 600; padding: 6px 16px; font-size: 14px; cursor: pointer; background: #fff; color: #000; transition: background 100ms, color 100ms; }
+    .tab-btn.active { background: #F97316; color: #fff; }
+  </style>
+</head>
+<body>
+  <a href="00-index.html" style="position:fixed;top:12px;left:12px;z-index:100;background:rgba(255,255,255,0.95);color:#475569;font-size:12px;padding:6px 12px;border-radius:20px;text-decoration:none;display:inline-flex;align-items:center;gap:4px;box-shadow:0 2px 8px rgba(0,0,0,0.1)">&larr; Index</a>
+  <div class="max-w-[390px] mx-auto min-h-screen bg-cream relative">
+
+    <!-- Header -->
+    <header class="bg-primary-dark px-4 py-4">
+      <a href="08-conducteur-chantiers.html" class="text-white/70 text-xs flex items-center gap-1 mb-1"><i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Retour</a>
+      <div class="flex items-center gap-2">
+        <h1 class="font-heading text-white text-lg font-bold flex-1">Extension Leclerc — Mérignac</h1>
+        <span class="badge badge-danger">En retard</span>
+      </div>
+    </header>
+
+    <!-- Tabs -->
+    <div class="flex gap-2 px-4 pt-3 pb-2">
+      <button class="tab-btn active" onclick="showTab('taches', this)">Tâches</button>
+      <button class="tab-btn" onclick="showTab('equipe', this)">Équipe</button>
+      <button class="tab-btn" onclick="showTab('photos', this)">Photos</button>
+    </div>
+
+    <!-- Tab Tâches -->
+    <main id="tab-taches" class="px-4 pt-2 pb-40 flex flex-col gap-3">
+
+      <!-- Tâche bloquée -->
+      <div class="card-brutal p-3 border-l-[4px] border-l-danger">
+        <div class="flex items-start justify-between">
+          <div class="flex-1">
+            <div class="font-heading font-semibold text-sm">Pose plinthes RDC</div>
+            <div class="text-muted text-xs">Assigné à Mohamed</div>
+            <div class="text-danger text-xs italic mt-1">Bloqué : attente livraison plinthes</div>
+          </div>
+          <span class="badge badge-danger ml-2 shrink-0">Bloqué</span>
+        </div>
+        <div class="flex items-center gap-1 mt-2 text-xs text-muted">
+          <i data-lucide="calendar" class="w-3.5 h-3.5"></i> 01/04/2026
+        </div>
+      </div>
+
+      <!-- Tâche en cours -->
+      <div class="card-brutal p-3 border-l-[4px] border-l-warning">
+        <div class="flex items-start justify-between">
+          <div class="flex-1">
+            <div class="font-heading font-semibold text-sm">Enduit salle de bain</div>
+            <div class="text-muted text-xs">Assigné à Karim</div>
+          </div>
+          <span class="badge badge-warning ml-2 shrink-0">En cours</span>
+        </div>
+        <div class="flex items-center gap-1 mt-2 text-xs text-muted">
+          <i data-lucide="calendar" class="w-3.5 h-3.5"></i> 03/04/2026
+        </div>
+      </div>
+
+      <!-- Tâche en cours -->
+      <div class="card-brutal p-3 border-l-[4px] border-l-warning">
+        <div class="flex items-start justify-between">
+          <div class="flex-1">
+            <div class="font-heading font-semibold text-sm">Carrelage entrée</div>
+            <div class="text-muted text-xs">Assigné à Mohamed</div>
+          </div>
+          <span class="badge badge-warning ml-2 shrink-0">En cours</span>
+        </div>
+        <div class="flex items-center gap-1 mt-2 text-xs text-muted">
+          <i data-lucide="calendar" class="w-3.5 h-3.5"></i> 04/04/2026
+        </div>
+      </div>
+
+      <!-- Tâche à faire -->
+      <div class="card-brutal p-3 border-l-[4px] border-l-gray-300">
+        <div class="flex items-start justify-between">
+          <div class="flex-1">
+            <div class="font-heading font-semibold text-sm">Finitions électriques</div>
+            <div class="text-muted text-xs">Assigné à Jean-Pierre</div>
+          </div>
+          <span class="badge badge-muted ml-2 shrink-0">À faire</span>
+        </div>
+        <div class="flex items-center gap-1 mt-2 text-xs text-muted">
+          <i data-lucide="calendar" class="w-3.5 h-3.5"></i> 06/04/2026
+        </div>
+      </div>
+
+      <!-- Tâche terminée -->
+      <div class="card-brutal p-3 border-l-[4px] border-l-success">
+        <div class="flex items-start justify-between">
+          <div class="flex-1">
+            <div class="font-heading font-semibold text-sm">Pose cloisons RDC</div>
+            <div class="text-muted text-xs">Assigné à Karim</div>
+          </div>
+          <span class="badge badge-success ml-2 shrink-0">Terminé</span>
+        </div>
+        <div class="flex items-center gap-1 mt-2 text-xs text-muted">
+          <i data-lucide="calendar" class="w-3.5 h-3.5"></i> 30/03/2026
+        </div>
+      </div>
+
+      <!-- Bouton ajouter -->
+      <button class="btn-brutal bg-accent text-white px-4 py-3 flex items-center justify-center gap-2 w-full text-sm">
+        <i data-lucide="plus" class="w-4 h-4"></i> Ajouter une tâche
+      </button>
+    </main>
+
+    <!-- Tab Équipe -->
+    <div id="tab-equipe" class="px-4 pt-2 pb-40 flex-col gap-3 hidden">
+      <div class="card-brutal p-3 flex items-center gap-3">
+        <div class="w-10 h-10 rounded-full bg-surface border-2 border-black flex items-center justify-center font-bold text-sm">MO</div>
+        <div class="flex-1">
+          <div class="font-heading font-semibold text-sm">Mohamed Ouali</div>
+          <div class="text-muted text-xs">06 12 34 56 78</div>
+        </div>
+      </div>
+      <div class="card-brutal p-3 flex items-center gap-3 mt-3">
+        <div class="w-10 h-10 rounded-full bg-surface border-2 border-black flex items-center justify-center font-bold text-sm">KB</div>
+        <div class="flex-1">
+          <div class="font-heading font-semibold text-sm">Karim Benali</div>
+          <div class="text-muted text-xs">06 98 76 54 32</div>
+        </div>
+      </div>
+      <div class="card-brutal p-3 flex items-center gap-3 mt-3">
+        <div class="w-10 h-10 rounded-full bg-surface border-2 border-black flex items-center justify-center font-bold text-sm">JP</div>
+        <div class="flex-1">
+          <div class="font-heading font-semibold text-sm">Jean-Pierre Duval</div>
+          <div class="text-muted text-xs">06 55 44 33 22</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab Photos -->
+    <div id="tab-photos" class="px-4 pt-2 pb-40 hidden">
+      <div class="grid grid-cols-3 gap-2">
+        <div class="card-brutal aspect-square bg-surface"></div>
+        <div class="card-brutal aspect-square bg-surface"></div>
+        <div class="card-brutal aspect-square bg-surface"></div>
+        <div class="card-brutal aspect-square bg-surface"></div>
+        <div class="card-brutal aspect-square bg-surface"></div>
+        <div class="card-brutal aspect-square bg-surface"></div>
+      </div>
+    </div>
+
+    <!-- Bottom Nav -->
+    <nav class="bottom-nav">
+      <a href="08-conducteur-chantiers.html" class="active">
+        <i data-lucide="building-2" class="w-5 h-5"></i>
+        <span>Chantiers</span>
+      </a>
+      <a href="10-conducteur-taches.html">
+        <i data-lucide="list-checks" class="w-5 h-5"></i>
+        <span>Tâches</span>
+      </a>
+      <a href="11-conducteur-cr.html">
+        <i data-lucide="file-text" class="w-5 h-5"></i>
+        <span>CR</span>
+      </a>
+      <a href="12-conducteur-alertes.html" class="relative">
+        <i data-lucide="bell" class="w-5 h-5"></i>
+        <span>Alertes</span>
+        <span class="absolute -top-1 right-0 w-4 h-4 bg-danger text-white text-[10px] font-bold rounded-full flex items-center justify-center">3</span>
+      </a>
+      <a href="13-conducteur-clawbot.html">
+        <i data-lucide="bot" class="w-5 h-5"></i>
+        <span>ClawBot</span>
+      </a>
+    </nav>
+
+  </div>
+
+  <script>
+    lucide.createIcons();
+
+    function showTab(tab, btn) {
+      document.getElementById('tab-taches').classList.add('hidden');
+      document.getElementById('tab-equipe').classList.add('hidden');
+      document.getElementById('tab-photos').classList.add('hidden');
+
+      const el = document.getElementById('tab-' + tab);
+      el.classList.remove('hidden');
+      if (tab === 'equipe') el.style.display = 'flex';
+
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    }
+  </script>
+</body>
+</html>

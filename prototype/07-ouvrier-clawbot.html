@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>ClawBTP — ClawBot</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            heading: ['Outfit', 'sans-serif'],
+            sans: ['Public Sans', 'sans-serif']
+          },
+          colors: {
+            primary: { DEFAULT: '#334155', light: '#475569', dark: '#1E293B' },
+            accent: '#F97316',
+            danger: { DEFAULT: '#DC2626', bg: '#FEE2E2' },
+            warning: { DEFAULT: '#F59E0B', bg: '#FEF3C7' },
+            success: { DEFAULT: '#22C55E', bg: '#DCFCE7' },
+            surface: '#F1F5F9',
+            cream: '#FAFAF8',
+            muted: '#64748B',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    * { touch-action: manipulation; }
+    body {
+      overscroll-behavior: contain;
+      min-height: 100vh; min-height: 100dvh;
+      background: #FAFAF8;
+      font-family: 'Public Sans', sans-serif;
+      color: #0F172A;
+    }
+    .card-brutal {
+      border: 2px solid #000;
+      box-shadow: 4px 4px 0 #000;
+      border-radius: 6px;
+      background: #fff;
+      transition: transform 100ms, box-shadow 100ms;
+    }
+    .card-brutal:active {
+      box-shadow: 2px 2px 0 #000;
+      transform: translate(2px, 2px);
+    }
+    .btn-brutal {
+      border: 2px solid #000;
+      box-shadow: 3px 3px 0 #000;
+      border-radius: 6px;
+      min-height: 56px;
+      min-width: 56px;
+      font-weight: 700;
+      font-size: 18px;
+      font-family: 'Outfit', sans-serif;
+      transition: transform 100ms, box-shadow 100ms;
+      cursor: pointer;
+    }
+    .btn-brutal:active {
+      box-shadow: 1px 1px 0 #000;
+      transform: translate(2px, 2px);
+    }
+    .badge { border: 2px solid; border-radius: 4px; padding: 2px 10px; font-weight: 600; font-size: 14px; }
+
+    @keyframes dot-pulse {
+      0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
+      40% { opacity: 1; transform: scale(1); }
+    }
+    .dot-1 { animation: dot-pulse 1.4s infinite 0s; }
+    .dot-2 { animation: dot-pulse 1.4s infinite 0.2s; }
+    .dot-3 { animation: dot-pulse 1.4s infinite 0.4s; }
+
+    .send-brutal {
+      border: 2px solid #000;
+      box-shadow: 3px 3px 0 #000;
+      border-radius: 50%;
+      width: 56px;
+      height: 56px;
+      min-width: 56px;
+      cursor: pointer;
+      transition: transform 100ms, box-shadow 100ms;
+    }
+    .send-brutal:active {
+      box-shadow: 1px 1px 0 #000;
+      transform: translate(2px, 2px);
+    }
+  </style>
+</head>
+<body>
+  <div class="max-w-[375px] mx-auto min-h-screen bg-cream flex flex-col">
+    <!-- Retour proto -->
+    <a href="00-index.html" class="block px-4 pt-3 text-sm text-white/60 hover:underline relative z-10">&larr; Retour au prototype</a>
+
+    <!-- Header -->
+    <div class="bg-primary-dark text-white px-4 py-4 -mt-8 pt-12">
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 min-w-[48px] rounded-full border-2 border-white/30 flex items-center justify-center bg-white/10">
+          <i data-lucide="bot" class="w-6 h-6 text-white"></i>
+        </div>
+        <div>
+          <h1 class="font-heading text-xl font-bold">ClawBot</h1>
+          <p class="text-sm text-white/70">Assistant chantier</p>
+        </div>
+        <a href="03-ouvrier-taches.html" class="ml-auto w-12 h-12 min-w-[48px] rounded-md border-2 border-white/30 flex items-center justify-center no-underline">
+          <i data-lucide="x" class="w-6 h-6 text-white"></i>
+        </a>
+      </div>
+    </div>
+
+    <!-- Messages -->
+    <div class="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-4">
+
+      <!-- Bulle ClawBot -->
+      <div class="flex gap-3 items-start max-w-[90%]">
+        <div class="w-8 h-8 min-w-[32px] rounded-full border-2 border-black bg-white flex items-center justify-center mt-1">
+          <i data-lucide="bot" class="w-4 h-4 text-accent"></i>
+        </div>
+        <div class="card-brutal p-4 border-l-[4px] border-l-accent flex-1">
+          <p class="text-base">Bonjour Mohamed ! Chantier Leclerc. Tu as 3 tâches aujourd'hui.</p>
+        </div>
+      </div>
+
+      <!-- Bulle utilisateur -->
+      <div class="flex justify-end">
+        <div class="card-brutal p-4 max-w-[80%] bg-primary-dark text-white">
+          <p class="text-base">ma tâche carrelage est bloquée</p>
+        </div>
+      </div>
+
+      <!-- Bulle ClawBot réponse -->
+      <div class="flex gap-3 items-start max-w-[90%]">
+        <div class="w-8 h-8 min-w-[32px] rounded-full border-2 border-black bg-white flex items-center justify-center mt-1">
+          <i data-lucide="bot" class="w-4 h-4 text-accent"></i>
+        </div>
+        <div class="card-brutal p-4 border-l-[4px] border-l-accent flex-1">
+          <p class="text-base">J'ai signalé le blocage à ton conducteur. Quelle est la raison ?</p>
+        </div>
+      </div>
+
+      <!-- Bulle utilisateur -->
+      <div class="flex justify-end">
+        <div class="card-brutal p-4 max-w-[80%] bg-primary-dark text-white">
+          <p class="text-base">il manque la colle pour le carrelage</p>
+        </div>
+      </div>
+
+      <!-- Bulle ClawBot réponse -->
+      <div class="flex gap-3 items-start max-w-[90%]">
+        <div class="w-8 h-8 min-w-[32px] rounded-full border-2 border-black bg-white flex items-center justify-center mt-1">
+          <i data-lucide="bot" class="w-4 h-4 text-accent"></i>
+        </div>
+        <div class="card-brutal p-4 border-l-[4px] border-l-accent flex-1">
+          <p class="text-base">C'est noté : "colle carrelage manquante". Ton conducteur Pierre a été prévenu. En attendant, tu peux passer à la tâche "Ragréage sol salle de bain".</p>
+        </div>
+      </div>
+
+      <!-- Indicateur "réfléchit" -->
+      <div class="flex gap-3 items-start max-w-[90%]">
+        <div class="w-8 h-8 min-w-[32px] rounded-full border-2 border-black bg-white flex items-center justify-center mt-1">
+          <i data-lucide="bot" class="w-4 h-4 text-accent"></i>
+        </div>
+        <div class="card-brutal p-4 border-l-[4px] border-l-accent">
+          <div class="flex items-center gap-1">
+            <span class="text-sm text-muted mr-1">ClawBot réfléchit</span>
+            <span class="dot-1 w-2 h-2 rounded-full bg-accent inline-block"></span>
+            <span class="dot-2 w-2 h-2 rounded-full bg-accent inline-block"></span>
+            <span class="dot-3 w-2 h-2 rounded-full bg-accent inline-block"></span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Input fixe bas -->
+    <div class="border-t-2 border-black bg-white px-4 py-3">
+      <div class="flex gap-3 items-center">
+        <input type="text" placeholder="Écris ton message..." class="flex-1 border-2 border-black p-3 text-base" style="border-radius: 6px; min-height: 48px;">
+        <button class="send-brutal bg-accent flex items-center justify-center">
+          <i data-lucide="send" class="w-5 h-5 text-white"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>lucide.createIcons();</script>
+</body>
+</html>

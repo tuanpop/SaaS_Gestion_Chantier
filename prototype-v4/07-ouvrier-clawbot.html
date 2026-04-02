@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claw — ClawBot</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #F8FAFC;
+    display: flex;
+    justify-content: center;
+    min-height: 100vh;
+  }
+  h1, h2, h3, h4, h5 { font-family: 'Plus Jakarta Sans', sans-serif; }
+  .mobile-frame {
+    width: 100%;
+    max-width: 375px;
+    min-height: 100vh;
+    background: #F8FAFC;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Header */
+  .header {
+    background: linear-gradient(135deg, #6366F1, #8B5CF6);
+    color: white;
+    padding: 48px 24px 16px;
+    border-radius: 0 0 20px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+  .bot-avatar {
+    width: 40px;
+    height: 40px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .header-info {}
+  .header-title {
+    font-size: 18px;
+    font-weight: 700;
+  }
+  .header-status {
+    font-size: 12px;
+    opacity: 0.8;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .online-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #34D399;
+  }
+
+  /* Chat area */
+  .chat-area {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 16px 100px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  /* Messages */
+  .message {
+    max-width: 85%;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .message.bot { align-self: flex-start; }
+  .message.user { align-self: flex-end; }
+
+  .message-bubble {
+    padding: 14px 16px;
+    border-radius: 16px;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .bot .message-bubble {
+    background: #EEF2FF;
+    color: #0F172A;
+    border-bottom-left-radius: 4px;
+  }
+  .user .message-bubble {
+    background: white;
+    color: #0F172A;
+    border: 1px solid #E2E8F0;
+    border-bottom-right-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+
+  .message-time {
+    font-size: 11px;
+    color: #94A3B8;
+    padding: 0 4px;
+  }
+  .bot .message-time { text-align: left; }
+  .user .message-time { text-align: right; }
+
+  .bot-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #6366F1;
+    margin-bottom: 2px;
+  }
+  .bot-label-icon {
+    width: 20px;
+    height: 20px;
+    background: #EEF2FF;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Embedded task card in message */
+  .embedded-card {
+    background: white;
+    border: 1px solid #E2E8F0;
+    border-radius: 12px;
+    padding: 12px;
+    margin-top: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .embedded-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+  .embedded-card-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #0F172A;
+  }
+  .embedded-badge {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 6px;
+    background: #EEF2FF;
+    color: #6366F1;
+  }
+  .embedded-card-meta {
+    display: flex;
+    gap: 12px;
+    font-size: 12px;
+    color: #475569;
+  }
+  .embedded-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  /* Quick suggestions */
+  .suggestions {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    padding: 0 4px;
+  }
+  .suggestion-chip {
+    padding: 8px 14px;
+    background: white;
+    border: 1px solid #E2E8F0;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #6366F1;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .suggestion-chip:hover { background: #EEF2FF; border-color: #6366F1; }
+
+  /* Input bar */
+  .input-bar {
+    position: fixed;
+    bottom: 64px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 375px;
+    background: white;
+    border-top: 1px solid #E2E8F0;
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    z-index: 20;
+  }
+  .input-field {
+    flex: 1;
+    height: 44px;
+    padding: 0 16px;
+    background: #F1F5F9;
+    border: none;
+    border-radius: 22px;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    color: #0F172A;
+  }
+  .input-field:focus { outline: none; background: #EEF2FF; }
+  .input-field::placeholder { color: #94A3B8; }
+  .send-btn {
+    width: 44px;
+    height: 44px;
+    background: linear-gradient(135deg, #6366F1, #8B5CF6);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.2s;
+  }
+  .send-btn:hover { box-shadow: 0 4px 12px rgba(99,102,241,0.35); transform: scale(1.05); }
+
+  /* Bottom nav */
+  .bottom-nav {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    max-width: 375px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: white;
+    border-top: 1px solid #E2E8F0;
+    display: flex;
+    padding: 8px 0 12px;
+    z-index: 20;
+  }
+  .nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    text-decoration: none;
+    font-size: 11px;
+    color: #94A3B8;
+    position: relative;
+    padding-top: 6px;
+  }
+  .nav-item.active { color: #6366F1; }
+  .nav-item.active::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 24px;
+    height: 3px;
+    background: #6366F1;
+    border-radius: 0 0 3px 3px;
+  }
+  .nav-label { font-weight: 500; }
+</style>
+</head>
+<body>
+
+<a href="00-index.html" style="position:fixed;top:12px;left:12px;z-index:100;background:white;color:#475569;font-size:12px;padding:6px 12px;border-radius:20px;text-decoration:none;display:flex;align-items:center;gap:4px;box-shadow:0 2px 8px rgba(0,0,0,0.1);font-family:'Inter',sans-serif">
+  <i data-lucide="arrow-left" style="width:14px;height:14px"></i> Index
+</a>
+
+<div class="mobile-frame">
+  <div class="header">
+    <div class="bot-avatar">
+      <i data-lucide="bot" style="width:22px;height:22px"></i>
+    </div>
+    <div class="header-info">
+      <h1 class="header-title">ClawBot</h1>
+      <div class="header-status">
+        <span class="online-dot"></span> En ligne
+      </div>
+    </div>
+  </div>
+
+  <div class="chat-area">
+    <!-- Bot welcome -->
+    <div class="message bot">
+      <div class="bot-label">
+        <div class="bot-label-icon">
+          <i data-lucide="bot" style="width:12px;height:12px;color:#6366F1"></i>
+        </div>
+        ClawBot
+      </div>
+      <div class="message-bubble">
+        Bonjour Mohamed ! Je suis ClawBot, votre assistant. Je peux vous aider avec vos taches, le planning, ou repondre a vos questions sur le chantier. Que puis-je faire pour vous ?
+      </div>
+      <span class="message-time">09:12</span>
+    </div>
+
+    <!-- User message -->
+    <div class="message user">
+      <div class="message-bubble">
+        Ou en est le carrelage ?
+      </div>
+      <span class="message-time">09:13</span>
+    </div>
+
+    <!-- Bot response with embedded card -->
+    <div class="message bot">
+      <div class="bot-label">
+        <div class="bot-label-icon">
+          <i data-lucide="bot" style="width:12px;height:12px;color:#6366F1"></i>
+        </div>
+        ClawBot
+      </div>
+      <div class="message-bubble">
+        Voici l'etat actuel de votre tache carrelage :
+
+        <div class="embedded-card">
+          <div class="embedded-card-header">
+            <span class="embedded-card-title">Carrelage cuisine 201</span>
+            <span class="embedded-badge">En cours</span>
+          </div>
+          <div class="embedded-card-meta">
+            <span class="embedded-meta-item">
+              <i data-lucide="map-pin" style="width:12px;height:12px;color:#94A3B8"></i>
+              Etage 2
+            </span>
+            <span class="embedded-meta-item">
+              <i data-lucide="calendar" style="width:12px;height:12px;color:#94A3B8"></i>
+              Echeance : 5 avril
+            </span>
+          </div>
+        </div>
+
+        La pose est en cours. Il reste la decoupe autour des arrivees d'eau. Vous etes dans les temps pour l'echeance de demain.
+      </div>
+      <span class="message-time">09:13</span>
+    </div>
+
+    <!-- Suggestions -->
+    <div class="suggestions">
+      <span class="suggestion-chip">Mes taches du jour</span>
+      <span class="suggestion-chip">Meteo demain</span>
+      <span class="suggestion-chip">Signaler un probleme</span>
+    </div>
+  </div>
+
+  <!-- Input bar -->
+  <div class="input-bar">
+    <input class="input-field" type="text" placeholder="Posez votre question...">
+    <button class="send-btn">
+      <i data-lucide="send" style="width:18px;height:18px"></i>
+    </button>
+  </div>
+
+  <nav class="bottom-nav">
+    <a href="03-ouvrier-taches.html" class="nav-item">
+      <i data-lucide="check-square" style="width:20px;height:20px"></i>
+      <span class="nav-label">Taches</span>
+    </a>
+    <a href="05-ouvrier-photo.html" class="nav-item">
+      <i data-lucide="camera" style="width:20px;height:20px"></i>
+      <span class="nav-label">Photo</span>
+    </a>
+    <a href="07-ouvrier-clawbot.html" class="nav-item active">
+      <i data-lucide="bot" style="width:20px;height:20px"></i>
+      <span class="nav-label">Bot</span>
+    </a>
+    <a href="02-ouvrier-selecteur-chantier.html" class="nav-item">
+      <i data-lucide="menu" style="width:20px;height:20px"></i>
+      <span class="nav-label">Menu</span>
+    </a>
+  </nav>
+</div>
+
+<script>lucide.createIcons()</script>
+</body>
+</html>

@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claw — Rés. Les Oliviers</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #F8FAFC;
+    color: #0F172A;
+    display: flex;
+    justify-content: center;
+    min-height: 100vh;
+  }
+  .mobile-frame {
+    width: 100%;
+    max-width: 390px;
+    min-height: 100vh;
+    background: #F8FAFC;
+    position: relative;
+    padding-bottom: 80px;
+  }
+  h1, h2, h3, h4 { font-family: 'Plus Jakarta Sans', sans-serif; }
+
+  /* Header */
+  .header {
+    background: linear-gradient(135deg, #6366F1, #8B5CF6);
+    color: white;
+    padding: 48px 20px 20px;
+    border-radius: 0 0 20px 20px;
+  }
+  .header-back {
+    display: inline-flex; align-items: center; gap: 4px;
+    color: rgba(255,255,255,0.8); font-size: 13px;
+    text-decoration: none; margin-bottom: 12px;
+  }
+  .header-back i { width: 16px; height: 16px; }
+  .header h1 { font-size: 22px; font-weight: 700; margin-bottom: 2px; }
+  .header-meta { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+  .header-client { font-size: 13px; opacity: 0.85; }
+  .header-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 11px; font-weight: 600; padding: 3px 10px;
+    border-radius: 20px; background: rgba(239,68,68,0.2); color: #FCA5A5;
+  }
+  .progress-header { margin-top: 14px; display: flex; align-items: center; gap: 10px; }
+  .progress-bar-h { flex: 1; height: 6px; background: rgba(255,255,255,0.2); border-radius: 3px; overflow: hidden; }
+  .progress-fill-h { height: 100%; background: white; border-radius: 3px; }
+  .progress-pct-h { font-size: 14px; font-weight: 700; }
+
+  /* Tabs */
+  .tabs {
+    display: flex; gap: 0; padding: 16px 16px 0;
+  }
+  .tab-btn {
+    flex: 1; padding: 10px 0; text-align: center;
+    font-size: 13px; font-weight: 600; color: #94A3B8;
+    background: none; border: none; cursor: pointer;
+    border-bottom: 2px solid transparent;
+    font-family: 'Inter', sans-serif;
+  }
+  .tab-btn.active {
+    color: #6366F1;
+    border-bottom-color: #6366F1;
+  }
+
+  /* Content */
+  .content { padding: 16px; }
+
+  /* Task item */
+  .task-item {
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .task-icon {
+    width: 40px; height: 40px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .task-icon.bloque { background: #FEF2F2; color: #EF4444; }
+  .task-icon.en_cours { background: #EEF2FF; color: #6366F1; }
+  .task-icon.a_faire { background: #F1F5F9; color: #94A3B8; }
+  .task-icon.termine { background: #ECFDF5; color: #10B981; }
+  .task-icon i { width: 20px; height: 20px; }
+
+  .task-info { flex: 1; min-width: 0; }
+  .task-name { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+  .task-assignee { font-size: 12px; color: #475569; }
+
+  .status-badge {
+    font-size: 10px; font-weight: 600; padding: 4px 10px;
+    border-radius: 20px; white-space: nowrap; flex-shrink: 0;
+  }
+  .status-badge.bloque { background: #FEF2F2; color: #EF4444; }
+  .status-badge.en_cours { background: #EEF2FF; color: #6366F1; }
+  .status-badge.a_faire { background: #F1F5F9; color: #64748B; }
+  .status-badge.termine { background: #ECFDF5; color: #059669; }
+
+  /* Bottom Nav */
+  .bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 390px;
+    background: #FFFFFF;
+    border-top: 1px solid #E2E8F0;
+    display: flex;
+    z-index: 50;
+    padding: 6px 0 env(safe-area-inset-bottom, 8px);
+  }
+  .nav-tab {
+    flex: 1;
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    padding: 6px 0; text-decoration: none; color: #94A3B8;
+    font-size: 10px; font-weight: 500; position: relative;
+  }
+  .nav-tab.active { color: #6366F1; }
+  .nav-tab.active::before {
+    content: '';
+    position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+    width: 24px; height: 3px; background: #6366F1; border-radius: 0 0 3px 3px;
+  }
+  .nav-tab i { width: 22px; height: 22px; }
+</style>
+</head>
+<body>
+<a href="00-index.html" style="position:fixed;top:12px;left:12px;z-index:100;background:white;color:#475569;font-size:12px;padding:6px 12px;border-radius:20px;text-decoration:none;display:flex;align-items:center;gap:4px;box-shadow:0 2px 8px rgba(0,0,0,0.1);font-family:'Inter',sans-serif">
+  <i data-lucide="arrow-left" style="width:14px;height:14px"></i> Index
+</a>
+
+<div class="mobile-frame">
+  <!-- Header -->
+  <div class="header">
+    <a href="08-conducteur-chantiers.html" class="header-back">
+      <i data-lucide="chevron-left"></i> Mes projets
+    </a>
+    <h1>Rés. Les Oliviers</h1>
+    <div class="header-meta">
+      <span class="header-client">SCI Provence</span>
+      <span class="header-badge"><i data-lucide="alert-triangle" style="width:11px;height:11px"></i> En retard</span>
+    </div>
+    <div class="progress-header">
+      <div class="progress-bar-h"><div class="progress-fill-h" style="width:35%"></div></div>
+      <span class="progress-pct-h">35%</span>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab-btn active">Tâches</button>
+    <button class="tab-btn">Équipe</button>
+    <button class="tab-btn">Photos</button>
+  </div>
+
+  <!-- Tasks Content -->
+  <div class="content">
+    <div class="task-item">
+      <div class="task-icon bloque"><i data-lucide="alert-circle"></i></div>
+      <div class="task-info">
+        <div class="task-name">Livraison menuiseries</div>
+        <div class="task-assignee">Fournisseur AluPro</div>
+      </div>
+      <span class="status-badge bloque">Bloqué</span>
+    </div>
+
+    <div class="task-item">
+      <div class="task-icon bloque"><i data-lucide="alert-circle"></i></div>
+      <div class="task-info">
+        <div class="task-name">Pose carrelage RDC</div>
+        <div class="task-assignee">Marc Petit</div>
+      </div>
+      <span class="status-badge bloque">Bloqué</span>
+    </div>
+
+    <div class="task-item">
+      <div class="task-icon en_cours"><i data-lucide="loader"></i></div>
+      <div class="task-info">
+        <div class="task-name">Peinture cages escalier</div>
+        <div class="task-assignee">Lucas Martin</div>
+      </div>
+      <span class="status-badge en_cours">En cours</span>
+    </div>
+
+    <div class="task-item">
+      <div class="task-icon en_cours"><i data-lucide="loader"></i></div>
+      <div class="task-info">
+        <div class="task-name">Électricité 2e étage</div>
+        <div class="task-assignee">Ahmed Benali</div>
+      </div>
+      <span class="status-badge en_cours">En cours</span>
+    </div>
+
+    <div class="task-item">
+      <div class="task-icon a_faire"><i data-lucide="circle"></i></div>
+      <div class="task-info">
+        <div class="task-name">Plomberie salle de bain</div>
+        <div class="task-assignee">Non assigné</div>
+      </div>
+      <span class="status-badge a_faire">À faire</span>
+    </div>
+
+    <div class="task-item">
+      <div class="task-icon termine"><i data-lucide="check-circle"></i></div>
+      <div class="task-info">
+        <div class="task-name">Isolation combles</div>
+        <div class="task-assignee">Thomas Durand</div>
+      </div>
+      <span class="status-badge termine">Terminé</span>
+    </div>
+  </div>
+
+  <!-- Bottom Nav -->
+  <nav class="bottom-nav">
+    <a href="08-conducteur-chantiers.html" class="nav-tab active">
+      <i data-lucide="folder-kanban"></i><span>Projets</span>
+    </a>
+    <a href="10-conducteur-taches.html" class="nav-tab">
+      <i data-lucide="check-square"></i><span>Tâches</span>
+    </a>
+    <a href="11-conducteur-cr.html" class="nav-tab">
+      <i data-lucide="file-text"></i><span>CR</span>
+    </a>
+    <a href="12-conducteur-alertes.html" class="nav-tab">
+      <i data-lucide="bell"></i><span>Alertes</span>
+    </a>
+    <a href="13-conducteur-clawbot.html" class="nav-tab">
+      <i data-lucide="sparkles"></i><span>Bot</span>
+    </a>
+  </nav>
+</div>
+
+<script>lucide.createIcons();</script>
+</body>
+</html>

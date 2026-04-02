@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>ClawBTP - Taches</title>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;touch-action:manipulation}
+body{background:#FAF6F1;font-family:'Source Sans 3',sans-serif;color:#292524;max-width:390px;margin:0 auto;min-height:100vh;padding-bottom:80px}
+.header{background:#C2703E;color:#fff;padding:20px 20px 24px;border-radius:0 0 20px 20px}
+.header h1{font-family:'Lexend',sans-serif;font-weight:700;font-size:22px}
+.header-sub{font-size:14px;opacity:0.85;margin-top:2px}
+.content{padding:16px}
+.filters{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.filter-btn{padding:8px 16px;border-radius:20px;font-family:'Lexend',sans-serif;font-weight:600;font-size:13px;background:#F5F0E8;color:#78716C;border:none;cursor:pointer;transition:all 150ms}
+.filter-btn.active{background:#C2703E;color:#fff}
+.group-header{display:flex;align-items:center;gap:8px;margin:20px 0 10px;font-family:'Lexend',sans-serif;font-weight:600;font-size:15px;color:#292524}
+.dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.dot-red{background:#DC2626}
+.dot-orange{background:#D97706}
+.dot-green{background:#15803D}
+.card-warm{background:#fff;border:1px solid #E7E0D6;border-radius:14px;box-shadow:0 2px 8px rgba(120,53,15,0.08);transition:box-shadow 200ms,transform 200ms;padding:12px 14px;margin-bottom:8px}
+.card-warm:active{box-shadow:0 1px 3px rgba(120,53,15,0.1);transform:translateY(1px)}
+.task-row{display:flex;justify-content:space-between;align-items:center}
+.task-title{font-family:'Lexend',sans-serif;font-weight:600;font-size:14px}
+.task-sub{font-size:12px;color:#78716C;margin-top:2px}
+.badge-warm{border-radius:8px;padding:4px 12px;font-weight:600;font-size:12px;display:inline-block}
+.badge-danger{background:#FEE2E2;color:#DC2626}
+.badge-warning{background:#FEF3C7;color:#D97706}
+.badge-success{background:#DCFCE7;color:#15803D}
+.badge-muted{background:#F5F0E8;color:#78716C}
+.task-blocked{background:#FEE2E2 !important;border-color:#FECACA}
+
+.fab{position:fixed;bottom:80px;right:calc(50% - 175px);width:56px;height:56px;border-radius:50%;background:#C2703E;color:#fff;border:none;box-shadow:0 4px 16px rgba(120,53,15,0.3);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:45;transition:all 150ms}
+.fab:active{transform:scale(0.92)}
+
+.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:390px;background:#fff;border-top:1px solid #E7E0D6;display:flex;justify-content:space-around;align-items:center;padding:8px 0 env(safe-area-inset-bottom,8px);z-index:50;box-shadow:0 -2px 8px rgba(120,53,15,0.06)}
+.bottom-nav a{display:flex;flex-direction:column;align-items:center;font-size:11px;font-weight:500;color:#A8A29E;gap:2px;text-decoration:none;padding:4px 8px;position:relative}
+.bottom-nav a.active{color:#C2703E;font-weight:700}
+.bottom-nav a.active::after{content:'';position:absolute;top:-9px;left:50%;transform:translateX(-50%);width:24px;height:3px;background:#C2703E;border-radius:2px}
+.nav-badge{position:absolute;top:0;right:2px;background:#DC2626;color:#fff;font-size:10px;font-weight:700;width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.back-link{display:inline-flex;align-items:center;gap:6px;color:#78716C;font-size:13px;text-decoration:none;margin-bottom:12px}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Taches</h1>
+  <div class="header-sub">12 taches en cours sur 4 chantiers</div>
+</div>
+
+<div class="content">
+  <a href="00-index.html" class="back-link"><i data-lucide="arrow-left" style="width:14px;height:14px"></i> Prototype</a>
+
+  <div class="filters">
+    <button class="filter-btn active">Toutes</button>
+    <button class="filter-btn">Bloquees</button>
+    <button class="filter-btn">En cours</button>
+    <button class="filter-btn">A faire</button>
+  </div>
+
+  <!-- Groupe 1 -->
+  <div class="group-header"><span class="dot dot-red"></span> Residence Les Oliviers</div>
+
+  <div class="card-warm task-blocked" style="border-left:4px solid #DC2626">
+    <div class="task-row">
+      <div>
+        <div class="task-title">Pose cloisons RDC</div>
+        <div class="task-sub">Attente livraison rails</div>
+      </div>
+      <span class="badge-warm badge-danger">Bloquee</span>
+    </div>
+  </div>
+
+  <div class="card-warm task-blocked" style="border-left:4px solid #DC2626">
+    <div class="task-row">
+      <div>
+        <div class="task-title">Enduit salle de bain</div>
+        <div class="task-sub">Manque enduit</div>
+      </div>
+      <span class="badge-warm badge-danger">Bloquee</span>
+    </div>
+  </div>
+
+  <div class="card-warm" style="border-left:4px solid #D97706">
+    <div class="task-row">
+      <div>
+        <div class="task-title">Carrelage cuisine</div>
+        <div class="task-sub">Mohamed — En cours depuis 2j</div>
+      </div>
+      <span class="badge-warm badge-warning">En cours</span>
+    </div>
+  </div>
+
+  <!-- Groupe 2 -->
+  <div class="group-header"><span class="dot dot-orange"></span> Bureau Mistral</div>
+
+  <div class="card-warm" style="border-left:4px solid #D97706">
+    <div class="task-row">
+      <div>
+        <div class="task-title">Faux plafond open space</div>
+        <div class="task-sub">Pierre — En cours depuis 3j</div>
+      </div>
+      <span class="badge-warm badge-warning">En cours</span>
+    </div>
+  </div>
+
+  <div class="card-warm" style="border-left:4px solid #A8A29E">
+    <div class="task-row">
+      <div>
+        <div class="task-title">Peinture bureaux</div>
+        <div class="task-sub">Non affectee</div>
+      </div>
+      <span class="badge-warm badge-muted">A faire</span>
+    </div>
+  </div>
+
+  <!-- Groupe 3 -->
+  <div class="group-header"><span class="dot dot-green"></span> Maison Dubois</div>
+
+  <div class="card-warm" style="border-left:4px solid #15803D">
+    <div class="task-row">
+      <div>
+        <div class="task-title">Pose parquet salon</div>
+        <div class="task-sub">Stephane — Termine hier</div>
+      </div>
+      <span class="badge-warm badge-success">Termine</span>
+    </div>
+  </div>
+
+  <div class="card-warm" style="border-left:4px solid #D97706">
+    <div class="task-row">
+      <div>
+        <div class="task-title">Joints salle de bain</div>
+        <div class="task-sub">Mohamed — En cours</div>
+      </div>
+      <span class="badge-warm badge-warning">En cours</span>
+    </div>
+  </div>
+</div>
+
+<button class="fab"><i data-lucide="plus" style="width:24px;height:24px"></i></button>
+
+<nav class="bottom-nav">
+  <a href="08-conducteur-chantiers.html"><i data-lucide="hard-hat" style="width:22px;height:22px"></i>Chantiers</a>
+  <a href="10-conducteur-taches.html" class="active"><i data-lucide="check-square" style="width:22px;height:22px"></i>Taches</a>
+  <a href="11-conducteur-cr.html"><i data-lucide="file-text" style="width:22px;height:22px"></i>CR</a>
+  <a href="12-conducteur-alertes.html"><i data-lucide="bell" style="width:22px;height:22px"></i><span class="nav-badge">3</span>Alertes</a>
+  <a href="13-conducteur-clawbot.html"><i data-lucide="bot" style="width:22px;height:22px"></i>ClawBot</a>
+</nav>
+
+<script>
+lucide.createIcons();
+document.querySelectorAll('.filter-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+  });
+});
+</script>
+</body>
+</html>

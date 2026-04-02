@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ClawBTP — Essai termine</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { heading: ['Space Grotesk','sans-serif'], sans: ['DM Sans','sans-serif'], mono: ['JetBrains Mono','monospace'] },
+          colors: {
+            bg: { DEFAULT: '#0F172A', card: '#1E293B', elevated: '#334155' },
+            accent: '#3B82F6',
+            danger: { DEFAULT: '#EF4444' },
+            warning: { DEFAULT: '#F59E0B' },
+            success: { DEFAULT: '#22C55E' },
+            text: { DEFAULT: '#F8FAFC', muted: '#94A3B8', dim: '#64748B' },
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { background: #0B1120; font-family: 'DM Sans', sans-serif; color: #F8FAFC; }
+    .card-cockpit { background: #1E293B; border: 1px solid rgba(148,163,184,0.15); border-radius: 12px; }
+    .glow-accent { box-shadow: 0 0 20px rgba(59,130,246,0.3), 0 0 60px rgba(59,130,246,0.1); }
+    .btn-cockpit { border-radius: 10px; font-weight: 600; font-family: 'Space Grotesk', sans-serif; cursor: pointer; transition: all 150ms; padding: 12px 24px; border: none; }
+    .btn-cockpit:hover { filter: brightness(1.1); transform: translateY(-1px); }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center px-6">
+<a href="00-index.html" style="position:fixed;top:12px;left:12px;z-index:100;background:rgba(30,41,59,0.9);color:#94A3B8;font-size:12px;padding:6px 12px;border-radius:20px;text-decoration:none;display:inline-flex;align-items:center;gap:4px;box-shadow:0 2px 8px rgba(0,0,0,0.3);font-family:DM Sans,sans-serif">&#8592; Index</a>
+  <!-- Logo -->
+  <div class="mb-8">
+    <h1 class="font-heading font-[700] text-[28px] text-center"><span class="text-accent" style="text-shadow:0 0 15px rgba(59,130,246,0.5)">Claw</span>BTP</h1>
+  </div>
+
+  <!-- Alert icon -->
+  <div class="w-20 h-20 rounded-2xl bg-accent/15 flex items-center justify-center mb-6" style="box-shadow:0 0 30px rgba(59,130,246,0.3), 0 0 60px rgba(59,130,246,0.1)">
+    <i data-lucide="alert-circle" class="w-10 h-10 text-accent" style="filter:drop-shadow(0 0 8px rgba(59,130,246,0.6))"></i>
+  </div>
+
+  <!-- Title -->
+  <h2 class="font-heading font-[800] text-[32px] text-text text-center mb-3">Votre essai est termine</h2>
+  <p class="text-text-muted text-center max-w-md mb-2">Votre periode d'essai de 14 jours a expire. Choisissez un plan pour continuer a utiliser ClawBTP.</p>
+  <p class="text-accent text-sm font-semibold mb-10">-20% sur le paiement annuel</p>
+
+  <!-- Pricing cards -->
+  <div class="grid grid-cols-3 gap-6 max-w-4xl w-full mb-8">
+    <!-- Starter -->
+    <div class="card-cockpit p-7 flex flex-col">
+      <h3 class="font-heading font-semibold text-[18px] text-text mb-1">Starter</h3>
+      <p class="text-text-dim text-sm mb-6">Pour les petites equipes</p>
+      <div class="mb-6">
+        <span class="font-mono font-bold text-[40px] text-accent leading-none">49&#8364;</span>
+        <span class="text-text-dim text-sm"> /mois</span>
+      </div>
+      <ul class="space-y-3 mb-8 flex-1">
+        <li class="flex items-center gap-2 text-text-muted text-sm">
+          <i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0"></i>
+          Jusqu'a 3 chantiers
+        </li>
+        <li class="flex items-center gap-2 text-text-muted text-sm">
+          <i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0"></i>
+          10 utilisateurs max
+        </li>
+        <li class="flex items-center gap-2 text-text-muted text-sm">
+          <i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0"></i>
+          CR automatiques
+        </li>
+        <li class="flex items-center gap-2 text-text-muted text-sm">
+          <i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0"></i>
+          Suivi budget
+        </li>
+        <li class="flex items-center gap-2 text-text-dim text-sm">
+          <i data-lucide="x" class="w-4 h-4 text-text-dim flex-shrink-0"></i>
+          ClawBot IA
+        </li>
+      </ul>
+      <button class="btn-cockpit bg-bg-elevated text-text w-full border border-white/15">Choisir Starter</button>
+    </div>
+
+    <!-- Pro (highlighted) -->
+    <div class="card-cockpit p-7 flex flex-col border-accent/50 relative" style="box-shadow:0 0 25px rgba(59,130,246,0.2), 0 0 50px rgba(59,130,246,0.08)">
+      <div class="absolute -top-3 left-1/2 -translate-x-1/2">
+        <span class="bg-accent text-white text-xs font-heading font-bold px-4 py-1.5 rounded-full" style="box-shadow:0 0 12px rgba(59,130,246,0.4)">Populaire</span>
+      </div>
+      <h3 class="font-heading font-semibold text-[18px] text-text mb-1">Pro</h3>
+      <p class="text-text-dim text-sm mb-6">Pour les PME en croissance</p>
+      <div class="mb-6">
+        <span class="font-mono font-bold text-[40px] text-accent leading-none">99&#8364;</span>
+        <span class="text-text-dim text-sm"> /mois</span>
+      </div>
+      <ul class="space-y-3 mb-8 flex-1">
+        <li class="flex items-center gap-2 text-text-muted text-sm">
+          <i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0"></i>
+          Jusqu'a 10 chantiers
+        </li>
+        <li class="flex items-center gap-2 text-text-muted text-sm">
+          <i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0"></i>
+          25 utilisateurs max
+        </li>
+        <li class="flex items-center gap-2 text-text-muted text-sm">
+          <i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0"></i>
+          CR automatiques
+        </li>
+        <li class="flex items-center gap-2 text-text-muted text-sm">
+          <i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0"></i>
+          Suivi budget avance
+        </li>
+        <li class="flex items-center gap-2 text-text-muted text-sm">
+          <i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0"></i>
+          ClawBot IA illimite
+        </li>
+        <li class="flex items-center gap-2 text-text-muted text-sm">
+          <i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0"></i>
+          Alertes meteo
+        </li>
+      </ul>
+      <button class="btn-cockpit bg-accent text-white w-full glow-accent">Choisir Pro</button>
+    </div>
+
+    <!-- Business -->
+    <div class="card-cockpit p-7 flex flex-col">
+      <h3 class="font-heading font-semibold text-[18px] text-text mb-1">Business</h3>
+      <p class="text-text-dim text-sm mb-6">Pour les entreprises etablies</p>
+      <div class="mb-6">
+        <span class="font-mono font-bold text-[40px] text-accent leading-none">179&#8364;</span>
+        <span class="text-text-dim text-sm"> /mois</span>
+      </div>
+      <ul class="space-y-3 mb-8 flex-1">
+        <li class="flex items-center gap-2 text-text-muted text-sm">
+          <i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0"></i>
+          Chantiers illimites
+        </li>
+        <li class="flex items-center gap-2 text-text-muted text-sm">
+          <i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0"></i>
+          Utilisateurs illimites
+        </li>
+        <li class="flex items-center gap-2 text-text-muted text-sm">
+          <i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0"></i>
+          Tout le plan Pro
+        </li>
+        <li class="flex items-center gap-2 text-text-muted text-sm">
+          <i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0"></i>
+          Rapports personnalises
+        </li>
+        <li class="flex items-center gap-2 text-text-muted text-sm">
+          <i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0"></i>
+          Support prioritaire
+        </li>
+        <li class="flex items-center gap-2 text-text-muted text-sm">
+          <i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0"></i>
+          Export comptable
+        </li>
+      </ul>
+      <button class="btn-cockpit bg-bg-elevated text-text w-full border border-white/15">Choisir Business</button>
+    </div>
+  </div>
+
+  <!-- Lecture seule -->
+  <a href="15-admin-dashboard.html" class="text-text-dim text-sm hover:text-text-muted transition-colors flex items-center gap-1">
+    Continuer en lecture seule <i data-lucide="arrow-right" class="w-4 h-4"></i>
+  </a>
+
+  <script>lucide.createIcons();</script>
+</body>
+</html>

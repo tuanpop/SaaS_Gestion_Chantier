@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ClawBTP — ClawBot</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            heading: ['Outfit', 'sans-serif'],
+            sans: ['Public Sans', 'sans-serif']
+          },
+          colors: {
+            primary: { DEFAULT: '#334155', light: '#475569', dark: '#1E293B' },
+            accent: '#F97316',
+            danger: { DEFAULT: '#DC2626', bg: '#FEE2E2' },
+            warning: { DEFAULT: '#F59E0B', bg: '#FEF3C7' },
+            success: { DEFAULT: '#22C55E', bg: '#DCFCE7' },
+            surface: '#F1F5F9',
+            cream: '#FAFAF8',
+            muted: '#64748B',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background: #FAFAF8;
+      font-family: 'Public Sans', sans-serif;
+      color: #0F172A;
+    }
+    .sidebar {
+      position: fixed; left: 0; top: 0; bottom: 0;
+      width: 240px; background: #1E293B; color: #fff;
+      padding: 24px 0; z-index: 40;
+      border-right: 2px solid #000;
+    }
+    .sidebar a {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 24px; color: #94A3B8; text-decoration: none;
+      font-weight: 500; font-size: 15px;
+      transition: background 150ms, color 150ms;
+    }
+    .sidebar a:hover { background: #334155; color: #fff; }
+    .sidebar a.active {
+      background: #F97316; color: #fff; font-weight: 700;
+      border-left: 4px solid #fff;
+    }
+    .main-content {
+      margin-left: 240px; padding: 32px; min-height: 100vh;
+      display: flex; flex-direction: column;
+    }
+    .card-brutal {
+      border: 2px solid #000;
+      box-shadow: 4px 4px 0 #000;
+      border-radius: 6px;
+      background: #fff;
+    }
+    .btn-brutal {
+      border: 2px solid #000;
+      box-shadow: 3px 3px 0 #000;
+      border-radius: 6px;
+      font-weight: 700;
+      font-family: 'Outfit', sans-serif;
+      transition: transform 100ms, box-shadow 100ms;
+      cursor: pointer;
+      padding: 10px 20px;
+    }
+    .btn-brutal:hover {
+      box-shadow: 2px 2px 0 #000;
+      transform: translate(1px, 1px);
+    }
+    .btn-brutal:active {
+      box-shadow: 0px 0px 0 #000;
+      transform: translate(3px, 3px);
+    }
+    .badge { border: 2px solid; border-radius: 4px; padding: 2px 10px; font-weight: 600; font-size: 13px; display: inline-block; }
+    .badge-danger { background: #FEE2E2; border-color: #DC2626; color: #DC2626; }
+    .badge-warning { background: #FEF3C7; border-color: #F59E0B; color: #92400E; }
+    .input-brutal {
+      border: 2px solid #000;
+      border-radius: 6px;
+      padding: 14px;
+      font-size: 16px;
+      width: 100%;
+      outline: none;
+      font-family: 'Public Sans', sans-serif;
+      background: #fff;
+    }
+    .input-brutal:focus {
+      border-color: #F97316;
+      box-shadow: 0 0 0 3px rgba(249,115,22,0.15);
+    }
+    @keyframes dots {
+      0%, 20% { opacity: 0; }
+      50% { opacity: 1; }
+      100% { opacity: 0; }
+    }
+    .dot-1 { animation: dots 1.4s infinite 0s; }
+    .dot-2 { animation: dots 1.4s infinite 0.2s; }
+    .dot-3 { animation: dots 1.4s infinite 0.4s; }
+  </style>
+</head>
+<body>
+  <!-- Sidebar -->
+  <nav class="sidebar">
+    <div class="px-6 mb-2">
+      <a href="00-index.html" class="text-xs !text-[#64748B] !p-0 mb-4 hover:!text-white !font-normal"><i data-lucide="arrow-left" class="w-3 h-3"></i> Prototype</a>
+    </div>
+    <div class="px-6 mb-8">
+      <h1 class="font-heading font-[800] text-[22px]"><span class="text-accent">Claw</span>BTP</h1>
+    </div>
+    <a href="15-admin-dashboard.html"><i data-lucide="layout-dashboard" class="w-5 h-5"></i> Dashboard</a>
+    <a href="16-admin-chantier-detail.html"><i data-lucide="building-2" class="w-5 h-5"></i> Chantiers</a>
+    <a href="18-admin-equipe.html"><i data-lucide="users" class="w-5 h-5"></i> Équipe</a>
+    <a href="19-admin-notifications.html"><i data-lucide="bell" class="w-5 h-5"></i> Notifications</a>
+    <a href="20-admin-clawbot.html" class="active"><i data-lucide="bot" class="w-5 h-5"></i> ClawBot</a>
+  </nav>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <!-- Header -->
+    <div class="flex items-center gap-3 mb-6">
+      <h1 class="font-heading font-bold text-[28px]">ClawBot</h1>
+      <i data-lucide="bot" class="w-7 h-7 text-accent"></i>
+    </div>
+
+    <!-- Chat card -->
+    <div class="card-brutal flex-1 flex flex-col" style="min-height: calc(100vh - 160px);">
+      <!-- Messages area -->
+      <div class="flex-1 p-6 space-y-5 bg-cream rounded-t-md overflow-y-auto">
+        <!-- Bot message 1 -->
+        <div class="flex gap-3 max-w-[75%]">
+          <div class="w-8 h-8 rounded-full bg-accent text-white flex items-center justify-center flex-shrink-0 border-2 border-black">
+            <i data-lucide="bot" class="w-4 h-4"></i>
+          </div>
+          <div class="bg-white border-l-4 border-l-accent rounded-md p-4 border-2 border-black border-l-4">
+            <p class="text-sm">Bonjour Frédéric ! 1 chantier en retard, 2 alertes budget cette semaine.</p>
+          </div>
+        </div>
+
+        <!-- User message 1 -->
+        <div class="flex justify-end">
+          <div class="bg-primary-dark text-white rounded-md p-4 max-w-[65%] border-2 border-black">
+            <p class="text-sm">Quels chantiers dépassent le budget ?</p>
+          </div>
+        </div>
+
+        <!-- Bot message 2 with data cards -->
+        <div class="flex gap-3 max-w-[80%]">
+          <div class="w-8 h-8 rounded-full bg-accent text-white flex items-center justify-center flex-shrink-0 border-2 border-black">
+            <i data-lucide="bot" class="w-4 h-4"></i>
+          </div>
+          <div class="bg-white border-l-4 border-l-accent rounded-md p-4 border-2 border-black space-y-3">
+            <p class="text-sm">Voici les 2 chantiers avec dépassement budgétaire :</p>
+            <!-- Mini card Bertrand -->
+            <div class="border-2 border-black rounded-md p-3 border-l-4 border-l-danger bg-white">
+              <div class="flex items-center justify-between mb-1">
+                <span class="font-heading font-semibold text-sm">Bertrand</span>
+                <span class="badge badge-danger text-xs">Critique</span>
+              </div>
+              <p class="text-sm text-muted">73% budget — 45% avancement</p>
+            </div>
+            <!-- Mini card Martin -->
+            <div class="border-2 border-black rounded-md p-3 border-l-4 border-l-warning bg-white">
+              <div class="flex items-center justify-between mb-1">
+                <span class="font-heading font-semibold text-sm">Martin</span>
+                <span class="badge badge-warning text-xs">Attention</span>
+              </div>
+              <p class="text-sm text-muted">82% budget — 60% avancement</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- User message 2 -->
+        <div class="flex justify-end">
+          <div class="bg-primary-dark text-white rounded-md p-4 max-w-[65%] border-2 border-black">
+            <p class="text-sm">Crée une alerte sur Bertrand à 85%</p>
+          </div>
+        </div>
+
+        <!-- Bot confirmation message -->
+        <div class="flex gap-3 max-w-[75%]">
+          <div class="w-8 h-8 rounded-full bg-accent text-white flex items-center justify-center flex-shrink-0 border-2 border-black">
+            <i data-lucide="bot" class="w-4 h-4"></i>
+          </div>
+          <div class="bg-white border-l-4 border-l-accent rounded-md p-4 border-2 border-black">
+            <p class="text-sm mb-3">Créer une alerte budget à 85% sur le chantier Bertrand ?</p>
+            <div class="flex gap-3">
+              <button class="btn-brutal bg-success text-white text-sm py-2 px-4 !shadow-[2px_2px_0_#000]">Confirmer</button>
+              <button class="btn-brutal bg-white text-danger text-sm py-2 px-4 !shadow-[2px_2px_0_#000]">Annuler</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Streaming indicator -->
+        <div class="flex gap-3 max-w-[75%]">
+          <div class="w-8 h-8 rounded-full bg-accent text-white flex items-center justify-center flex-shrink-0 border-2 border-black">
+            <i data-lucide="bot" class="w-4 h-4"></i>
+          </div>
+          <div class="bg-white border-l-4 border-l-accent rounded-md p-4 border-2 border-black flex items-center gap-2">
+            <span class="flex gap-1">
+              <span class="w-2 h-2 bg-accent rounded-full dot-1"></span>
+              <span class="w-2 h-2 bg-accent rounded-full dot-2"></span>
+              <span class="w-2 h-2 bg-accent rounded-full dot-3"></span>
+            </span>
+            <span class="text-muted text-sm">ClawBot réfléchit...</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Input area -->
+      <div class="p-4 border-t-2 border-black">
+        <div class="flex gap-3">
+          <input type="text" placeholder="Posez une question..." class="input-brutal flex-1">
+          <button class="w-12 h-12 rounded-full bg-accent text-white border-2 border-black flex items-center justify-center cursor-pointer hover:bg-orange-600 transition-colors flex-shrink-0">
+            <i data-lucide="send" class="w-5 h-5"></i>
+          </button>
+        </div>
+        <p class="text-muted text-xs mt-2 text-center">ClawBot peut se tromper. Vérifiez les informations importantes.</p>
+      </div>
+    </div>
+  </div>
+
+  <script>lucide.createIcons();</script>
+</body>
+</html>

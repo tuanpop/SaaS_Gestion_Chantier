@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>ClawBTP — États spéciaux</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            heading: ['Outfit', 'sans-serif'],
+            sans: ['Public Sans', 'sans-serif']
+          },
+          colors: {
+            primary: { DEFAULT: '#334155', light: '#475569', dark: '#1E293B' },
+            accent: '#F97316',
+            danger: { DEFAULT: '#DC2626', bg: '#FEE2E2' },
+            warning: { DEFAULT: '#F59E0B', bg: '#FEF3C7' },
+            success: { DEFAULT: '#22C55E', bg: '#DCFCE7' },
+            surface: '#F1F5F9',
+            cream: '#FAFAF8',
+            muted: '#64748B',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    * { touch-action: manipulation; }
+    body {
+      overscroll-behavior: contain;
+      min-height: 100vh; min-height: 100dvh;
+      background: #FAFAF8;
+      font-family: 'Public Sans', sans-serif;
+      color: #0F172A;
+    }
+    .card-brutal {
+      border: 2px solid #000;
+      box-shadow: 4px 4px 0 #000;
+      border-radius: 6px;
+      background: #fff;
+      transition: transform 100ms, box-shadow 100ms;
+    }
+    .card-brutal:active {
+      box-shadow: 2px 2px 0 #000;
+      transform: translate(2px, 2px);
+    }
+    .btn-brutal {
+      border: 2px solid #000;
+      box-shadow: 3px 3px 0 #000;
+      border-radius: 6px;
+      min-height: 56px;
+      min-width: 56px;
+      font-weight: 700;
+      font-size: 18px;
+      font-family: 'Outfit', sans-serif;
+      transition: transform 100ms, box-shadow 100ms;
+      cursor: pointer;
+    }
+    .btn-brutal:active {
+      box-shadow: 1px 1px 0 #000;
+      transform: translate(2px, 2px);
+    }
+    .badge { border: 2px solid; border-radius: 4px; padding: 2px 10px; font-weight: 600; font-size: 14px; }
+    .badge-danger { background: #FEE2E2; border-color: #DC2626; color: #DC2626; }
+    .badge-success { background: #DCFCE7; border-color: #22C55E; color: #166534; }
+    .badge-warning { background: #FEF3C7; border-color: #F59E0B; color: #92400E; }
+    .badge-muted { background: #F1F5F9; border-color: #94A3B8; color: #64748B; }
+
+    @keyframes progress-bar {
+      0% { width: 10%; }
+      50% { width: 70%; }
+      100% { width: 90%; }
+    }
+    .progress-anim {
+      animation: progress-bar 2s ease-in-out infinite alternate;
+    }
+
+    .separator {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: #64748B;
+      font-family: 'Outfit', sans-serif;
+      font-weight: 600;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .separator::before, .separator::after {
+      content: '';
+      flex: 1;
+      height: 2px;
+      background: #94A3B8;
+    }
+  </style>
+</head>
+<body>
+  <div class="max-w-[375px] mx-auto min-h-screen bg-cream">
+    <!-- Retour proto -->
+    <a href="00-index.html" class="block px-4 pt-3 text-sm text-muted hover:underline">&larr; Retour au prototype</a>
+
+    <!-- Header -->
+    <div class="px-4 pt-4 pb-2">
+      <h1 class="font-heading text-2xl font-bold">États spéciaux</h1>
+      <p class="text-sm text-muted mt-1">Tous les écrans d'état pour la revue design</p>
+    </div>
+
+    <div class="px-4 pb-8 flex flex-col gap-5">
+
+      <!-- Aucune tâche -->
+      <div class="separator">Aucune tâche</div>
+      <div class="card-brutal p-8 text-center">
+        <div class="flex justify-center mb-4">
+          <i data-lucide="coffee" class="w-16 h-16 text-muted"></i>
+        </div>
+        <p class="font-heading text-xl font-bold mb-2">Rien de prévu aujourd'hui</p>
+        <p class="text-base text-muted">Profite bien !</p>
+      </div>
+
+      <!-- Aucune affectation -->
+      <div class="separator">Aucune affectation</div>
+      <div class="card-brutal p-8 text-center">
+        <div class="flex justify-center mb-4">
+          <i data-lucide="alert-circle" class="w-16 h-16 text-accent"></i>
+        </div>
+        <p class="font-heading text-xl font-bold mb-2">Tu n'es affecté à aucun chantier</p>
+        <p class="text-base text-muted mb-5">Contacte ton conducteur de travaux</p>
+        <a href="tel:0612345678" class="btn-brutal bg-accent text-white flex items-center justify-center gap-3 w-full no-underline">
+          <i data-lucide="phone" class="w-5 h-5"></i>
+          Appeler le conducteur : 06 12 34 56 78
+        </a>
+      </div>
+
+      <!-- Hors ligne -->
+      <div class="separator">Hors ligne</div>
+      <div class="card-brutal p-8 text-center border-danger" style="border-color: #DC2626;">
+        <div class="flex justify-center mb-4">
+          <i data-lucide="wifi-off" class="w-16 h-16 text-danger"></i>
+        </div>
+        <p class="font-heading text-xl font-bold mb-2">Pas de connexion</p>
+        <p class="text-base text-muted mb-5">Tes données seront synchronisées quand tu seras reconnecté</p>
+        <button class="btn-brutal bg-white text-black flex items-center justify-center gap-3 w-full">
+          <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+          Réessayer
+        </button>
+      </div>
+
+      <!-- Sync en cours -->
+      <div class="separator">Sync en cours</div>
+      <div class="card-brutal p-8 text-center">
+        <div class="flex justify-center mb-4">
+          <i data-lucide="upload-cloud" class="w-16 h-16 text-accent"></i>
+        </div>
+        <p class="font-heading text-xl font-bold mb-2">Synchronisation...</p>
+        <p class="text-base text-muted mb-4">Envoi des données en cours</p>
+        <div class="w-full h-2 border-2 border-black rounded-sm overflow-hidden">
+          <div class="h-full bg-accent progress-anim"></div>
+        </div>
+      </div>
+
+      <!-- Upload en attente -->
+      <div class="separator">Upload en attente</div>
+      <div class="card-brutal p-6">
+        <div class="flex items-center gap-4 mb-4">
+          <i data-lucide="clock" class="w-10 h-10 text-accent"></i>
+          <div>
+            <p class="font-heading text-lg font-bold">2 photos en attente d'envoi</p>
+            <p class="text-sm text-muted">Seront envoyées dès la reconnexion</p>
+          </div>
+        </div>
+        <div class="flex flex-col gap-2">
+          <div class="flex items-center gap-3 p-3 bg-surface rounded-md border-2 border-black">
+            <i data-lucide="image" class="w-5 h-5 text-muted"></i>
+            <span class="text-sm font-medium flex-1">photo_cuisine_01.jpg</span>
+            <span class="badge badge-warning text-xs">En attente</span>
+          </div>
+          <div class="flex items-center gap-3 p-3 bg-surface rounded-md border-2 border-black">
+            <i data-lucide="image" class="w-5 h-5 text-muted"></i>
+            <span class="text-sm font-medium flex-1">photo_sdb_avant.jpg</span>
+            <span class="badge badge-warning text-xs">En attente</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>lucide.createIcons();</script>
+</body>
+</html>

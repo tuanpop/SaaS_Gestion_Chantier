@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ClawBTP — Prototype V2 Cockpit Sombre</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            heading: ['Space Grotesk', 'sans-serif'],
+            sans: ['DM Sans', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace']
+          },
+          colors: {
+            bg: { DEFAULT: '#0F172A', card: '#1E293B', elevated: '#334155' },
+            accent: '#3B82F6',
+            danger: { DEFAULT: '#EF4444', glow: 'rgba(239,68,68,0.2)' },
+            warning: { DEFAULT: '#F59E0B', glow: 'rgba(245,158,11,0.2)' },
+            success: { DEFAULT: '#22C55E', glow: 'rgba(34,197,94,0.2)' },
+            text: { DEFAULT: '#F8FAFC', muted: '#94A3B8', dim: '#64748B' },
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { min-height: 100vh; min-height: 100dvh; background: #0F172A; font-family: 'DM Sans', sans-serif; color: #F8FAFC; }
+    .card-cockpit { background: #1E293B; border: 1px solid rgba(148,163,184,0.2); border-radius: 12px; transition: border-color 200ms, box-shadow 200ms; }
+    .card-cockpit:hover { border-color: #3B82F6; box-shadow: 0 0 12px rgba(59,130,246,0.3); }
+  </style>
+</head>
+<body>
+
+  <div class="max-w-6xl mx-auto px-6 py-12">
+    <!-- Header -->
+    <div class="mb-12">
+      <h1 class="text-4xl font-heading font-bold mb-2">
+        <span class="text-accent">Claw</span><span class="text-text">BTP</span>
+        <span class="text-lg font-sans font-normal text-text-dim ml-3">Prototype V2 — Cockpit Sombre</span>
+      </h1>
+      <p class="text-text-muted text-lg">Maquettes navigables — Design System Dark Cockpit</p>
+      <div class="flex gap-3 mt-4 flex-wrap">
+        <span class="inline-block rounded-md px-3 py-1 text-sm font-semibold bg-accent text-white">Bleu Accent</span>
+        <span class="inline-block rounded-md px-3 py-1 text-sm font-semibold bg-success text-white">Vert OK</span>
+        <span class="inline-block rounded-md px-3 py-1 text-sm font-semibold bg-warning text-white">Ambre</span>
+        <span class="inline-block rounded-md px-3 py-1 text-sm font-semibold bg-danger text-white">Rouge Alerte</span>
+        <span class="inline-block rounded-md px-3 py-1 text-sm font-semibold bg-bg-card text-text-muted border border-white/10">Card Dark</span>
+        <span class="inline-block rounded-md px-3 py-1 text-sm font-semibold bg-bg-elevated text-text">Elevated</span>
+      </div>
+    </div>
+
+    <!-- OUVRIER PWA -->
+    <section class="mb-12">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-10 h-10 bg-accent rounded-lg flex items-center justify-center" style="box-shadow: 0 0 12px rgba(59,130,246,0.4)">
+          <i data-lucide="hard-hat" class="w-5 h-5 text-white"></i>
+        </div>
+        <div>
+          <h2 class="text-xl font-heading font-bold text-text">Ouvrier — PWA Mobile</h2>
+          <p class="text-sm text-text-muted">375px · Terrain, gants, soleil · 2 taps max</p>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+        <a href="01-ouvrier-scan-qr.html" class="card-cockpit p-4 block" style="border-left: 3px solid #3B82F6">
+          <div class="text-sm font-heading font-semibold">Scan QR Code</div>
+          <div class="text-xs text-text-muted mt-1">Onboarding 90 sec</div>
+        </a>
+        <a href="02-ouvrier-selecteur-chantier.html" class="card-cockpit p-4 block" style="border-left: 3px solid #3B82F6">
+          <div class="text-sm font-heading font-semibold">Selecteur Chantier</div>
+          <div class="text-xs text-text-muted mt-1">2+ affectations</div>
+        </a>
+        <a href="03-ouvrier-taches.html" class="card-cockpit p-4 block" style="border-left: 3px solid #3B82F6">
+          <div class="text-sm font-heading font-semibold">Liste Taches</div>
+          <div class="text-xs text-text-muted mt-1">Ecran principal</div>
+        </a>
+        <a href="04-ouvrier-tache-detail.html" class="card-cockpit p-4 block" style="border-left: 3px solid #3B82F6">
+          <div class="text-sm font-heading font-semibold">Detail Tache</div>
+          <div class="text-xs text-text-muted mt-1">Actions + photos</div>
+        </a>
+        <a href="05-ouvrier-photo.html" class="card-cockpit p-4 block" style="border-left: 3px solid #3B82F6">
+          <div class="text-sm font-heading font-semibold">Photo Upload</div>
+          <div class="text-xs text-text-muted mt-1">Camera + galerie</div>
+        </a>
+        <a href="06-ouvrier-etats.html" class="card-cockpit p-4 block" style="border-left: 3px solid #3B82F6">
+          <div class="text-sm font-heading font-semibold">Etats Speciaux</div>
+          <div class="text-xs text-text-muted mt-1">Offline, vide, erreur</div>
+        </a>
+        <a href="07-ouvrier-clawbot.html" class="card-cockpit p-4 block" style="border-left: 3px solid #3B82F6">
+          <div class="text-sm font-heading font-semibold">ClawBot Ouvrier</div>
+          <div class="text-xs text-text-muted mt-1">Chat simplifie</div>
+        </a>
+      </div>
+    </section>
+
+    <!-- CONDUCTEUR -->
+    <section class="mb-12">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-10 h-10 bg-accent rounded-lg flex items-center justify-center" style="box-shadow: 0 0 12px rgba(59,130,246,0.4)">
+          <i data-lucide="clipboard-list" class="w-5 h-5 text-white"></i>
+        </div>
+        <div>
+          <h2 class="text-xl font-heading font-bold text-text">Conducteur — Web Responsive Mobile</h2>
+          <p class="text-sm text-text-muted">390px · Bottom nav · Mobile-first en deplacement</p>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+        <a href="08-conducteur-chantiers.html" class="card-cockpit p-4 block" style="border-left: 3px solid #22C55E">
+          <div class="text-sm font-heading font-semibold">Liste Chantiers</div>
+          <div class="text-xs text-text-muted mt-1">Vue par chantier</div>
+        </a>
+        <a href="09-conducteur-chantier-detail.html" class="card-cockpit p-4 block" style="border-left: 3px solid #22C55E">
+          <div class="text-sm font-heading font-semibold">Detail Chantier</div>
+          <div class="text-xs text-text-muted mt-1">Taches + equipe</div>
+        </a>
+        <a href="10-conducteur-taches.html" class="card-cockpit p-4 block" style="border-left: 3px solid #22C55E">
+          <div class="text-sm font-heading font-semibold">Gestion Taches</div>
+          <div class="text-xs text-text-muted mt-1">Creer, assigner</div>
+        </a>
+        <a href="11-conducteur-cr.html" class="card-cockpit p-4 block" style="border-left: 3px solid #22C55E">
+          <div class="text-sm font-heading font-semibold">CR Journalier</div>
+          <div class="text-xs text-text-muted mt-1">Validation workflow</div>
+        </a>
+        <a href="12-conducteur-alertes.html" class="card-cockpit p-4 block" style="border-left: 3px solid #F59E0B">
+          <div class="text-sm font-heading font-semibold">Alertes</div>
+          <div class="text-xs text-text-muted mt-1">Derives, blocages</div>
+        </a>
+        <a href="13-conducteur-clawbot.html" class="card-cockpit p-4 block" style="border-left: 3px solid #22C55E">
+          <div class="text-sm font-heading font-semibold">ClawBot Conducteur</div>
+          <div class="text-xs text-text-muted mt-1">Chat + actions</div>
+        </a>
+      </div>
+    </section>
+
+    <!-- ADMIN -->
+    <section class="mb-12">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-10 h-10 bg-accent rounded-lg flex items-center justify-center" style="box-shadow: 0 0 12px rgba(59,130,246,0.4)">
+          <i data-lucide="layout-dashboard" class="w-5 h-5 text-white"></i>
+        </div>
+        <div>
+          <h2 class="text-xl font-heading font-bold text-text">Admin / Dirigeant — Dashboard Desktop</h2>
+          <p class="text-sm text-text-muted">1440px · Sidebar · Dense, cockpit chantier</p>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+        <a href="14-admin-login.html" class="card-cockpit p-4 block" style="border-left: 3px solid #3B82F6">
+          <div class="text-sm font-heading font-semibold">Login / Signup</div>
+          <div class="text-xs text-text-muted mt-1">Inscription + trial</div>
+        </a>
+        <a href="15-admin-dashboard.html" class="card-cockpit p-4 block" style="border-left: 3px solid #3B82F6">
+          <div class="text-sm font-heading font-semibold">Dashboard</div>
+          <div class="text-xs text-text-muted mt-1">Portefeuille R/O/V</div>
+        </a>
+        <a href="16-admin-chantier-detail.html" class="card-cockpit p-4 block" style="border-left: 3px solid #3B82F6">
+          <div class="text-sm font-heading font-semibold">Detail Chantier</div>
+          <div class="text-xs text-text-muted mt-1">Budget + taches + photos</div>
+        </a>
+        <a href="17-admin-chantier-nouveau.html" class="card-cockpit p-4 block" style="border-left: 3px solid #3B82F6">
+          <div class="text-sm font-heading font-semibold">Nouveau Chantier</div>
+          <div class="text-xs text-text-muted mt-1">Formulaire creation</div>
+        </a>
+        <a href="18-admin-equipe.html" class="card-cockpit p-4 block" style="border-left: 3px solid #3B82F6">
+          <div class="text-sm font-heading font-semibold">Equipe</div>
+          <div class="text-xs text-text-muted mt-1">Invitations + QR codes</div>
+        </a>
+        <a href="19-admin-notifications.html" class="card-cockpit p-4 block" style="border-left: 3px solid #3B82F6">
+          <div class="text-sm font-heading font-semibold">Notifications</div>
+          <div class="text-xs text-text-muted mt-1">Alertes groupees</div>
+        </a>
+        <a href="20-admin-clawbot.html" class="card-cockpit p-4 block" style="border-left: 3px solid #3B82F6">
+          <div class="text-sm font-heading font-semibold">ClawBot Admin</div>
+          <div class="text-xs text-text-muted mt-1">Chat + rapports</div>
+        </a>
+        <a href="21-admin-trial-expire.html" class="card-cockpit p-4 block" style="border-left: 3px solid #F59E0B">
+          <div class="text-sm font-heading font-semibold">Trial Expire</div>
+          <div class="text-xs text-text-muted mt-1">Pricing + upgrade</div>
+        </a>
+      </div>
+    </section>
+
+    <!-- Design System -->
+    <section class="mt-16 mb-8 border-t border-white/10 pt-8">
+      <h2 class="text-lg font-heading font-bold text-text mb-4">Design System — Cockpit Sombre</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="card-cockpit p-5">
+          <h3 class="font-heading font-bold mb-3">Typographie</h3>
+          <p class="text-3xl font-heading font-bold mb-1">Space Grotesk 700</p>
+          <p class="text-xl font-heading font-semibold mb-1">Space Grotesk 600</p>
+          <p class="text-base">DM Sans 400 — corps de texte</p>
+          <p class="text-sm text-text-muted">DM Sans muted</p>
+          <p class="text-sm font-mono mt-2 text-accent">JetBrains Mono — chiffres</p>
+        </div>
+        <div class="card-cockpit p-5">
+          <h3 class="font-heading font-bold mb-3">Composants</h3>
+          <div class="space-y-3">
+            <button class="rounded-lg px-4 py-2 font-heading font-semibold bg-accent text-white text-sm cursor-pointer border border-accent/50" style="box-shadow: 0 0 12px rgba(59,130,246,0.3)">Bouton Accent</button>
+            <div class="flex gap-2 flex-wrap">
+              <span class="rounded-md bg-danger/20 text-danger px-2 py-0.5 text-xs font-semibold uppercase tracking-wider">Bloque</span>
+              <span class="rounded-md bg-warning/20 text-warning px-2 py-0.5 text-xs font-semibold uppercase tracking-wider">Derive</span>
+              <span class="rounded-md bg-success/20 text-success px-2 py-0.5 text-xs font-semibold uppercase tracking-wider">OK</span>
+              <span class="rounded-md bg-accent/20 text-accent px-2 py-0.5 text-xs font-semibold uppercase tracking-wider">Valide</span>
+            </div>
+            <div class="h-1.5 rounded-full bg-bg-elevated overflow-hidden">
+              <div class="h-full bg-accent rounded-full" style="width: 65%"></div>
+            </div>
+          </div>
+        </div>
+        <div class="card-cockpit p-5">
+          <h3 class="font-heading font-bold mb-3">Identite</h3>
+          <ul class="space-y-1 text-sm text-text-muted">
+            <li>Fond #0F172A, Cards #1E293B</li>
+            <li>Bordures rgba semi-transparentes</li>
+            <li>Glow colore selon statut</li>
+            <li>Coins 12px cards, 10px boutons</li>
+            <li>Accent bleu #3B82F6</li>
+            <li>Feedback active: scale(0.97)</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>lucide.createIcons();</script>
+</body>
+</html>

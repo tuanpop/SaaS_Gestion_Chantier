@@ -4,6 +4,15 @@
 
 **Contexte** : outil professionnel BTP, pas une startup tech. L'utilisateur est un dirigeant de 45 ans ou un ouvrier de 30 ans avec les mains sales. Le design doit inspirer **confiance et efficacité**, pas "innovation".
 
+**Typographie recommandée :**
+- **Plus Jakarta Sans** — police unique heading + body, moderne, lisible, optimisée SaaS/dashboards
+- Alternative : **Lexend** (heading) + **Source Sans 3** (body) — conçues pour la lisibilité, pertinent contexte terrain
+- Google Fonts avec `font-display: swap` obligatoire (évite le flash de texte invisible)
+
+```
+fontFamily: { sans: ['Plus Jakarta Sans', 'sans-serif'] }
+```
+
 **Ce qui est interdit** :
 - Gradients violet/blanc ou bleu/blanc "startup générique"
 - Cards Bootstrap-style avec `box-shadow: 0 4px 6px rgba(0,0,0,0.1)`
@@ -43,7 +52,7 @@ Utiliser ces variables CSS dans tous les composants. Ne jamais hardcoder les cou
   --color-surface: #F2F2F2;
   --color-border: #CCCCCC;
   --color-text: #222222;
-  --color-text-muted: #666666;
+  --color-text-muted: #555555;        /* Renforcé pour lisibilité soleil direct chantier (ratio ≥ 7:1 sur blanc) */
 
   /* Spacing */
   --spacing-xs: 0.25rem;
@@ -69,8 +78,20 @@ Utiliser ces variables CSS dans tous les composants. Ne jamais hardcoder les cou
 ❌ Jamais : tap 1 → ouvrir menu → tap 2 → sous-menu → tap 3 → action
 ```
 
+**CSS global PWA ouvrier — obligatoire :**
+```css
+/* Supprime le délai 300ms au tap — critique pour l'expérience "2 taps rapides" */
+* { touch-action: manipulation; }
+
+/* Empêche le pull-to-refresh accidentel en mode standalone */
+body { overscroll-behavior: contain; }
+
+/* Viewport mobile — fallback pour Android WebView ancien */
+body { min-height: 100vh; min-height: 100dvh; }
+```
+
 **Contraintes de layout :**
-- Boutons tactiles : **min 56px hauteur** (pas 44px — plus confortable avec les gants)
+- Boutons tactiles : **min 56×56px** (hauteur ET largeur — utilisable avec des gants)
 - Espacement entre éléments cliquables : **min 8px** (évite les taps accidentels)
 - Éléments d'action en **bas de l'écran** (zone de confort pouce)
 - **Jamais de menus hamburger** — navigation plate uniquement
@@ -88,6 +109,9 @@ Utiliser ces variables CSS dans tous les composants. Ne jamais hardcoder les cou
 - Feedback haptique sur les actions critiques (Terminé, Bloqué) si disponible
 - Indicateur visuel clair pour les uploads en attente offline
 - Banner "Ajouter à l'écran d'accueil" après le premier scan QR réussi
+- **Active state** : `active:scale-95` sur tous les boutons — feedback immédiat au tap
+- **Disabled state** : `opacity-50 cursor-not-allowed` — bouton grisé quand l'action n'est pas disponible
+- **Loading state** : bouton désactivé + spinner inline pendant les actions async (empêche les doubles taps)
 
 **États à designer impérativement :**
 - Tâche à faire / en cours / terminée / bloquée
@@ -96,12 +120,22 @@ Utiliser ces variables CSS dans tous les composants. Ne jamais hardcoder les cou
 - Aucune tâche aujourd'hui
 - Aucune affectation active (message + numéro conducteur)
 - Sélecteur de chantier (si 2+ affectations actives le même jour)
+- Erreur réseau (message "Pas de connexion" + bouton "Réessayer" — fréquent en zone chantier)
+- Sync en cours (indicateur de progression pour les uploads différés)
 
 ---
 
 ### Interface Conducteur (Web responsive mobile-first)
 
 **Principe : même densité qu'une app native, même fluidité.**
+
+**CSS global conducteur mobile :**
+```css
+* { touch-action: manipulation; }       /* Supprime le délai 300ms */
+body { min-height: 100vh; min-height: 100dvh; }  /* Fallback viewport */
+```
+
+**Boutons async :** désactiver le bouton + spinner inline pendant les actions (valider CR, assigner tâche) — empêche les doubles taps en déplacement.
 
 **Navigation mobile :**
 - `BottomNavigationBar` fixe — max 5 onglets
@@ -242,6 +276,30 @@ import { Keyboard } from '@capacitor/keyboard' // si Capacitor activé
 // ou CSS :
 // body { height: 100dvh } // dvh = dynamic viewport height
 ```
+
+---
+
+## Transitions & animations — règles partagées
+
+```css
+/* Durée standard micro-interactions : 200ms ease-out */
+transition: color 200ms ease-out, background-color 200ms ease-out, opacity 200ms ease-out;
+
+/* UNIQUEMENT transform et opacity pour les animations — jamais width/height/top/left (repaints coûteux) */
+/* Exemple : feedback tap ouvrier */
+.btn:active { transform: scale(0.95); }
+```
+
+- **150-200ms** : hover, focus, changement de couleur
+- **200-300ms** : apparition/disparition d'éléments (toast, drawer)
+- **Easing** : `ease-out` pour les entrées, `ease-in` pour les sorties
+
+---
+
+## Dark mode — hors scope V1
+
+Le dark mode n'est pas implémenté en V1. Ne pas ajouter de classes `dark:` ni de logique `prefers-color-scheme`.
+Réévaluer en V2 si le feedback terrain montre un usage fréquent tôt le matin (< 7h) ou tard le soir (> 20h).
 
 ---
 

@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ClawBTP — Connexion Admin</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { heading: ['Space Grotesk','sans-serif'], sans: ['DM Sans','sans-serif'], mono: ['JetBrains Mono','monospace'] },
+          colors: {
+            bg: { DEFAULT: '#0F172A', card: '#1E293B', elevated: '#334155' },
+            accent: '#3B82F6',
+            danger: { DEFAULT: '#EF4444' },
+            warning: { DEFAULT: '#F59E0B' },
+            success: { DEFAULT: '#22C55E' },
+            text: { DEFAULT: '#F8FAFC', muted: '#94A3B8', dim: '#64748B' },
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { background: #0F172A; font-family: 'DM Sans', sans-serif; color: #F8FAFC; }
+    .glow-accent { box-shadow: 0 0 20px rgba(59,130,246,0.3), 0 0 60px rgba(59,130,246,0.1); }
+    .glow-accent-subtle { box-shadow: 0 0 10px rgba(59,130,246,0.2); }
+    .glow-danger { box-shadow: 0 0 15px rgba(239,68,68,0.3); }
+    .glow-warning { box-shadow: 0 0 15px rgba(245,158,11,0.3); }
+    .glow-success { box-shadow: 0 0 15px rgba(34,197,94,0.3); }
+    .card-cockpit { background: #1E293B; border: 1px solid rgba(148,163,184,0.15); border-radius: 12px; }
+    .btn-cockpit { border-radius: 10px; font-weight: 600; font-family: 'Space Grotesk', sans-serif; cursor: pointer; transition: all 150ms; padding: 12px 24px; border: none; }
+    .btn-cockpit:hover { filter: brightness(1.1); transform: translateY(-1px); }
+    .input-cockpit { background: #1E293B; border: 1px solid #334155; border-radius: 10px; padding: 14px 16px; font-size: 15px; width: 100%; outline: none; color: #F8FAFC; font-family: 'DM Sans', sans-serif; transition: border-color 150ms, box-shadow 150ms; }
+    .input-cockpit:focus { border-color: #3B82F6; box-shadow: 0 0 0 3px rgba(59,130,246,0.15); }
+    .input-cockpit::placeholder { color: #64748B; }
+    .tab-cockpit { padding: 12px 28px; font-weight: 600; font-family: 'Space Grotesk', sans-serif; cursor: pointer; font-size: 15px; transition: all 150ms; border: none; background: transparent; color: #64748B; border-bottom: 2px solid transparent; }
+    .tab-cockpit.active { color: #3B82F6; border-bottom-color: #3B82F6; text-shadow: 0 0 10px rgba(59,130,246,0.5); }
+    .tab-cockpit:hover:not(.active) { color: #94A3B8; }
+  </style>
+</head>
+<body class="min-h-screen">
+<a href="00-index.html" style="position:fixed;top:12px;left:12px;z-index:100;background:rgba(30,41,59,0.9);color:#94A3B8;font-size:12px;padding:6px 12px;border-radius:20px;text-decoration:none;display:inline-flex;align-items:center;gap:4px;box-shadow:0 2px 8px rgba(0,0,0,0.3);font-family:DM Sans,sans-serif">&#8592; Index</a>
+  <div class="flex min-h-screen">
+    <!-- Left Panel — Branding -->
+    <div class="w-[55%] bg-[#0B1120] p-12 flex flex-col justify-between relative overflow-hidden border-r border-white/10">
+      <div>
+        <div class="mb-12">
+          <h1 class="font-heading font-[800] text-[36px]"><span class="text-accent" style="text-shadow: 0 0 20px rgba(59,130,246,0.5)">Claw</span>BTP</h1>
+        </div>
+        <h2 class="font-heading font-semibold text-[24px] leading-tight mb-3 max-w-md text-text">
+          Le seul outil BTP que tes ouvriers utilisent vraiment.
+        </h2>
+        <p class="text-text-muted text-[15px] mb-10 max-w-sm">Pilotez vos chantiers, budgets et equipes depuis un cockpit unique.</p>
+        <div class="space-y-5 mb-16">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-lg bg-accent/15 flex items-center justify-center glow-accent-subtle">
+              <i data-lucide="qr-code" class="w-5 h-5 text-accent"></i>
+            </div>
+            <span class="text-[16px] font-medium text-text-muted">QR code : operationnel en 90 secondes</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-lg bg-accent/15 flex items-center justify-center glow-accent-subtle">
+              <i data-lucide="file-text" class="w-5 h-5 text-accent"></i>
+            </div>
+            <span class="text-[16px] font-medium text-text-muted">CR automatiques chaque soir</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-lg bg-accent/15 flex items-center justify-center glow-accent-subtle">
+              <i data-lucide="trending-up" class="w-5 h-5 text-accent"></i>
+            </div>
+            <span class="text-[16px] font-medium text-text-muted">Budget visible en temps reel</span>
+          </div>
+        </div>
+      </div>
+      <!-- Illustration: stacked cockpit cards -->
+      <div class="relative h-[240px]">
+        <div class="card-cockpit absolute bottom-0 left-0 w-[270px] p-4 rotate-[-4deg] opacity-70 glow-success">
+          <div class="text-xs font-semibold text-text-dim mb-1 uppercase tracking-wide">Chantier Martin</div>
+          <div class="flex justify-between items-center">
+            <span class="font-mono font-bold text-text text-lg">42 000&#8364;</span>
+            <span class="text-xs font-semibold bg-success/20 text-success rounded-full px-2 py-0.5" style="box-shadow:0 0 8px rgba(34,197,94,0.3)">OK</span>
+          </div>
+          <div class="h-1.5 bg-bg-elevated rounded-full mt-2"><div class="h-full bg-success rounded-full" style="width:55%"></div></div>
+        </div>
+        <div class="card-cockpit absolute bottom-10 left-16 w-[270px] p-4 rotate-[2deg] opacity-80 glow-warning">
+          <div class="text-xs font-semibold text-text-dim mb-1 uppercase tracking-wide">Chantier Dupont</div>
+          <div class="flex justify-between items-center">
+            <span class="font-mono font-bold text-text text-lg">78 500&#8364;</span>
+            <span class="text-xs font-semibold bg-warning/20 text-warning rounded-full px-2 py-0.5" style="box-shadow:0 0 8px rgba(245,158,11,0.3)">Derive</span>
+          </div>
+          <div class="h-1.5 bg-bg-elevated rounded-full mt-2"><div class="h-full bg-warning rounded-full" style="width:78%"></div></div>
+        </div>
+        <div class="card-cockpit absolute bottom-20 left-32 w-[270px] p-4 rotate-[-1deg] glow-danger">
+          <div class="text-xs font-semibold text-text-dim mb-1 uppercase tracking-wide">Chantier Leclerc</div>
+          <div class="flex justify-between items-center">
+            <span class="font-mono font-bold text-text text-lg">31 200&#8364;</span>
+            <span class="text-xs font-semibold bg-danger/20 text-danger rounded-full px-2 py-0.5" style="box-shadow:0 0 8px rgba(239,68,68,0.3)">Retard</span>
+          </div>
+          <div class="h-1.5 bg-bg-elevated rounded-full mt-2"><div class="h-full bg-danger rounded-full" style="width:92%"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Panel — Forms -->
+    <div class="w-[45%] bg-bg flex items-center justify-center p-12">
+      <div class="w-full max-w-[420px]">
+        <!-- Tabs -->
+        <div class="flex mb-8 border-b border-white/10">
+          <button onclick="switchTab('login')" id="tab-login" class="tab-cockpit active">Connexion</button>
+          <button onclick="switchTab('signup')" id="tab-signup" class="tab-cockpit">Inscription</button>
+        </div>
+
+        <!-- Login Form -->
+        <div id="form-login">
+          <div class="space-y-5">
+            <div>
+              <label class="block font-heading font-medium text-[11px] uppercase text-text-dim mb-2 tracking-widest">Email</label>
+              <input type="email" placeholder="frederic@sandau.fr" class="input-cockpit">
+            </div>
+            <div>
+              <label class="block font-heading font-medium text-[11px] uppercase text-text-dim mb-2 tracking-widest">Mot de passe</label>
+              <input type="password" placeholder="&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;" class="input-cockpit">
+            </div>
+            <button class="btn-cockpit bg-accent text-white w-full text-[15px] py-3.5 glow-accent">Se connecter</button>
+          </div>
+          <div class="flex items-center gap-4 my-6">
+            <div class="flex-1 h-px bg-white/10"></div>
+            <span class="text-text-dim text-sm font-medium">ou</span>
+            <div class="flex-1 h-px bg-white/10"></div>
+          </div>
+          <button class="btn-cockpit bg-bg-card text-text-muted w-full text-[15px] py-3.5 border border-white/10">
+            <span class="flex items-center justify-center gap-2">
+              <i data-lucide="wand-2" class="w-4 h-4"></i>
+              Recevoir un magic link
+            </span>
+          </button>
+        </div>
+
+        <!-- Signup Form -->
+        <div id="form-signup" class="hidden">
+          <div class="space-y-5">
+            <div>
+              <label class="block font-heading font-medium text-[11px] uppercase text-text-dim mb-2 tracking-widest">Nom de l'entreprise</label>
+              <input type="text" placeholder="Sandau Charpente" class="input-cockpit">
+            </div>
+            <div>
+              <label class="block font-heading font-medium text-[11px] uppercase text-text-dim mb-2 tracking-widest">Secteur</label>
+              <select class="input-cockpit text-text-dim">
+                <option value="">Choisir un secteur</option>
+                <option>Plomberie</option>
+                <option>Electricite</option>
+                <option>Carrelage</option>
+                <option>Peinture</option>
+                <option>Maconnerie</option>
+                <option>Charpente</option>
+                <option>Menuiserie</option>
+                <option>Multi-corps</option>
+              </select>
+            </div>
+            <div>
+              <label class="block font-heading font-medium text-[11px] uppercase text-text-dim mb-2 tracking-widest">Email professionnel</label>
+              <input type="email" placeholder="frederic@sandau.fr" class="input-cockpit">
+            </div>
+            <div>
+              <label class="block font-heading font-medium text-[11px] uppercase text-text-dim mb-2 tracking-widest">Mot de passe</label>
+              <input type="password" placeholder="Min 12 caracteres" class="input-cockpit">
+              <p class="text-text-dim text-xs mt-1.5">Minimum 12 caracteres</p>
+            </div>
+            <button class="btn-cockpit bg-accent text-white w-full text-[15px] py-3.5 glow-accent">Demarrer l'essai gratuit</button>
+          </div>
+          <p class="text-center text-text-muted text-sm mt-5 font-medium">14 jours gratuits, sans carte bancaire</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    lucide.createIcons();
+    function switchTab(tab) {
+      const loginForm = document.getElementById('form-login');
+      const signupForm = document.getElementById('form-signup');
+      const tabLogin = document.getElementById('tab-login');
+      const tabSignup = document.getElementById('tab-signup');
+      if (tab === 'login') {
+        loginForm.classList.remove('hidden');
+        signupForm.classList.add('hidden');
+        tabLogin.classList.add('active');
+        tabSignup.classList.remove('active');
+      } else {
+        loginForm.classList.add('hidden');
+        signupForm.classList.remove('hidden');
+        tabSignup.classList.add('active');
+        tabLogin.classList.remove('active');
+      }
+    }
+  </script>
+</body>
+</html>

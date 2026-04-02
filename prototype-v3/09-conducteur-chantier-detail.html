@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>ClawBTP - Detail Chantier</title>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;touch-action:manipulation}
+body{background:#FAF6F1;font-family:'Source Sans 3',sans-serif;color:#292524;max-width:390px;margin:0 auto;min-height:100vh;padding-bottom:80px}
+.header{background:#C2703E;color:#fff;padding:16px 20px 20px;border-radius:0 0 20px 20px}
+.header-back{display:flex;align-items:center;gap:8px;color:#fff;text-decoration:none;font-size:14px;margin-bottom:8px;opacity:0.85}
+.header h1{font-family:'Lexend',sans-serif;font-weight:700;font-size:20px;margin-bottom:4px}
+.header-meta{display:flex;gap:8px;align-items:center}
+.badge-warm{border-radius:8px;padding:4px 12px;font-weight:600;font-size:13px;display:inline-block}
+.badge-danger{background:#FEE2E2;color:#DC2626}
+.badge-warning{background:#FEF3C7;color:#D97706}
+.badge-success{background:#DCFCE7;color:#15803D}
+.badge-muted{background:#F5F0E8;color:#78716C}
+.badge-accent{background:#FEF3C7;color:#B45309}
+.tabs{display:flex;gap:8px;padding:16px 16px 0}
+.tab{padding:10px 20px;border-radius:8px;font-family:'Lexend',sans-serif;font-weight:600;font-size:14px;background:#F5F0E8;color:#78716C;border:none;cursor:pointer;transition:all 150ms}
+.tab.active{background:#C2703E;color:#fff}
+.content{padding:16px}
+.card-warm{background:#fff;border:1px solid #E7E0D6;border-radius:14px;box-shadow:0 2px 8px rgba(120,53,15,0.08);transition:box-shadow 200ms,transform 200ms;padding:14px;margin-bottom:10px}
+.card-warm:active{box-shadow:0 1px 3px rgba(120,53,15,0.1);transform:translateY(1px)}
+.task-card{display:flex;gap:12px;align-items:center}
+.task-border{width:4px;border-radius:2px;align-self:stretch;flex-shrink:0}
+.border-red{background:#DC2626}
+.border-orange{background:#D97706}
+.border-green{background:#15803D}
+.border-gray{background:#A8A29E}
+.task-info{flex:1;min-width:0}
+.task-title{font-family:'Lexend',sans-serif;font-weight:600;font-size:14px;margin-bottom:2px}
+.task-sub{font-size:12px;color:#78716C}
+.task-blocked{background:#FEE2E2 !important;border-color:#FECACA}
+.equipe-item{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #F5F0E8}
+.equipe-avatar{width:36px;height:36px;border-radius:50%;background:#C2703E;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:600;font-size:13px;font-family:'Lexend',sans-serif}
+.equipe-name{font-weight:600;font-size:14px}
+.equipe-role{font-size:12px;color:#78716C}
+.photo-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.photo-card{background:#E7E0D6;border-radius:12px;aspect-ratio:1;display:flex;align-items:center;justify-content:center;color:#78716C;font-size:12px;text-align:center;padding:8px}
+.btn-warm{border:none;border-radius:12px;font-weight:600;font-family:'Lexend',sans-serif;box-shadow:0 2px 8px rgba(120,53,15,0.15);transition:all 150ms;cursor:pointer;padding:14px 24px;font-size:15px;display:flex;align-items:center;justify-content:center;gap:8px;width:100%;color:#fff;background:#C2703E;margin-top:12px}
+.btn-warm:active{transform:translateY(2px);box-shadow:0 1px 3px rgba(120,53,15,0.1)}
+.hidden{display:none}
+
+.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:390px;background:#fff;border-top:1px solid #E7E0D6;display:flex;justify-content:space-around;align-items:center;padding:8px 0 env(safe-area-inset-bottom,8px);z-index:50;box-shadow:0 -2px 8px rgba(120,53,15,0.06)}
+.bottom-nav a{display:flex;flex-direction:column;align-items:center;font-size:11px;font-weight:500;color:#A8A29E;gap:2px;text-decoration:none;padding:4px 8px;position:relative}
+.bottom-nav a.active{color:#C2703E;font-weight:700}
+.bottom-nav a.active::after{content:'';position:absolute;top:-9px;left:50%;transform:translateX(-50%);width:24px;height:3px;background:#C2703E;border-radius:2px}
+.nav-badge{position:absolute;top:0;right:2px;background:#DC2626;color:#fff;font-size:10px;font-weight:700;width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+</style>
+</head>
+<body>
+<a href="00-index.html" style="position:fixed;top:12px;left:12px;z-index:100;background:rgba(255,255,255,0.95);color:#78716C;font-size:12px;padding:6px 12px;border-radius:20px;text-decoration:none;display:inline-flex;align-items:center;gap:4px;box-shadow:0 2px 8px rgba(0,0,0,0.08);font-family:Source Sans 3,sans-serif">&#8592; Index</a>
+
+<div class="header">
+  <a href="08-conducteur-chantiers.html" class="header-back"><i data-lucide="arrow-left" style="width:18px;height:18px"></i> Mes chantiers</a>
+  <h1>Residence Les Oliviers</h1>
+  <div class="header-meta">
+    <span class="badge-warm badge-danger">En retard</span>
+    <span style="font-size:13px;opacity:0.85">35% — Livraison 15/05</span>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="showTab('taches')">Taches</button>
+  <button class="tab" onclick="showTab('equipe')">Equipe</button>
+  <button class="tab" onclick="showTab('photos')">Photos</button>
+</div>
+
+<div class="content">
+  <!-- TAB TACHES -->
+  <div id="tab-taches">
+    <div class="card-warm task-blocked" style="border-left:4px solid #DC2626">
+      <div class="task-card">
+        <div class="task-info">
+          <div class="task-title">Pose cloisons RDC</div>
+          <div class="task-sub">Bloquee — attente livraison rails</div>
+        </div>
+        <span class="badge-warm badge-danger">Bloquee</span>
+      </div>
+    </div>
+
+    <div class="card-warm task-blocked" style="border-left:4px solid #DC2626">
+      <div class="task-card">
+        <div class="task-info">
+          <div class="task-title">Enduit salle de bain</div>
+          <div class="task-sub">Bloquee — manque enduit</div>
+        </div>
+        <span class="badge-warm badge-danger">Bloquee</span>
+      </div>
+    </div>
+
+    <div class="card-warm" style="border-left:4px solid #D97706">
+      <div class="task-card">
+        <div class="task-info">
+          <div class="task-title">Carrelage cuisine</div>
+          <div class="task-sub">Mohamed — En cours</div>
+        </div>
+        <span class="badge-warm badge-warning">En cours</span>
+      </div>
+    </div>
+
+    <div class="card-warm" style="border-left:4px solid #15803D">
+      <div class="task-card">
+        <div class="task-info">
+          <div class="task-title">Electricite salon</div>
+          <div class="task-sub">Rachid — Termine</div>
+        </div>
+        <span class="badge-warm badge-success">Termine</span>
+      </div>
+    </div>
+
+    <div class="card-warm" style="border-left:4px solid #A8A29E">
+      <div class="task-card">
+        <div class="task-info">
+          <div class="task-title">Peinture chambre 1</div>
+          <div class="task-sub">Non affectee</div>
+        </div>
+        <span class="badge-warm badge-muted">A faire</span>
+      </div>
+    </div>
+
+    <button class="btn-warm"><i data-lucide="plus" style="width:18px;height:18px"></i> Ajouter une tache</button>
+  </div>
+
+  <!-- TAB EQUIPE -->
+  <div id="tab-equipe" class="hidden">
+    <div class="card-warm">
+      <div class="equipe-item">
+        <div class="equipe-avatar">MB</div>
+        <div><div class="equipe-name">Mohamed Benali</div><div class="equipe-role">Plaquiste — depuis 12/03</div></div>
+      </div>
+      <div class="equipe-item">
+        <div class="equipe-avatar">RK</div>
+        <div><div class="equipe-name">Rachid Khelifi</div><div class="equipe-role">Electricien — depuis 05/03</div></div>
+      </div>
+      <div class="equipe-item">
+        <div class="equipe-avatar">PD</div>
+        <div><div class="equipe-name">Pierre Durand</div><div class="equipe-role">Peintre — depuis 20/03</div></div>
+      </div>
+      <div class="equipe-item" style="border:none">
+        <div class="equipe-avatar" style="background:#F5F0E8;color:#78716C">SM</div>
+        <div><div class="equipe-name">Stephane Martin</div><div class="equipe-role">Carreleur — depuis 01/04</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB PHOTOS -->
+  <div id="tab-photos" class="hidden">
+    <div class="photo-grid">
+      <div class="photo-card"><i data-lucide="image" style="width:32px;height:32px;margin-bottom:4px"></i><br>Cuisine avant<br><span style="font-size:11px;color:#A8A29E">01/04</span></div>
+      <div class="photo-card"><i data-lucide="image" style="width:32px;height:32px;margin-bottom:4px"></i><br>Cloisons RDC<br><span style="font-size:11px;color:#A8A29E">31/03</span></div>
+      <div class="photo-card"><i data-lucide="image" style="width:32px;height:32px;margin-bottom:4px"></i><br>Elec salon<br><span style="font-size:11px;color:#A8A29E">28/03</span></div>
+      <div class="photo-card"><i data-lucide="image" style="width:32px;height:32px;margin-bottom:4px"></i><br>Salle de bain<br><span style="font-size:11px;color:#A8A29E">25/03</span></div>
+    </div>
+  </div>
+</div>
+
+<nav class="bottom-nav">
+  <a href="08-conducteur-chantiers.html" class="active"><i data-lucide="hard-hat" style="width:22px;height:22px"></i>Chantiers</a>
+  <a href="10-conducteur-taches.html"><i data-lucide="check-square" style="width:22px;height:22px"></i>Taches</a>
+  <a href="11-conducteur-cr.html"><i data-lucide="file-text" style="width:22px;height:22px"></i>CR</a>
+  <a href="12-conducteur-alertes.html"><i data-lucide="bell" style="width:22px;height:22px"></i><span class="nav-badge">3</span>Alertes</a>
+  <a href="13-conducteur-clawbot.html"><i data-lucide="bot" style="width:22px;height:22px"></i>ClawBot</a>
+</nav>
+
+<script>
+lucide.createIcons();
+function showTab(name){
+  document.querySelectorAll('[id^="tab-"]').forEach(el=>el.classList.add('hidden'));
+  document.getElementById('tab-'+name).classList.remove('hidden');
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  event.target.classList.add('active');
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claw — Detail tache</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #F8FAFC;
+    display: flex;
+    justify-content: center;
+    min-height: 100vh;
+  }
+  h1, h2, h3, h4, h5 { font-family: 'Plus Jakarta Sans', sans-serif; }
+  .mobile-frame {
+    width: 100%;
+    max-width: 375px;
+    min-height: 100vh;
+    background: #F8FAFC;
+    position: relative;
+    padding-bottom: 100px;
+  }
+
+  /* Top bar */
+  .top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 48px 16px 16px;
+    background: white;
+    border-bottom: 1px solid #E2E8F0;
+  }
+  .back-link {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: #6366F1;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+  }
+  .top-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #0F172A;
+  }
+
+  /* Detail content */
+  .detail-content {
+    padding: 20px 16px;
+  }
+
+  /* Status + location row */
+  .info-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 8px;
+  }
+  .badge-en-cours { background: #EEF2FF; color: #6366F1; }
+  .badge-location { background: #F1F5F9; color: #475569; }
+  .badge-deadline { background: #FFFBEB; color: #D97706; }
+
+  .task-title {
+    font-size: 22px;
+    font-weight: 800;
+    color: #0F172A;
+    margin-bottom: 12px;
+    line-height: 1.3;
+  }
+  .task-description {
+    font-size: 14px;
+    color: #475569;
+    line-height: 1.6;
+    margin-bottom: 24px;
+  }
+
+  /* Info cards */
+  .info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+  .info-card {
+    background: white;
+    border: 1px solid #E2E8F0;
+    border-radius: 12px;
+    padding: 14px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .info-card-label {
+    font-size: 11px;
+    color: #94A3B8;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    margin-bottom: 4px;
+  }
+  .info-card-value {
+    font-size: 14px;
+    font-weight: 600;
+    color: #0F172A;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  /* Photos section */
+  .section-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #0F172A;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .photo-count {
+    font-size: 12px;
+    font-weight: 600;
+    background: #EEF2FF;
+    color: #6366F1;
+    padding: 2px 8px;
+    border-radius: 6px;
+  }
+  .photo-gallery {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    margin-bottom: 24px;
+    padding-bottom: 4px;
+  }
+  .photo-thumb {
+    width: 100px;
+    height: 100px;
+    border-radius: 12px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 12px;
+    font-weight: 600;
+    position: relative;
+    overflow: hidden;
+  }
+  .photo-thumb:nth-child(1) { background: linear-gradient(135deg, #6366F1, #818CF8); }
+  .photo-thumb:nth-child(2) { background: linear-gradient(135deg, #8B5CF6, #A78BFA); }
+  .photo-thumb:nth-child(3) { background: linear-gradient(135deg, #6366F1, #8B5CF6); }
+  .photo-thumb-icon {
+    opacity: 0.6;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+  .photo-thumb-label {
+    position: absolute;
+    bottom: 8px;
+    left: 8px;
+    font-size: 10px;
+    background: rgba(0,0,0,0.4);
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+  .add-photo-btn {
+    width: 100px;
+    height: 100px;
+    border-radius: 12px;
+    flex-shrink: 0;
+    border: 2px dashed #E2E8F0;
+    background: white;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    color: #94A3B8;
+    text-decoration: none;
+    font-size: 11px;
+    font-weight: 500;
+    transition: border-color 0.2s;
+  }
+  .add-photo-btn:hover { border-color: #6366F1; color: #6366F1; }
+
+  /* Action buttons */
+  .actions {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 375px;
+    background: white;
+    border-top: 1px solid #E2E8F0;
+    padding: 12px 16px 24px;
+    display: flex;
+    gap: 10px;
+    z-index: 10;
+  }
+  .btn {
+    flex: 1;
+    min-height: 56px;
+    border-radius: 14px;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+  .btn-danger-outline {
+    background: white;
+    color: #EF4444;
+    border: 2px solid #FCA5A5;
+  }
+  .btn-danger-outline:hover { background: #FEF2F2; }
+  .btn-success {
+    background: #10B981;
+    color: white;
+  }
+  .btn-success:hover { background: #059669; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); }
+</style>
+</head>
+<body>
+
+<a href="00-index.html" style="position:fixed;top:12px;left:12px;z-index:100;background:white;color:#475569;font-size:12px;padding:6px 12px;border-radius:20px;text-decoration:none;display:flex;align-items:center;gap:4px;box-shadow:0 2px 8px rgba(0,0,0,0.1);font-family:'Inter',sans-serif">
+  <i data-lucide="arrow-left" style="width:14px;height:14px"></i> Index
+</a>
+
+<div class="mobile-frame">
+  <div class="top-bar">
+    <a href="03-ouvrier-taches.html" class="back-link">
+      <i data-lucide="chevron-left" style="width:18px;height:18px"></i> Retour
+    </a>
+    <span style="width:18px"></span>
+  </div>
+
+  <div class="detail-content">
+    <div class="info-row">
+      <span class="badge badge-en-cours">
+        <i data-lucide="loader" style="width:12px;height:12px"></i> En cours
+      </span>
+      <span class="badge badge-location">
+        <i data-lucide="map-pin" style="width:12px;height:12px"></i> Etage 2
+      </span>
+      <span class="badge badge-deadline">
+        <i data-lucide="calendar" style="width:12px;height:12px"></i> 5 avril 2026
+      </span>
+    </div>
+
+    <h1 class="task-title">Carrelage cuisine 201</h1>
+    <p class="task-description">
+      Pose du carrelage 60x60 gres cerame coloris gris clair dans la cuisine du lot 201.
+      Decoupe autour des arrivees d'eau et prises electriques.
+      Joint gris anthracite 3mm.
+    </p>
+
+    <div class="info-grid">
+      <div class="info-card">
+        <div class="info-card-label">Chantier</div>
+        <div class="info-card-value">
+          <i data-lucide="building-2" style="width:14px;height:14px;color:#6366F1"></i>
+          Leclerc
+        </div>
+      </div>
+      <div class="info-card">
+        <div class="info-card-label">Priorite</div>
+        <div class="info-card-value">
+          <i data-lucide="flag" style="width:14px;height:14px;color:#F59E0B"></i>
+          Normale
+        </div>
+      </div>
+      <div class="info-card">
+        <div class="info-card-label">Debut</div>
+        <div class="info-card-value">3 avril</div>
+      </div>
+      <div class="info-card">
+        <div class="info-card-label">Echeance</div>
+        <div class="info-card-value">5 avril</div>
+      </div>
+    </div>
+
+    <div class="section-title">
+      <i data-lucide="image" style="width:18px;height:18px;color:#6366F1"></i>
+      Photos
+      <span class="photo-count">3</span>
+    </div>
+    <div class="photo-gallery">
+      <div class="photo-thumb">
+        <i data-lucide="image" style="width:28px;height:28px" class="photo-thumb-icon"></i>
+        <span class="photo-thumb-label">Avancement</span>
+      </div>
+      <div class="photo-thumb">
+        <i data-lucide="image" style="width:28px;height:28px" class="photo-thumb-icon"></i>
+        <span class="photo-thumb-label">Avancement</span>
+      </div>
+      <div class="photo-thumb">
+        <i data-lucide="image" style="width:28px;height:28px" class="photo-thumb-icon"></i>
+        <span class="photo-thumb-label">Detail</span>
+      </div>
+      <a href="05-ouvrier-photo.html" class="add-photo-btn">
+        <i data-lucide="plus" style="width:20px;height:20px"></i>
+        Ajouter
+      </a>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="btn btn-danger-outline">
+      <i data-lucide="alert-triangle" style="width:18px;height:18px"></i>
+      Blocage
+    </button>
+    <button class="btn btn-success">
+      <i data-lucide="check" style="width:18px;height:18px"></i>
+      Terminee
+    </button>
+  </div>
+</div>
+
+<script>lucide.createIcons()</script>
+</body>
+</html>

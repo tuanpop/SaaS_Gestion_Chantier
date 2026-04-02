@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ClawBTP - Equipe</title>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#FAF6F1;font-family:'Source Sans 3',sans-serif;color:#292524}
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:240px;background:#451A03;color:#fff;padding:24px 0;z-index:40;display:flex;flex-direction:column}
+.sidebar-logo{font-family:'Lexend',sans-serif;font-weight:700;font-size:22px;padding:0 24px 24px;border-bottom:1px solid rgba(255,255,255,0.1);margin-bottom:16px}
+.sidebar-logo span{color:#C2703E}
+.sidebar a{display:flex;align-items:center;gap:12px;padding:12px 24px;color:#A8A29E;text-decoration:none;font-weight:500;font-size:15px;transition:all 150ms}
+.sidebar a:hover{color:#FEF3C7;background:rgba(194,112,62,0.2)}
+.sidebar a.active{color:#FEF3C7;background:#C2703E;border-radius:0 8px 8px 0;margin-right:12px}
+.sidebar-bottom{margin-top:auto;padding:16px 24px;border-top:1px solid rgba(255,255,255,0.1)}
+.sidebar-user{display:flex;align-items:center;gap:10px;color:#A8A29E;font-size:13px}
+.sidebar-avatar{width:32px;height:32px;border-radius:50%;background:#C2703E;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:600;font-size:12px;font-family:'Lexend',sans-serif}
+.main-content{margin-left:240px;padding:32px;min-height:100vh}
+
+.page-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px}
+.page-title{font-family:'Lexend',sans-serif;font-weight:700;font-size:24px}
+.btn-warm{border:none;border-radius:12px;font-weight:600;font-family:'Lexend',sans-serif;box-shadow:0 2px 8px rgba(120,53,15,0.15);transition:all 150ms;cursor:pointer;padding:10px 20px;font-size:14px;display:inline-flex;align-items:center;gap:8px}
+.btn-warm:active{transform:translateY(2px);box-shadow:0 1px 3px rgba(120,53,15,0.1)}
+.btn-primary{background:#C2703E;color:#fff}
+.btn-secondary{background:#F5F0E8;color:#78716C;box-shadow:0 2px 8px rgba(120,53,15,0.08)}
+
+.table-warm{width:100%;border-collapse:collapse;border-radius:14px;overflow:hidden;border:1px solid #E7E0D6;background:#fff}
+.table-warm th{background:#78350F;color:#fff;font-family:'Lexend',sans-serif;font-weight:600;font-size:14px;padding:12px 16px;text-align:left}
+.table-warm td{padding:12px 16px;border-bottom:1px solid #F5F0E8;font-size:14px}
+.table-warm tr:hover td{background:#FAF6F1}
+.badge-warm{border-radius:8px;padding:4px 12px;font-weight:600;font-size:12px;display:inline-block}
+.badge-admin{background:#451A03;color:#FEF3C7}
+.badge-conducteur{background:#C2703E;color:#fff}
+.badge-ouvrier{background:#F5F0E8;color:#78716C}
+.user-cell{display:flex;align-items:center;gap:10px}
+.user-avatar{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:12px;font-family:'Lexend',sans-serif;color:#fff;flex-shrink:0}
+.action-btn{background:none;border:none;color:#78716C;cursor:pointer;padding:4px;border-radius:6px;transition:all 150ms}
+.action-btn:hover{background:#F5F0E8;color:#C2703E}
+
+/* Modal overlay */
+.modal-overlay{position:fixed;inset:0;background:rgba(41,37,36,0.5);display:flex;align-items:center;justify-content:center;z-index:100}
+.modal-card{background:#fff;border-radius:14px;box-shadow:0 8px 32px rgba(120,53,15,0.2);padding:28px;width:420px;max-width:90vw}
+.modal-title{font-family:'Lexend',sans-serif;font-weight:700;font-size:20px;margin-bottom:16px}
+.modal-close{position:absolute;top:16px;right:16px;background:none;border:none;color:#78716C;cursor:pointer}
+.qr-placeholder{width:200px;height:200px;background:#F5F0E8;border:2px dashed #E7E0D6;border-radius:14px;display:flex;align-items:center;justify-content:center;margin:20px auto;color:#78716C;flex-direction:column;gap:8px}
+.qr-name{text-align:center;font-family:'Lexend',sans-serif;font-weight:600;font-size:16px;margin-top:12px}
+.qr-sub{text-align:center;font-size:13px;color:#78716C}
+
+/* Modal ajout */
+.radio-group{display:flex;gap:12px;margin:16px 0}
+.radio-card{flex:1;padding:16px;border:2px solid #E7E0D6;border-radius:12px;text-align:center;cursor:pointer;transition:all 150ms;font-family:'Lexend',sans-serif;font-weight:600;font-size:14px}
+.radio-card.selected{border-color:#C2703E;background:#FEF3C7;color:#C2703E}
+.radio-card:hover{border-color:#C2703E}
+.form-group{margin-bottom:16px}
+.form-label{display:block;font-weight:600;font-size:14px;margin-bottom:6px;color:#57534E}
+.form-input{width:100%;padding:12px 16px;background:#F5F0E8;border:1px solid #A8A29E;border-radius:12px;font-size:15px;font-family:'Source Sans 3',sans-serif;color:#292524;transition:all 150ms}
+.form-input:focus{outline:none;border-color:#C2703E;box-shadow:0 0 0 3px rgba(194,112,62,0.15)}
+.hidden{display:none}
+.back-link{display:inline-flex;align-items:center;gap:6px;color:#78716C;font-size:13px;text-decoration:none;margin-bottom:16px}
+</style>
+</head>
+<body>
+
+<nav class="sidebar">
+  <div class="sidebar-logo"><span>Claw</span>BTP</div>
+  <a href="15-admin-dashboard.html"><i data-lucide="layout-dashboard" style="width:18px;height:18px"></i> Dashboard</a>
+  <a href="16-admin-chantier-detail.html"><i data-lucide="hard-hat" style="width:18px;height:18px"></i> Chantiers</a>
+  <a href="18-admin-equipe.html" class="active"><i data-lucide="users" style="width:18px;height:18px"></i> Equipe</a>
+  <a href="19-admin-notifications.html"><i data-lucide="bell" style="width:18px;height:18px"></i> Notifications</a>
+  <a href="20-admin-clawbot.html"><i data-lucide="bot" style="width:18px;height:18px"></i> ClawBot</a>
+  <div class="sidebar-bottom">
+    <div class="sidebar-user">
+      <div class="sidebar-avatar">FD</div>
+      <div>Frederic Duval<br><span style="font-size:11px;color:#78716C">Admin</span></div>
+    </div>
+  </div>
+</nav>
+
+<main class="main-content">
+  <a href="00-index.html" class="back-link"><i data-lucide="arrow-left" style="width:14px;height:14px"></i> Prototype</a>
+
+  <div class="page-header">
+    <div class="page-title">Equipe (8 membres)</div>
+    <button class="btn-warm btn-primary" onclick="toggleModal('modal-ajout')"><i data-lucide="user-plus" style="width:16px;height:16px"></i> Ajouter</button>
+  </div>
+
+  <div style="border-radius:14px;overflow:hidden">
+    <table class="table-warm">
+      <thead>
+        <tr><th>Membre</th><th>Role</th><th>Chantiers</th><th>Statut</th><th></th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><div class="user-cell"><div class="user-avatar" style="background:#451A03">FD</div>Frederic Duval</div></td>
+          <td><span class="badge-warm badge-admin">Admin</span></td>
+          <td>Tous</td>
+          <td style="color:#15803D;font-weight:600">Actif</td>
+          <td><button class="action-btn"><i data-lucide="more-horizontal" style="width:16px;height:16px"></i></button></td>
+        </tr>
+        <tr>
+          <td><div class="user-cell"><div class="user-avatar" style="background:#C2703E">JD</div>Jean-Daniel Moreau</div></td>
+          <td><span class="badge-warm badge-conducteur">Conducteur</span></td>
+          <td>Les Oliviers, Mistral</td>
+          <td style="color:#15803D;font-weight:600">Actif</td>
+          <td><button class="action-btn"><i data-lucide="more-horizontal" style="width:16px;height:16px"></i></button></td>
+        </tr>
+        <tr>
+          <td><div class="user-cell"><div class="user-avatar" style="background:#C2703E">SL</div>Sophie Lambert</div></td>
+          <td><span class="badge-warm badge-conducteur">Conducteur</span></td>
+          <td>Dubois, Vauban</td>
+          <td style="color:#15803D;font-weight:600">Actif</td>
+          <td><button class="action-btn"><i data-lucide="more-horizontal" style="width:16px;height:16px"></i></button></td>
+        </tr>
+        <tr>
+          <td><div class="user-cell"><div class="user-avatar" style="background:#78716C">MB</div>Mohamed Benali</div></td>
+          <td><span class="badge-warm badge-ouvrier">Ouvrier</span></td>
+          <td>Les Oliviers</td>
+          <td style="color:#15803D;font-weight:600">Actif</td>
+          <td><button class="action-btn" onclick="toggleModal('modal-qr')"><i data-lucide="qr-code" style="width:16px;height:16px"></i></button></td>
+        </tr>
+        <tr>
+          <td><div class="user-cell"><div class="user-avatar" style="background:#78716C">RK</div>Rachid Khelifi</div></td>
+          <td><span class="badge-warm badge-ouvrier">Ouvrier</span></td>
+          <td>Les Oliviers</td>
+          <td style="color:#15803D;font-weight:600">Actif</td>
+          <td><button class="action-btn"><i data-lucide="qr-code" style="width:16px;height:16px"></i></button></td>
+        </tr>
+        <tr>
+          <td><div class="user-cell"><div class="user-avatar" style="background:#78716C">PD</div>Pierre Durand</div></td>
+          <td><span class="badge-warm badge-ouvrier">Ouvrier</span></td>
+          <td>Les Oliviers, Mistral</td>
+          <td style="color:#15803D;font-weight:600">Actif</td>
+          <td><button class="action-btn"><i data-lucide="qr-code" style="width:16px;height:16px"></i></button></td>
+        </tr>
+        <tr>
+          <td><div class="user-cell"><div class="user-avatar" style="background:#78716C">SM</div>Stephane Martin</div></td>
+          <td><span class="badge-warm badge-ouvrier">Ouvrier</span></td>
+          <td>Dubois</td>
+          <td style="color:#15803D;font-weight:600">Actif</td>
+          <td><button class="action-btn"><i data-lucide="qr-code" style="width:16px;height:16px"></i></button></td>
+        </tr>
+        <tr>
+          <td><div class="user-cell"><div class="user-avatar" style="background:#78716C">AB</div>Ali Bouaziz</div></td>
+          <td><span class="badge-warm badge-ouvrier">Ouvrier</span></td>
+          <td>Vauban</td>
+          <td style="color:#A8A29E;font-weight:600">Inactif</td>
+          <td><button class="action-btn"><i data-lucide="qr-code" style="width:16px;height:16px"></i></button></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</main>
+
+<!-- Modal QR -->
+<div id="modal-qr" class="modal-overlay hidden" onclick="if(event.target===this)toggleModal('modal-qr')">
+  <div class="modal-card" style="position:relative">
+    <button class="modal-close" onclick="toggleModal('modal-qr')"><i data-lucide="x" style="width:20px;height:20px"></i></button>
+    <div class="modal-title">QR Code d'acces</div>
+    <div class="qr-placeholder">
+      <i data-lucide="qr-code" style="width:48px;height:48px"></i>
+      <span style="font-size:12px">QR chiffre AES-256</span>
+    </div>
+    <div class="qr-name">Mohamed Benali</div>
+    <div class="qr-sub">Ouvrier — Les Oliviers</div>
+    <div style="display:flex;gap:10px;margin-top:20px">
+      <button class="btn-warm btn-primary" style="flex:1"><i data-lucide="download" style="width:16px;height:16px"></i> Telecharger</button>
+      <button class="btn-warm btn-secondary" style="flex:1"><i data-lucide="printer" style="width:16px;height:16px"></i> Imprimer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Ajout -->
+<div id="modal-ajout" class="modal-overlay hidden" onclick="if(event.target===this)toggleModal('modal-ajout')">
+  <div class="modal-card" style="position:relative">
+    <button class="modal-close" onclick="toggleModal('modal-ajout')"><i data-lucide="x" style="width:20px;height:20px"></i></button>
+    <div class="modal-title">Ajouter un membre</div>
+
+    <div style="font-weight:600;font-size:14px;color:#57534E;margin-bottom:4px">Role</div>
+    <div class="radio-group">
+      <div class="radio-card selected" onclick="selectRole(this)">
+        <i data-lucide="hard-hat" style="width:20px;height:20px;margin-bottom:4px"></i><br>Conducteur
+      </div>
+      <div class="radio-card" onclick="selectRole(this)">
+        <i data-lucide="wrench" style="width:20px;height:20px;margin-bottom:4px"></i><br>Ouvrier
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Nom complet *</label>
+      <input type="text" class="form-input" placeholder="Prenom Nom">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Email (conducteur) ou telephone</label>
+      <input type="text" class="form-input" placeholder="email@entreprise.fr">
+    </div>
+
+    <div style="display:flex;gap:10px;margin-top:20px">
+      <button class="btn-warm btn-primary" style="flex:1"><i data-lucide="user-plus" style="width:16px;height:16px"></i> Ajouter</button>
+      <button class="btn-warm btn-secondary" onclick="toggleModal('modal-ajout')">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<script>
+lucide.createIcons();
+function toggleModal(id){document.getElementById(id).classList.toggle('hidden');lucide.createIcons()}
+function selectRole(el){document.querySelectorAll('.radio-card').forEach(c=>c.classList.remove('selected'));el.classList.add('selected')}
+</script>
+</body>
+</html>

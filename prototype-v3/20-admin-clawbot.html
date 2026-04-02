@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ClawBTP - ClawBot Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#FAF6F1;font-family:'Source Sans 3',sans-serif;color:#292524}
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:240px;background:#451A03;color:#fff;padding:24px 0;z-index:40;display:flex;flex-direction:column}
+.sidebar-logo{font-family:'Lexend',sans-serif;font-weight:700;font-size:22px;padding:0 24px 24px;border-bottom:1px solid rgba(255,255,255,0.1);margin-bottom:16px}
+.sidebar-logo span{color:#C2703E}
+.sidebar a{display:flex;align-items:center;gap:12px;padding:12px 24px;color:#A8A29E;text-decoration:none;font-weight:500;font-size:15px;transition:all 150ms}
+.sidebar a:hover{color:#FEF3C7;background:rgba(194,112,62,0.2)}
+.sidebar a.active{color:#FEF3C7;background:#C2703E;border-radius:0 8px 8px 0;margin-right:12px}
+.sidebar-bottom{margin-top:auto;padding:16px 24px;border-top:1px solid rgba(255,255,255,0.1)}
+.sidebar-user{display:flex;align-items:center;gap:10px;color:#A8A29E;font-size:13px}
+.sidebar-avatar{width:32px;height:32px;border-radius:50%;background:#C2703E;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:600;font-size:12px;font-family:'Lexend',sans-serif}
+.main-content{margin-left:240px;padding:32px;min-height:100vh;display:flex;flex-direction:column}
+
+.page-title{font-family:'Lexend',sans-serif;font-weight:700;font-size:24px;margin-bottom:20px;display:flex;align-items:center;gap:10px}
+.chat-card{background:#fff;border:1px solid #E7E0D6;border-radius:14px;box-shadow:0 2px 8px rgba(120,53,15,0.08);flex:1;display:flex;flex-direction:column;max-width:800px;min-height:600px}
+.chat-body{flex:1;padding:24px;overflow-y:auto;display:flex;flex-direction:column;gap:16px}
+.bubble-bot{background:#fff;border:1px solid #E7E0D6;border-left:4px solid #C2703E;border-radius:4px 14px 14px 14px;padding:16px;box-shadow:0 2px 8px rgba(120,53,15,0.06);max-width:85%;font-size:14px;line-height:1.6}
+.bubble-user{background:#C2703E;color:#fff;border-radius:14px 4px 14px 14px;padding:16px;max-width:70%;align-self:flex-end;font-size:14px;line-height:1.5}
+.bot-label{font-family:'Lexend',sans-serif;font-weight:600;font-size:12px;color:#C2703E;margin-bottom:6px}
+.mini-card{background:#FAF6F1;border:1px solid #E7E0D6;border-radius:10px;padding:10px 14px;margin:8px 0;display:flex;justify-content:space-between;align-items:center;font-size:13px}
+.mini-card-name{font-weight:600}
+.badge-warm{border-radius:8px;padding:3px 10px;font-weight:600;font-size:12px;display:inline-block}
+.badge-danger{background:#FEE2E2;color:#DC2626}
+.badge-warning{background:#FEF3C7;color:#D97706}
+.bubble-actions{display:flex;gap:8px;margin-top:12px}
+.bubble-btn{padding:8px 16px;border-radius:10px;border:none;font-weight:600;font-size:13px;font-family:'Lexend',sans-serif;cursor:pointer;transition:all 150ms}
+.bubble-btn:active{transform:translateY(1px)}
+.btn-confirm{background:#DCFCE7;color:#15803D}
+.btn-cancel{background:#F5F0E8;color:#78716C}
+.typing{display:flex;gap:4px;align-items:center;padding:4px 0}
+.typing-dot{width:8px;height:8px;border-radius:50%;background:#C2703E;animation:bounce 1.4s infinite ease-in-out}
+.typing-dot:nth-child(2){animation-delay:0.2s}
+.typing-dot:nth-child(3){animation-delay:0.4s}
+@keyframes bounce{0%,80%,100%{transform:scale(0.6);opacity:0.4}40%{transform:scale(1);opacity:1}}
+
+.chat-input{border-top:1px solid #E7E0D6;padding:16px;display:flex;gap:12px;align-items:center}
+.chat-input input{flex:1;padding:12px 16px;border:1px solid #E7E0D6;border-radius:12px;font-size:15px;font-family:'Source Sans 3',sans-serif;color:#292524;background:#fff}
+.chat-input input:focus{outline:none;border-color:#C2703E;box-shadow:0 0 0 3px rgba(194,112,62,0.15)}
+.send-btn{width:44px;height:44px;border-radius:50%;background:#C2703E;border:none;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 8px rgba(120,53,15,0.2);flex-shrink:0}
+.send-btn:active{transform:scale(0.92)}
+.disclaimer{text-align:center;font-size:11px;color:#A8A29E;padding:8px 16px 12px}
+.back-link{display:inline-flex;align-items:center;gap:6px;color:#78716C;font-size:13px;text-decoration:none;margin-bottom:16px}
+</style>
+</head>
+<body>
+
+<nav class="sidebar">
+  <div class="sidebar-logo"><span>Claw</span>BTP</div>
+  <a href="15-admin-dashboard.html"><i data-lucide="layout-dashboard" style="width:18px;height:18px"></i> Dashboard</a>
+  <a href="16-admin-chantier-detail.html"><i data-lucide="hard-hat" style="width:18px;height:18px"></i> Chantiers</a>
+  <a href="18-admin-equipe.html"><i data-lucide="users" style="width:18px;height:18px"></i> Equipe</a>
+  <a href="19-admin-notifications.html"><i data-lucide="bell" style="width:18px;height:18px"></i> Notifications</a>
+  <a href="20-admin-clawbot.html" class="active"><i data-lucide="bot" style="width:18px;height:18px"></i> ClawBot</a>
+  <div class="sidebar-bottom">
+    <div class="sidebar-user">
+      <div class="sidebar-avatar">FD</div>
+      <div>Frederic Duval<br><span style="font-size:11px;color:#78716C">Admin</span></div>
+    </div>
+  </div>
+</nav>
+
+<main class="main-content">
+  <a href="00-index.html" class="back-link"><i data-lucide="arrow-left" style="width:14px;height:14px"></i> Prototype</a>
+
+  <div class="page-title"><i data-lucide="bot" style="width:24px;height:24px;color:#C2703E"></i> ClawBot</div>
+
+  <div class="chat-card">
+    <div class="chat-body">
+      <div class="bubble-bot">
+        <div class="bot-label">ClawBot</div>
+        Bonjour Frederic ! Voici votre point du matin :<br><br>
+        <strong>3 alertes</strong> a traiter, dont 2 critiques sur Les Oliviers.<br>
+        <strong>Budget Mistral</strong> en derive de 12%.<br>
+        <strong>2 CR</strong> en attente de validation.
+      </div>
+
+      <div class="bubble-user">Quels ouvriers posent probleme cette semaine ?</div>
+
+      <div class="bubble-bot">
+        <div class="bot-label">ClawBot</div>
+        Voici les ouvriers avec des indicateurs a surveiller :
+        <div class="mini-card" style="border-left:3px solid #DC2626">
+          <div><div class="mini-card-name">Mohamed Benali</div><div style="font-size:12px;color:#78716C">2 taches bloquees, aucune photo depuis 3j</div></div>
+          <span class="badge-warm badge-danger">Critique</span>
+        </div>
+        <div class="mini-card" style="border-left:3px solid #D97706">
+          <div><div class="mini-card-name">Stephane Martin</div><div style="font-size:12px;color:#78716C">Retard 1j sur joints, progression lente</div></div>
+          <span class="badge-warm badge-warning">A surveiller</span>
+        </div>
+        Les 3 autres ouvriers sont dans les temps. Voulez-vous que j'envoie un rappel a Mohamed ?
+      </div>
+
+      <div class="bubble-user">Oui, envoie un rappel a Mohamed pour les photos</div>
+
+      <div class="bubble-bot">
+        <div class="bot-label">ClawBot</div>
+        Je vais envoyer une notification push a Mohamed :<br><br>
+        <em>"Mohamed, n'oublie pas de prendre des photos de l'avancement cloisons et carrelage. Merci !"</em>
+        <div class="bubble-actions">
+          <button class="bubble-btn btn-confirm"><i data-lucide="check" style="width:14px;height:14px"></i> Confirmer</button>
+          <button class="bubble-btn btn-cancel"><i data-lucide="x" style="width:14px;height:14px"></i> Annuler</button>
+        </div>
+      </div>
+
+      <div class="bubble-bot">
+        <div class="typing">
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="chat-input">
+      <input type="text" placeholder="Poser une question a ClawBot...">
+      <button class="send-btn"><i data-lucide="send" style="width:18px;height:18px"></i></button>
+    </div>
+    <div class="disclaimer">ClawBot peut faire des erreurs. Verifiez les informations importantes.</div>
+  </div>
+</main>
+
+<script>lucide.createIcons()</script>
+</body>
+</html>

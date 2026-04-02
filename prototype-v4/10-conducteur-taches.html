@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claw — Toutes les tâches</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #F8FAFC;
+    color: #0F172A;
+    display: flex;
+    justify-content: center;
+    min-height: 100vh;
+  }
+  .mobile-frame {
+    width: 100%;
+    max-width: 390px;
+    min-height: 100vh;
+    background: #F8FAFC;
+    position: relative;
+    padding-bottom: 80px;
+  }
+  h1, h2, h3, h4 { font-family: 'Plus Jakarta Sans', sans-serif; }
+
+  .header {
+    background: linear-gradient(135deg, #6366F1, #8B5CF6);
+    color: white;
+    padding: 48px 20px 20px;
+    border-radius: 0 0 20px 20px;
+  }
+  .header h1 { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+  .header-sub { font-size: 13px; opacity: 0.85; }
+
+  /* Filter pills */
+  .filters {
+    display: flex; gap: 8px; padding: 16px;
+    overflow-x: auto;
+  }
+  .filter-pill {
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 13px; font-weight: 600;
+    border: 1px solid #E2E8F0;
+    background: white; color: #475569;
+    white-space: nowrap; cursor: pointer;
+    font-family: 'Inter', sans-serif;
+  }
+  .filter-pill.active {
+    background: #6366F1; color: white; border-color: #6366F1;
+  }
+  .filter-pill.red-active {
+    background: #FEF2F2; color: #EF4444; border-color: #FECACA;
+  }
+
+  /* Content */
+  .content { padding: 0 16px 16px; }
+
+  .project-section {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 13px; font-weight: 700; color: #475569;
+    margin: 16px 0 8px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .project-section i { width: 14px; height: 14px; color: #94A3B8; }
+
+  .task-item {
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    padding: 14px 16px;
+    margin-bottom: 8px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .task-icon {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .task-icon.bloque { background: #FEF2F2; color: #EF4444; }
+  .task-icon.en_cours { background: #EEF2FF; color: #6366F1; }
+  .task-icon.a_faire { background: #F1F5F9; color: #94A3B8; }
+  .task-icon.termine { background: #ECFDF5; color: #10B981; }
+  .task-icon i { width: 18px; height: 18px; }
+
+  .task-info { flex: 1; min-width: 0; }
+  .task-name { font-size: 13px; font-weight: 600; margin-bottom: 1px; }
+  .task-assignee { font-size: 11px; color: #94A3B8; }
+
+  .status-badge {
+    font-size: 10px; font-weight: 600; padding: 4px 8px;
+    border-radius: 20px; white-space: nowrap; flex-shrink: 0;
+  }
+  .status-badge.bloque { background: #FEF2F2; color: #EF4444; }
+  .status-badge.en_cours { background: #EEF2FF; color: #6366F1; }
+  .status-badge.a_faire { background: #F1F5F9; color: #64748B; }
+  .status-badge.termine { background: #ECFDF5; color: #059669; }
+
+  /* FAB */
+  .fab {
+    position: fixed;
+    bottom: 96px;
+    right: calc(50% - 175px);
+    width: 56px; height: 56px;
+    background: linear-gradient(135deg, #6366F1, #8B5CF6);
+    color: white;
+    border: none; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 16px rgba(99,102,241,0.4);
+    cursor: pointer;
+    z-index: 40;
+  }
+  .fab i { width: 24px; height: 24px; }
+
+  /* Bottom Nav */
+  .bottom-nav {
+    position: fixed;
+    bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 100%; max-width: 390px;
+    background: #FFFFFF;
+    border-top: 1px solid #E2E8F0;
+    display: flex; z-index: 50;
+    padding: 6px 0 env(safe-area-inset-bottom, 8px);
+  }
+  .nav-tab {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; gap: 2px; padding: 6px 0;
+    text-decoration: none; color: #94A3B8;
+    font-size: 10px; font-weight: 500; position: relative;
+  }
+  .nav-tab.active { color: #6366F1; }
+  .nav-tab.active::before {
+    content: '';
+    position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+    width: 24px; height: 3px; background: #6366F1; border-radius: 0 0 3px 3px;
+  }
+  .nav-tab i { width: 22px; height: 22px; }
+</style>
+</head>
+<body>
+<a href="00-index.html" style="position:fixed;top:12px;left:12px;z-index:100;background:white;color:#475569;font-size:12px;padding:6px 12px;border-radius:20px;text-decoration:none;display:flex;align-items:center;gap:4px;box-shadow:0 2px 8px rgba(0,0,0,0.1);font-family:'Inter',sans-serif">
+  <i data-lucide="arrow-left" style="width:14px;height:14px"></i> Index
+</a>
+
+<div class="mobile-frame">
+  <div class="header">
+    <h1>Toutes les tâches</h1>
+    <div class="header-sub">12 tâches sur 4 projets</div>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters">
+    <button class="filter-pill active">Tous (12)</button>
+    <button class="filter-pill">Bloqués (3)</button>
+    <button class="filter-pill">En cours (4)</button>
+    <button class="filter-pill">À faire (3)</button>
+  </div>
+
+  <div class="content">
+    <!-- Rés. Les Oliviers -->
+    <div class="project-section"><i data-lucide="folder"></i> Rés. Les Oliviers</div>
+
+    <div class="task-item">
+      <div class="task-icon bloque"><i data-lucide="alert-circle"></i></div>
+      <div class="task-info">
+        <div class="task-name">Livraison menuiseries</div>
+        <div class="task-assignee">Fournisseur AluPro</div>
+      </div>
+      <span class="status-badge bloque">Bloqué</span>
+    </div>
+    <div class="task-item">
+      <div class="task-icon bloque"><i data-lucide="alert-circle"></i></div>
+      <div class="task-info">
+        <div class="task-name">Pose carrelage RDC</div>
+        <div class="task-assignee">Marc Petit</div>
+      </div>
+      <span class="status-badge bloque">Bloqué</span>
+    </div>
+    <div class="task-item">
+      <div class="task-icon en_cours"><i data-lucide="loader"></i></div>
+      <div class="task-info">
+        <div class="task-name">Peinture cages escalier</div>
+        <div class="task-assignee">Lucas Martin</div>
+      </div>
+      <span class="status-badge en_cours">En cours</span>
+    </div>
+
+    <!-- Bureau Mistral -->
+    <div class="project-section"><i data-lucide="folder"></i> Bureau Mistral</div>
+
+    <div class="task-item">
+      <div class="task-icon bloque"><i data-lucide="alert-circle"></i></div>
+      <div class="task-info">
+        <div class="task-name">Attente validation plans</div>
+        <div class="task-assignee">Archi. Dupont</div>
+      </div>
+      <span class="status-badge bloque">Bloqué</span>
+    </div>
+    <div class="task-item">
+      <div class="task-icon en_cours"><i data-lucide="loader"></i></div>
+      <div class="task-info">
+        <div class="task-name">Cloisons open-space</div>
+        <div class="task-assignee">Thomas Durand</div>
+      </div>
+      <span class="status-badge en_cours">En cours</span>
+    </div>
+    <div class="task-item">
+      <div class="task-icon a_faire"><i data-lucide="circle"></i></div>
+      <div class="task-info">
+        <div class="task-name">Faux plafond accueil</div>
+        <div class="task-assignee">Non assigné</div>
+      </div>
+      <span class="status-badge a_faire">À faire</span>
+    </div>
+
+    <!-- Maison Dubois -->
+    <div class="project-section"><i data-lucide="folder"></i> Maison Dubois</div>
+
+    <div class="task-item">
+      <div class="task-icon en_cours"><i data-lucide="loader"></i></div>
+      <div class="task-info">
+        <div class="task-name">Finitions salle de bain</div>
+        <div class="task-assignee">Marc Petit</div>
+      </div>
+      <span class="status-badge en_cours">En cours</span>
+    </div>
+    <div class="task-item">
+      <div class="task-icon termine"><i data-lucide="check-circle"></i></div>
+      <div class="task-info">
+        <div class="task-name">Pose parquet séjour</div>
+        <div class="task-assignee">Ahmed Benali</div>
+      </div>
+      <span class="status-badge termine">Terminé</span>
+    </div>
+    <div class="task-item">
+      <div class="task-icon a_faire"><i data-lucide="circle"></i></div>
+      <div class="task-info">
+        <div class="task-name">Peinture extérieure</div>
+        <div class="task-assignee">Lucas Martin</div>
+      </div>
+      <span class="status-badge a_faire">À faire</span>
+    </div>
+
+    <!-- Local Vauban -->
+    <div class="project-section"><i data-lucide="folder"></i> Local Vauban</div>
+
+    <div class="task-item">
+      <div class="task-icon en_cours"><i data-lucide="loader"></i></div>
+      <div class="task-info">
+        <div class="task-name">Installation vitrine</div>
+        <div class="task-assignee">Thomas Durand</div>
+      </div>
+      <span class="status-badge en_cours">En cours</span>
+    </div>
+    <div class="task-item">
+      <div class="task-icon a_faire"><i data-lucide="circle"></i></div>
+      <div class="task-info">
+        <div class="task-name">Revêtement sol</div>
+        <div class="task-assignee">Non assigné</div>
+      </div>
+      <span class="status-badge a_faire">À faire</span>
+    </div>
+  </div>
+
+  <!-- FAB -->
+  <button class="fab"><i data-lucide="plus"></i></button>
+
+  <!-- Bottom Nav -->
+  <nav class="bottom-nav">
+    <a href="08-conducteur-chantiers.html" class="nav-tab">
+      <i data-lucide="folder-kanban"></i><span>Projets</span>
+    </a>
+    <a href="10-conducteur-taches.html" class="nav-tab active">
+      <i data-lucide="check-square"></i><span>Tâches</span>
+    </a>
+    <a href="11-conducteur-cr.html" class="nav-tab">
+      <i data-lucide="file-text"></i><span>CR</span>
+    </a>
+    <a href="12-conducteur-alertes.html" class="nav-tab">
+      <i data-lucide="bell"></i><span>Alertes</span>
+    </a>
+    <a href="13-conducteur-clawbot.html" class="nav-tab">
+      <i data-lucide="sparkles"></i><span>Bot</span>
+    </a>
+  </nav>
+</div>
+
+<script>lucide.createIcons();</script>
+</body>
+</html>

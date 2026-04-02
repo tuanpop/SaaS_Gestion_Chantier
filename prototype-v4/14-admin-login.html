@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Claw — Login Admin</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', sans-serif; color: #0F172A; min-height: 100vh; display: flex; }
+
+    /* Left panel */
+    .left { width: 55%; min-height: 100vh; background: linear-gradient(135deg, #4338CA 0%, #6D28D9 50%, #7C3AED 100%); color: #fff; display: flex; flex-direction: column; justify-content: center; padding: 64px; position: relative; overflow: hidden; }
+    .left::before { content: ''; position: absolute; top: -120px; right: -120px; width: 400px; height: 400px; border-radius: 50%; background: rgba(255,255,255,0.05); }
+    .left::after { content: ''; position: absolute; bottom: -80px; left: -80px; width: 300px; height: 300px; border-radius: 50%; background: rgba(255,255,255,0.03); }
+    .left .logo { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 36px; font-weight: 800; margin-bottom: 8px; }
+    .left .tagline { font-size: 15px; opacity: 0.8; margin-bottom: 48px; }
+    .feature { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 28px; }
+    .feature-icon { width: 44px; height: 44px; min-width: 44px; border-radius: 12px; background: rgba(255,255,255,0.15); display: flex; align-items: center; justify-content: center; }
+    .feature h4 { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+    .feature p { font-size: 13px; opacity: 0.75; line-height: 1.5; }
+
+    /* Right panel */
+    .right { width: 45%; min-height: 100vh; background: #F8FAFC; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 48px; }
+    .back-link { display: inline-flex; align-items: center; gap: 6px; color: #94A3B8; font-size: 13px; text-decoration: none; margin-bottom: 16px; font-family: 'Inter', sans-serif; align-self: flex-start; }
+    .form-card { background: #fff; border: 1px solid #E2E8F0; border-radius: 16px; padding: 36px; width: 100%; max-width: 420px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+    .form-card h2 { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 24px; font-weight: 700; margin-bottom: 4px; }
+    .form-card .sub { font-size: 14px; color: #475569; margin-bottom: 24px; }
+    .trial-badge { display: inline-flex; align-items: center; gap: 6px; background: #EEF2FF; color: #6366F1; font-size: 12px; font-weight: 600; padding: 6px 14px; border-radius: 20px; margin-bottom: 20px; }
+
+    /* Tabs */
+    .tabs { display: flex; border-bottom: 2px solid #E2E8F0; margin-bottom: 24px; }
+    .tab { flex: 1; text-align: center; padding: 10px; font-size: 14px; font-weight: 600; color: #94A3B8; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all .15s; }
+    .tab.active { color: #6366F1; border-bottom-color: #6366F1; }
+
+    /* Form */
+    .field { margin-bottom: 18px; }
+    .field label { display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px; }
+    .field input { width: 100%; padding: 11px 14px; border: 1px solid #E2E8F0; border-radius: 10px; font-size: 14px; font-family: 'Inter', sans-serif; outline: none; transition: border-color .15s; }
+    .field input:focus { border-color: #6366F1; box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
+    .forgot { text-align: right; margin-top: -10px; margin-bottom: 18px; }
+    .forgot a { font-size: 13px; color: #6366F1; text-decoration: none; }
+    .btn-primary { width: 100%; padding: 12px; background: #6366F1; color: #fff; border: none; border-radius: 10px; font-size: 15px; font-weight: 600; font-family: 'Inter', sans-serif; cursor: pointer; transition: background .15s; }
+    .btn-primary:hover { background: #4F46E5; }
+
+    .divider { display: flex; align-items: center; gap: 12px; margin: 20px 0; color: #94A3B8; font-size: 13px; }
+    .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: #E2E8F0; }
+
+    .social-hint { text-align: center; font-size: 13px; color: #94A3B8; }
+    .social-hint a { color: #6366F1; text-decoration: none; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <!-- Left -->
+  <div class="left">
+    <div class="logo">Claw</div>
+    <div class="tagline">Gestion de projets terrain intelligente</div>
+
+    <div class="feature">
+      <div class="feature-icon"><i data-lucide="bar-chart-3" style="width:20px;height:20px"></i></div>
+      <div>
+        <h4>Suivi en temps reel</h4>
+        <p>Visualisez l'avancement de vos projets et l'activite de vos equipes en un coup d'oeil.</p>
+      </div>
+    </div>
+    <div class="feature">
+      <div class="feature-icon"><i data-lucide="bot" style="width:20px;height:20px"></i></div>
+      <div>
+        <h4>IA integree</h4>
+        <p>Comptes-rendus automatiques, alertes intelligentes et assistant ClawBot a votre service.</p>
+      </div>
+    </div>
+    <div class="feature">
+      <div class="feature-icon"><i data-lucide="smartphone" style="width:20px;height:20px"></i></div>
+      <div>
+        <h4>Mobile-first pour le terrain</h4>
+        <p>Vos operateurs acceident en un scan QR. Zero friction, adoption garantie.</p>
+      </div>
+    </div>
+    <div class="feature">
+      <div class="feature-icon"><i data-lucide="shield-check" style="width:20px;height:20px"></i></div>
+      <div>
+        <h4>Securise et conforme</h4>
+        <p>Donnees chiffrees, isolation par organisation, hebergement en France.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right -->
+  <div class="right">
+    <a href="00-index.html" class="back-link">
+      <i data-lucide="arrow-left" style="width:14px;height:14px"></i> Prototype
+    </a>
+    <div class="form-card">
+      <div class="trial-badge"><i data-lucide="sparkles" style="width:14px;height:14px"></i> 14 jours d'essai gratuit</div>
+      <h2>Bienvenue</h2>
+      <p class="sub">Connectez-vous a votre espace Claw</p>
+
+      <div class="tabs">
+        <div class="tab active">Connexion</div>
+        <div class="tab">Inscription</div>
+      </div>
+
+      <div class="field">
+        <label>Adresse email</label>
+        <input type="email" placeholder="frederic@entreprise.fr">
+      </div>
+      <div class="field">
+        <label>Mot de passe</label>
+        <input type="password" placeholder="••••••••">
+      </div>
+      <div class="forgot"><a href="#">Mot de passe oublie ?</a></div>
+
+      <button class="btn-primary">Se connecter</button>
+
+      <div class="divider">ou</div>
+
+      <div class="social-hint">
+        Pas encore de compte ? <a href="#">Demarrer l'essai gratuit</a>
+      </div>
+    </div>
+  </div>
+
+  <script>lucide.createIcons();</script>
+</body>
+</html>

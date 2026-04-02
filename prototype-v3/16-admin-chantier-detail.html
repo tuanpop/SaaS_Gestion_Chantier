@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ClawBTP - Detail Chantier</title>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#FAF6F1;font-family:'Source Sans 3',sans-serif;color:#292524}
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:240px;background:#451A03;color:#fff;padding:24px 0;z-index:40;display:flex;flex-direction:column}
+.sidebar-logo{font-family:'Lexend',sans-serif;font-weight:700;font-size:22px;padding:0 24px 24px;border-bottom:1px solid rgba(255,255,255,0.1);margin-bottom:16px}
+.sidebar-logo span{color:#C2703E}
+.sidebar a{display:flex;align-items:center;gap:12px;padding:12px 24px;color:#A8A29E;text-decoration:none;font-weight:500;font-size:15px;transition:all 150ms}
+.sidebar a:hover{color:#FEF3C7;background:rgba(194,112,62,0.2)}
+.sidebar a.active{color:#FEF3C7;background:#C2703E;border-radius:0 8px 8px 0;margin-right:12px}
+.sidebar-bottom{margin-top:auto;padding:16px 24px;border-top:1px solid rgba(255,255,255,0.1)}
+.sidebar-user{display:flex;align-items:center;gap:10px;color:#A8A29E;font-size:13px}
+.sidebar-avatar{width:32px;height:32px;border-radius:50%;background:#C2703E;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:600;font-size:12px;font-family:'Lexend',sans-serif}
+.main-content{margin-left:240px;padding:32px;min-height:100vh}
+
+.page-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px}
+.page-title{font-family:'Lexend',sans-serif;font-weight:700;font-size:24px;display:flex;align-items:center;gap:12px}
+.badge-warm{border-radius:8px;padding:4px 12px;font-weight:600;font-size:13px;display:inline-block}
+.badge-danger{background:#FEE2E2;color:#DC2626}
+.badge-warning{background:#FEF3C7;color:#D97706}
+.badge-success{background:#DCFCE7;color:#15803D}
+.badge-muted{background:#F5F0E8;color:#78716C}
+.badge-accent{background:#FEF3C7;color:#B45309}
+.btn-warm{border:none;border-radius:12px;font-weight:600;font-family:'Lexend',sans-serif;box-shadow:0 2px 8px rgba(120,53,15,0.15);transition:all 150ms;cursor:pointer;padding:10px 20px;font-size:14px;display:inline-flex;align-items:center;gap:8px}
+.btn-warm:active{transform:translateY(2px);box-shadow:0 1px 3px rgba(120,53,15,0.1)}
+.btn-primary{background:#C2703E;color:#fff}
+.btn-secondary{background:#F5F0E8;color:#78716C;box-shadow:0 2px 8px rgba(120,53,15,0.08)}
+
+.tabs{display:flex;gap:8px;margin-bottom:24px}
+.tab{padding:10px 20px;border-radius:8px;font-family:'Lexend',sans-serif;font-weight:600;font-size:14px;background:#F5F0E8;color:#78716C;border:none;cursor:pointer;transition:all 150ms}
+.tab.active{background:#C2703E;color:#fff}
+
+.card-warm{background:#fff;border:1px solid #E7E0D6;border-radius:14px;box-shadow:0 2px 8px rgba(120,53,15,0.08);padding:20px;margin-bottom:16px}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px}
+.info-label{font-size:12px;color:#78716C;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px}
+.info-value{font-size:15px;font-weight:500}
+.progress-warm{height:10px;border-radius:5px;background:#F5F0E8;overflow:hidden}
+.progress-fill{height:100%;border-radius:5px}
+.progress-red{background:linear-gradient(90deg,#DC2626,#EF4444)}
+.budget-row{display:flex;justify-content:space-between;align-items:center;margin-top:8px;font-size:13px}
+.budget-over{color:#DC2626;font-weight:600}
+
+.table-warm{width:100%;border-collapse:collapse;border-radius:14px;overflow:hidden;border:1px solid #E7E0D6}
+.table-warm th{background:#78350F;color:#fff;font-family:'Lexend',sans-serif;font-weight:600;font-size:14px;padding:12px 16px;text-align:left}
+.table-warm td{padding:12px 16px;border-bottom:1px solid #F5F0E8;font-size:14px}
+.table-warm tr:hover td{background:#FAF6F1}
+
+.photo-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.photo-card{background:#E7E0D6;border-radius:12px;aspect-ratio:1;display:flex;align-items:center;justify-content:center;color:#78716C;font-size:11px;text-align:center;padding:8px}
+
+.cr-item{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid #F5F0E8}
+.cr-item:last-child{border:none}
+.cr-title{font-weight:600;font-size:14px}
+.cr-sub{font-size:12px;color:#78716C}
+
+.hidden{display:none}
+.back-link{display:inline-flex;align-items:center;gap:6px;color:#78716C;font-size:13px;text-decoration:none;margin-bottom:16px}
+</style>
+</head>
+<body>
+
+<nav class="sidebar">
+  <div class="sidebar-logo"><span>Claw</span>BTP</div>
+  <a href="15-admin-dashboard.html"><i data-lucide="layout-dashboard" style="width:18px;height:18px"></i> Dashboard</a>
+  <a href="16-admin-chantier-detail.html" class="active"><i data-lucide="hard-hat" style="width:18px;height:18px"></i> Chantiers</a>
+  <a href="18-admin-equipe.html"><i data-lucide="users" style="width:18px;height:18px"></i> Equipe</a>
+  <a href="19-admin-notifications.html"><i data-lucide="bell" style="width:18px;height:18px"></i> Notifications</a>
+  <a href="20-admin-clawbot.html"><i data-lucide="bot" style="width:18px;height:18px"></i> ClawBot</a>
+  <div class="sidebar-bottom">
+    <div class="sidebar-user">
+      <div class="sidebar-avatar">FD</div>
+      <div>Frederic Duval<br><span style="font-size:11px;color:#78716C">Admin</span></div>
+    </div>
+  </div>
+</nav>
+
+<main class="main-content">
+  <a href="00-index.html" class="back-link"><i data-lucide="arrow-left" style="width:14px;height:14px"></i> Prototype</a>
+
+  <div class="page-header">
+    <div class="page-title">Residence Les Oliviers <span class="badge-warm badge-danger">En retard</span></div>
+    <button class="btn-warm btn-secondary"><i data-lucide="edit" style="width:16px;height:16px"></i> Modifier</button>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('infos')">Infos</button>
+    <button class="tab" onclick="showTab('taches')">Taches</button>
+    <button class="tab" onclick="showTab('photos')">Photos</button>
+    <button class="tab" onclick="showTab('cr')">CR</button>
+  </div>
+
+  <!-- TAB INFOS -->
+  <div id="tab-infos">
+    <div class="info-grid">
+      <div class="card-warm">
+        <div class="info-label">Client</div>
+        <div class="info-value">SCI Provence Habitat</div>
+        <div style="font-size:12px;color:#78716C;margin-top:4px">Contact : Marc Lefevre</div>
+      </div>
+      <div class="card-warm">
+        <div class="info-label">Conducteur</div>
+        <div class="info-value">Jean-Daniel Moreau</div>
+        <div style="font-size:12px;color:#78716C;margin-top:4px">4 ouvriers affectes</div>
+      </div>
+      <div class="card-warm">
+        <div class="info-label">Dates</div>
+        <div class="info-value">01/02 — 15/05/2026</div>
+        <div style="font-size:12px;color:#78716C;margin-top:4px">73 jours restants</div>
+      </div>
+      <div class="card-warm">
+        <div class="info-label">Adresse</div>
+        <div class="info-value">12 rue des Oliviers</div>
+        <div style="font-size:12px;color:#78716C;margin-top:4px">13100 Aix-en-Provence</div>
+      </div>
+    </div>
+
+    <div class="card-warm">
+      <div class="info-label">Budget</div>
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin:8px 0">
+        <div class="info-value" style="font-size:22px;font-family:'Lexend',sans-serif;font-weight:700">87 500 EUR</div>
+        <div class="budget-over">+8 200 EUR (+9.4%)</div>
+      </div>
+      <div class="progress-warm"><div class="progress-fill progress-red" style="width:72%"></div></div>
+      <div class="budget-row">
+        <span>Depense : 63 100 EUR</span>
+        <span>Reste : 24 400 EUR</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB TACHES -->
+  <div id="tab-taches" class="hidden">
+    <div style="border-radius:14px;overflow:hidden">
+      <table class="table-warm">
+        <thead>
+          <tr><th>Tache</th><th>Ouvrier</th><th>Statut</th><th>Echeance</th></tr>
+        </thead>
+        <tbody>
+          <tr style="background:#FEE2E2"><td>Pose cloisons RDC</td><td>Mohamed B.</td><td><span class="badge-warm badge-danger">Bloquee</span></td><td>28/03</td></tr>
+          <tr style="background:#FEE2E2"><td>Enduit salle de bain</td><td>Pierre D.</td><td><span class="badge-warm badge-danger">Bloquee</span></td><td>02/04</td></tr>
+          <tr><td>Carrelage cuisine</td><td>Mohamed B.</td><td><span class="badge-warm badge-warning">En cours</span></td><td>05/04</td></tr>
+          <tr><td>Electricite salon</td><td>Rachid K.</td><td><span class="badge-warm badge-success">Termine</span></td><td>01/04</td></tr>
+          <tr><td>Peinture chambre 1</td><td>—</td><td><span class="badge-warm badge-muted">A faire</span></td><td>10/04</td></tr>
+          <tr><td>Plinthes salon</td><td>—</td><td><span class="badge-warm badge-muted">A faire</span></td><td>12/04</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- TAB PHOTOS -->
+  <div id="tab-photos" class="hidden">
+    <div class="photo-grid">
+      <div class="photo-card card-warm"><i data-lucide="image" style="width:28px;height:28px;margin-bottom:4px"></i><br>Cuisine<br><small>01/04</small></div>
+      <div class="photo-card card-warm"><i data-lucide="image" style="width:28px;height:28px;margin-bottom:4px"></i><br>Cloisons<br><small>31/03</small></div>
+      <div class="photo-card card-warm"><i data-lucide="image" style="width:28px;height:28px;margin-bottom:4px"></i><br>Elec salon<br><small>28/03</small></div>
+      <div class="photo-card card-warm"><i data-lucide="image" style="width:28px;height:28px;margin-bottom:4px"></i><br>SdB<br><small>25/03</small></div>
+      <div class="photo-card card-warm"><i data-lucide="image" style="width:28px;height:28px;margin-bottom:4px"></i><br>Facade<br><small>22/03</small></div>
+      <div class="photo-card card-warm"><i data-lucide="image" style="width:28px;height:28px;margin-bottom:4px"></i><br>Entree<br><small>20/03</small></div>
+    </div>
+  </div>
+
+  <!-- TAB CR -->
+  <div id="tab-cr" class="hidden">
+    <div class="card-warm">
+      <div class="cr-item">
+        <div><div class="cr-title">CR du 03/04/2026</div><div class="cr-sub">Genere a 18h00</div></div>
+        <span class="badge-warm badge-muted">Brouillon</span>
+      </div>
+      <div class="cr-item">
+        <div><div class="cr-title">CR du 02/04/2026</div><div class="cr-sub">Valide a 18h30</div></div>
+        <span class="badge-warm badge-accent">Valide</span>
+      </div>
+      <div class="cr-item">
+        <div><div class="cr-title">CR du 01/04/2026</div><div class="cr-sub">Envoye a 18h45</div></div>
+        <span class="badge-warm badge-success">Envoye</span>
+      </div>
+      <div class="cr-item">
+        <div><div class="cr-title">CR du 31/03/2026</div><div class="cr-sub">Envoye a 19h00</div></div>
+        <span class="badge-warm badge-success">Envoye</span>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+lucide.createIcons();
+function showTab(name){
+  document.querySelectorAll('[id^="tab-"]').forEach(el=>el.classList.add('hidden'));
+  document.getElementById('tab-'+name).classList.remove('hidden');
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  event.target.classList.add('active');
+}
+</script>
+</body>
+</html>

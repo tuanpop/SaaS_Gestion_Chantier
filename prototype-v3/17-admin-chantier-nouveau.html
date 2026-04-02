@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ClawBTP - Nouveau Chantier</title>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#FAF6F1;font-family:'Source Sans 3',sans-serif;color:#292524}
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:240px;background:#451A03;color:#fff;padding:24px 0;z-index:40;display:flex;flex-direction:column}
+.sidebar-logo{font-family:'Lexend',sans-serif;font-weight:700;font-size:22px;padding:0 24px 24px;border-bottom:1px solid rgba(255,255,255,0.1);margin-bottom:16px}
+.sidebar-logo span{color:#C2703E}
+.sidebar a{display:flex;align-items:center;gap:12px;padding:12px 24px;color:#A8A29E;text-decoration:none;font-weight:500;font-size:15px;transition:all 150ms}
+.sidebar a:hover{color:#FEF3C7;background:rgba(194,112,62,0.2)}
+.sidebar a.active{color:#FEF3C7;background:#C2703E;border-radius:0 8px 8px 0;margin-right:12px}
+.sidebar-bottom{margin-top:auto;padding:16px 24px;border-top:1px solid rgba(255,255,255,0.1)}
+.sidebar-user{display:flex;align-items:center;gap:10px;color:#A8A29E;font-size:13px}
+.sidebar-avatar{width:32px;height:32px;border-radius:50%;background:#C2703E;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:600;font-size:12px;font-family:'Lexend',sans-serif}
+.main-content{margin-left:240px;padding:32px;min-height:100vh}
+
+.page-title{font-family:'Lexend',sans-serif;font-weight:700;font-size:24px;margin-bottom:24px}
+.card-warm{background:#fff;border:1px solid #E7E0D6;border-radius:14px;box-shadow:0 2px 8px rgba(120,53,15,0.08);padding:28px;max-width:640px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+.form-group{margin-bottom:20px}
+.form-label{display:block;font-weight:600;font-size:14px;margin-bottom:6px;color:#57534E}
+.form-input{width:100%;padding:12px 16px;background:#F5F0E8;border:1px solid #A8A29E;border-radius:12px;font-size:15px;font-family:'Source Sans 3',sans-serif;color:#292524;transition:all 150ms}
+.form-input:focus{outline:none;border-color:#C2703E;box-shadow:0 0 0 3px rgba(194,112,62,0.15)}
+.form-input.error{border-color:#DC2626;box-shadow:0 0 0 3px rgba(220,38,38,0.15)}
+.form-error{color:#DC2626;font-size:12px;margin-top:4px;display:flex;align-items:center;gap:4px}
+.form-select{width:100%;padding:12px 16px;background:#F5F0E8;border:1px solid #A8A29E;border-radius:12px;font-size:15px;font-family:'Source Sans 3',sans-serif;color:#292524;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2378716C' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center}
+.form-select:focus{outline:none;border-color:#C2703E;box-shadow:0 0 0 3px rgba(194,112,62,0.15)}
+.btn-row{display:flex;gap:12px;margin-top:28px}
+.btn-warm{border:none;border-radius:12px;font-weight:600;font-family:'Lexend',sans-serif;box-shadow:0 2px 8px rgba(120,53,15,0.15);transition:all 150ms;cursor:pointer;padding:14px 28px;font-size:15px;display:inline-flex;align-items:center;gap:8px}
+.btn-warm:active{transform:translateY(2px);box-shadow:0 1px 3px rgba(120,53,15,0.1)}
+.btn-primary{background:#C2703E;color:#fff}
+.btn-secondary{background:#F5F0E8;color:#78716C;box-shadow:0 2px 8px rgba(120,53,15,0.08)}
+.back-link{display:inline-flex;align-items:center;gap:6px;color:#78716C;font-size:13px;text-decoration:none;margin-bottom:16px}
+</style>
+</head>
+<body>
+
+<nav class="sidebar">
+  <div class="sidebar-logo"><span>Claw</span>BTP</div>
+  <a href="15-admin-dashboard.html"><i data-lucide="layout-dashboard" style="width:18px;height:18px"></i> Dashboard</a>
+  <a href="16-admin-chantier-detail.html" class="active"><i data-lucide="hard-hat" style="width:18px;height:18px"></i> Chantiers</a>
+  <a href="18-admin-equipe.html"><i data-lucide="users" style="width:18px;height:18px"></i> Equipe</a>
+  <a href="19-admin-notifications.html"><i data-lucide="bell" style="width:18px;height:18px"></i> Notifications</a>
+  <a href="20-admin-clawbot.html"><i data-lucide="bot" style="width:18px;height:18px"></i> ClawBot</a>
+  <div class="sidebar-bottom">
+    <div class="sidebar-user">
+      <div class="sidebar-avatar">FD</div>
+      <div>Frederic Duval<br><span style="font-size:11px;color:#78716C">Admin</span></div>
+    </div>
+  </div>
+</nav>
+
+<main class="main-content">
+  <a href="00-index.html" class="back-link"><i data-lucide="arrow-left" style="width:14px;height:14px"></i> Prototype</a>
+
+  <div class="page-title">Nouveau chantier</div>
+
+  <div class="card-warm">
+    <div class="form-group">
+      <label class="form-label">Nom du chantier *</label>
+      <input type="text" class="form-input" placeholder="Ex: Residence Les Pins" value="Villa Paradis">
+    </div>
+
+    <div class="form-row">
+      <div>
+        <label class="form-label">Client *</label>
+        <input type="text" class="form-input" placeholder="Nom du client">
+      </div>
+      <div>
+        <label class="form-label">Contact client</label>
+        <input type="text" class="form-input" placeholder="Email ou telephone">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Adresse *</label>
+      <input type="text" class="form-input" placeholder="Adresse du chantier" value="45 avenue du Prado">
+    </div>
+
+    <div class="form-row">
+      <div>
+        <label class="form-label">Code postal *</label>
+        <input type="text" class="form-input error" value="130">
+        <div class="form-error"><i data-lucide="alert-circle" style="width:12px;height:12px"></i> Code postal invalide (5 chiffres)</div>
+      </div>
+      <div>
+        <label class="form-label">Ville *</label>
+        <input type="text" class="form-input" value="Marseille">
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div>
+        <label class="form-label">Date debut *</label>
+        <input type="date" class="form-input" value="2026-04-15">
+      </div>
+      <div>
+        <label class="form-label">Date fin prevue *</label>
+        <input type="date" class="form-input" value="2026-07-30">
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div>
+        <label class="form-label">Budget total (EUR) *</label>
+        <input type="text" class="form-input" placeholder="Ex: 95000" value="125000">
+      </div>
+      <div>
+        <label class="form-label">Conducteur de travaux *</label>
+        <select class="form-select">
+          <option>Jean-Daniel Moreau</option>
+          <option>Sophie Lambert</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Description</label>
+      <textarea class="form-input" style="min-height:80px;resize:vertical" placeholder="Description du chantier...">Renovation complete villa 180m2. Second oeuvre : cloisons, electricite, plomberie, carrelage, peinture.</textarea>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn-warm btn-primary"><i data-lucide="plus" style="width:16px;height:16px"></i> Creer le chantier</button>
+      <button class="btn-warm btn-secondary" onclick="history.back()">Annuler</button>
+    </div>
+  </div>
+</main>
+
+<script>lucide.createIcons()</script>
+</body>
+</html>

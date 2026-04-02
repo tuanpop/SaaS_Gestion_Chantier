@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claw — ClawBot</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #F8FAFC;
+    color: #0F172A;
+    display: flex;
+    justify-content: center;
+    min-height: 100vh;
+  }
+  .mobile-frame {
+    width: 100%;
+    max-width: 390px;
+    min-height: 100vh;
+    background: #F8FAFC;
+    position: relative;
+    padding-bottom: 80px;
+    display: flex;
+    flex-direction: column;
+  }
+  h1, h2, h3, h4 { font-family: 'Plus Jakarta Sans', sans-serif; }
+
+  .header {
+    background: linear-gradient(135deg, #6366F1, #8B5CF6);
+    color: white;
+    padding: 48px 20px 16px;
+    border-radius: 0 0 20px 20px;
+    display: flex; align-items: center; gap: 10px;
+    flex-shrink: 0;
+  }
+  .header-icon {
+    width: 40px; height: 40px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .header-icon i { width: 20px; height: 20px; color: white; }
+  .header h1 { font-size: 20px; font-weight: 700; }
+  .header-sub { font-size: 12px; opacity: 0.8; }
+
+  /* Chat area */
+  .chat-area {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-bottom: 80px;
+  }
+
+  .message {
+    max-width: 85%;
+    padding: 14px 16px;
+    border-radius: 16px;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  .message.bot {
+    align-self: flex-start;
+    background: #EEF2FF;
+    color: #0F172A;
+    border-bottom-left-radius: 4px;
+  }
+  .message.user {
+    align-self: flex-end;
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    color: #0F172A;
+    border-bottom-right-radius: 4px;
+  }
+
+  .bot-label {
+    display: flex; align-items: center; gap: 4px;
+    font-size: 11px; font-weight: 600; color: #6366F1;
+    margin-bottom: 6px;
+  }
+  .bot-label i { width: 12px; height: 12px; }
+
+  /* Blocage card inside chat */
+  .blocage-card {
+    background: white;
+    border: 1px solid #E2E8F0;
+    border-radius: 12px;
+    margin-top: 10px;
+    overflow: hidden;
+  }
+  .blocage-header {
+    padding: 10px 14px;
+    background: #FEF2F2;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 13px; font-weight: 700; color: #EF4444;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .blocage-header i { width: 14px; height: 14px; }
+  .blocage-item {
+    padding: 10px 14px;
+    border-bottom: 1px solid #F1F5F9;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .blocage-item:last-child { border-bottom: none; }
+  .blocage-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .blocage-dot.red { background: #EF4444; }
+  .blocage-dot.orange { background: #F59E0B; }
+  .blocage-text { font-size: 12px; }
+  .blocage-project { font-size: 11px; color: #94A3B8; }
+
+  /* Input bar */
+  .input-bar {
+    position: fixed;
+    bottom: 72px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 390px;
+    padding: 10px 16px;
+    background: white;
+    border-top: 1px solid #E2E8F0;
+    display: flex; gap: 8px;
+    z-index: 45;
+  }
+  .input-field {
+    flex: 1;
+    padding: 12px 16px;
+    border-radius: 24px;
+    border: 1px solid #E2E8F0;
+    font-size: 14px;
+    font-family: 'Inter', sans-serif;
+    background: #F8FAFC;
+    outline: none;
+  }
+  .input-field:focus { border-color: #6366F1; }
+  .input-field::placeholder { color: #94A3B8; }
+  .send-btn {
+    width: 44px; height: 44px;
+    background: linear-gradient(135deg, #6366F1, #8B5CF6);
+    color: white;
+    border: none; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; flex-shrink: 0;
+  }
+  .send-btn i { width: 18px; height: 18px; }
+
+  /* Bottom Nav */
+  .bottom-nav {
+    position: fixed;
+    bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 100%; max-width: 390px;
+    background: #FFFFFF;
+    border-top: 1px solid #E2E8F0;
+    display: flex; z-index: 50;
+    padding: 6px 0 env(safe-area-inset-bottom, 8px);
+  }
+  .nav-tab {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; gap: 2px; padding: 6px 0;
+    text-decoration: none; color: #94A3B8;
+    font-size: 10px; font-weight: 500; position: relative;
+  }
+  .nav-tab.active { color: #6366F1; }
+  .nav-tab.active::before {
+    content: '';
+    position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+    width: 24px; height: 3px; background: #6366F1; border-radius: 0 0 3px 3px;
+  }
+  .nav-tab i { width: 22px; height: 22px; }
+</style>
+</head>
+<body>
+<a href="00-index.html" style="position:fixed;top:12px;left:12px;z-index:100;background:white;color:#475569;font-size:12px;padding:6px 12px;border-radius:20px;text-decoration:none;display:flex;align-items:center;gap:4px;box-shadow:0 2px 8px rgba(0,0,0,0.1);font-family:'Inter',sans-serif">
+  <i data-lucide="arrow-left" style="width:14px;height:14px"></i> Index
+</a>
+
+<div class="mobile-frame">
+  <div class="header">
+    <div class="header-icon"><i data-lucide="sparkles"></i></div>
+    <div>
+      <h1>ClawBot</h1>
+      <div class="header-sub">Assistant IA projet</div>
+    </div>
+  </div>
+
+  <div class="chat-area">
+    <!-- Bot: Summary message -->
+    <div class="message bot">
+      <div class="bot-label"><i data-lucide="sparkles"></i> ClawBot</div>
+      Bonjour Julie ! Voici le résumé de votre journée :<br><br>
+      <strong>4 projets actifs</strong> — 1 en retard, 1 à surveiller.<br>
+      <strong>3 blocages</strong> nécessitent votre attention.<br>
+      <strong>1 CR</strong> en brouillon à valider (Les Oliviers).<br><br>
+      Comment puis-je vous aider ?
+    </div>
+
+    <!-- User message -->
+    <div class="message user">
+      Résumé des blocages
+    </div>
+
+    <!-- Bot: Structured blocage response -->
+    <div class="message bot">
+      <div class="bot-label"><i data-lucide="sparkles"></i> ClawBot</div>
+      Voici les 3 blocages actuels sur vos projets :
+
+      <div class="blocage-card">
+        <div class="blocage-header"><i data-lucide="alert-triangle"></i> 3 blocages actifs</div>
+        <div class="blocage-item">
+          <span class="blocage-dot red"></span>
+          <div>
+            <div class="blocage-text"><strong>Livraison menuiseries</strong> — fournisseur AluPro en retard de 3 jours</div>
+            <div class="blocage-project">Rés. Les Oliviers</div>
+          </div>
+        </div>
+        <div class="blocage-item">
+          <span class="blocage-dot red"></span>
+          <div>
+            <div class="blocage-text"><strong>Pose carrelage RDC</strong> — en attente des menuiseries</div>
+            <div class="blocage-project">Rés. Les Oliviers</div>
+          </div>
+        </div>
+        <div class="blocage-item">
+          <span class="blocage-dot orange"></span>
+          <div>
+            <div class="blocage-text"><strong>Validation plans</strong> — en attente retour architecte Dupont</div>
+            <div class="blocage-project">Bureau Mistral</div>
+          </div>
+        </div>
+      </div>
+
+      <br>Souhaitez-vous que je génère un message de relance pour AluPro ?
+    </div>
+  </div>
+
+  <!-- Input Bar -->
+  <div class="input-bar">
+    <input type="text" class="input-field" placeholder="Posez une question...">
+    <button class="send-btn"><i data-lucide="send"></i></button>
+  </div>
+
+  <!-- Bottom Nav -->
+  <nav class="bottom-nav">
+    <a href="08-conducteur-chantiers.html" class="nav-tab">
+      <i data-lucide="folder-kanban"></i><span>Projets</span>
+    </a>
+    <a href="10-conducteur-taches.html" class="nav-tab">
+      <i data-lucide="check-square"></i><span>Tâches</span>
+    </a>
+    <a href="11-conducteur-cr.html" class="nav-tab">
+      <i data-lucide="file-text"></i><span>CR</span>
+    </a>
+    <a href="12-conducteur-alertes.html" class="nav-tab">
+      <i data-lucide="bell"></i><span>Alertes</span>
+    </a>
+    <a href="13-conducteur-clawbot.html" class="nav-tab active">
+      <i data-lucide="sparkles"></i><span>Bot</span>
+    </a>
+  </nav>
+</div>
+
+<script>lucide.createIcons();</script>
+</body>
+</html>

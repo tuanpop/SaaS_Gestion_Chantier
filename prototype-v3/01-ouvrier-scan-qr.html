@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>ClawBTP — Scan QR</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { heading: ['Lexend', 'sans-serif'], sans: ['Source Sans 3', 'sans-serif'] },
+          colors: {
+            primary: { DEFAULT: '#78350F', light: '#92400E', dark: '#451A03' },
+            accent: '#C2703E',
+            terra: '#B45309',
+            sand: { DEFAULT: '#FEF3C7', light: '#FFFBEB', dark: '#FDE68A' },
+            cream: '#FAF6F1',
+            warmgray: { DEFAULT: '#78716C', light: '#A8A29E', dark: '#57534E' },
+            danger: { DEFAULT: '#DC2626', bg: '#FEE2E2' },
+            warning: { DEFAULT: '#D97706', bg: '#FEF3C7' },
+            success: { DEFAULT: '#15803D', bg: '#DCFCE7' },
+            surface: '#F5F0E8',
+            text: { DEFAULT: '#292524', muted: '#78716C', light: '#A8A29E' },
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    * { touch-action: manipulation; }
+    body { overscroll-behavior: contain; min-height: 100vh; min-height: 100dvh; background: #FAF6F1; font-family: 'Source Sans 3', sans-serif; color: #292524; }
+    .card-warm { background: #fff; border: 1px solid #E7E0D6; border-radius: 14px; box-shadow: 0 2px 8px rgba(120,53,15,0.08); transition: box-shadow 200ms, transform 200ms; }
+    .card-warm:active { box-shadow: 0 1px 3px rgba(120,53,15,0.1); transform: translateY(1px); }
+    .btn-warm { border: none; border-radius: 12px; font-weight: 600; font-family: 'Lexend', sans-serif; min-height: 56px; min-width: 56px; box-shadow: 0 2px 8px rgba(120,53,15,0.15); transition: all 150ms; cursor: pointer; }
+    .btn-warm:active { transform: translateY(2px); box-shadow: 0 1px 3px rgba(120,53,15,0.1); }
+    .badge-warm { border-radius: 8px; padding: 4px 12px; font-weight: 600; font-size: 13px; }
+
+    @keyframes pulse-scan { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    .animate-pulse-scan { animation: pulse-scan 1.5s ease-in-out infinite; }
+
+    @keyframes fade-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+    .animate-fade-in { animation: fade-in 0.5s ease-out forwards; }
+  </style>
+</head>
+<body>
+  <div class="max-w-[375px] mx-auto min-h-screen bg-cream">
+    <!-- Retour -->
+    <div class="px-5 pt-4">
+      <a href="00-index.html" class="text-text-muted text-sm flex items-center gap-1 no-underline">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+        Retour
+      </a>
+    </div>
+
+    <!-- Logo -->
+    <div class="text-center pt-10 pb-6">
+      <h1 class="font-heading text-3xl font-bold">
+        <span class="text-accent">Claw</span><span class="text-primary">BTP</span>
+      </h1>
+      <p class="text-text-muted text-sm mt-1">Le carnet de chantier moderne</p>
+    </div>
+
+    <!-- Phase 1 : Scan en cours (visible initialement) -->
+    <div id="phase-scan" class="px-5">
+      <div class="card-warm p-8 flex flex-col items-center text-center">
+        <div class="w-20 h-20 rounded-2xl bg-sand flex items-center justify-center mb-5 animate-pulse-scan">
+          <svg class="w-10 h-10 text-accent" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/>
+            <rect x="7" y="7" width="10" height="10" rx="1"/>
+          </svg>
+        </div>
+        <p class="text-warmgray text-base font-medium">Connexion en cours...</p>
+        <p class="text-text-light text-sm mt-1">Lecture du QR code</p>
+      </div>
+    </div>
+
+    <!-- Phase 2 : Connecté (masqué initialement) -->
+    <div id="phase-connected" class="px-5 hidden">
+      <!-- Avatar + Bonjour -->
+      <div class="flex flex-col items-center text-center mb-5 animate-fade-in">
+        <div class="w-20 h-20 rounded-full bg-sand flex items-center justify-center mb-3" style="box-shadow: 0 4px 12px rgba(120,53,15,0.12);">
+          <span class="font-heading text-2xl font-bold text-accent">M</span>
+        </div>
+        <h2 class="font-heading text-2xl font-bold text-text">Bonjour Mohamed !</h2>
+        <p class="text-text-muted text-base mt-1">Content de te revoir</p>
+      </div>
+
+      <!-- Card chantier -->
+      <div class="card-warm p-4 flex items-center gap-4 mb-5 animate-fade-in" style="animation-delay: 0.2s; opacity: 0;">
+        <div class="w-12 h-12 rounded-xl bg-sand flex items-center justify-center flex-shrink-0">
+          <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v4M12 14v4M16 14v4"/></svg>
+        </div>
+        <div class="flex-1">
+          <p class="font-heading font-semibold text-base">Leclerc — Mérignac</p>
+          <p class="text-text-muted text-sm">Chantier en cours</p>
+        </div>
+        <span class="badge-warm bg-sand text-terra text-xs">3 tâches</span>
+      </div>
+
+      <!-- Bouton CTA -->
+      <div class="animate-fade-in" style="animation-delay: 0.4s; opacity: 0;">
+        <a href="03-ouvrier-taches.html" class="btn-warm bg-accent text-white w-full flex items-center justify-center gap-3 text-lg no-underline px-6" style="min-height: 56px;">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          Voir mes tâches
+        </a>
+      </div>
+
+      <!-- Banner PWA -->
+      <div class="card-warm p-4 flex items-center gap-3 mt-5 animate-fade-in" style="animation-delay: 0.6s; opacity: 0;">
+        <div class="w-10 h-10 rounded-xl bg-sand flex items-center justify-center flex-shrink-0">
+          <svg class="w-5 h-5 text-accent" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+        </div>
+        <div class="flex-1">
+          <p class="text-sm font-semibold text-text">Ajouter à ton écran d'accueil</p>
+          <p class="text-text-muted text-xs">Pour un accès plus rapide</p>
+        </div>
+        <button class="text-accent font-heading font-semibold text-sm">Installer</button>
+      </div>
+    </div>
+
+    <div class="h-8"></div>
+  </div>
+
+  <script>
+    // Simulation : après 2s, passer à la phase connectée
+    setTimeout(() => {
+      document.getElementById('phase-scan').classList.add('hidden');
+      document.getElementById('phase-connected').classList.remove('hidden');
+    }, 2000);
+  </script>
+</body>
+</html>

@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>ClawBTP — Détail tâche</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { heading: ['Lexend', 'sans-serif'], sans: ['Source Sans 3', 'sans-serif'] },
+          colors: {
+            primary: { DEFAULT: '#78350F', light: '#92400E', dark: '#451A03' },
+            accent: '#C2703E',
+            terra: '#B45309',
+            sand: { DEFAULT: '#FEF3C7', light: '#FFFBEB', dark: '#FDE68A' },
+            cream: '#FAF6F1',
+            warmgray: { DEFAULT: '#78716C', light: '#A8A29E', dark: '#57534E' },
+            danger: { DEFAULT: '#DC2626', bg: '#FEE2E2' },
+            warning: { DEFAULT: '#D97706', bg: '#FEF3C7' },
+            success: { DEFAULT: '#15803D', bg: '#DCFCE7' },
+            surface: '#F5F0E8',
+            text: { DEFAULT: '#292524', muted: '#78716C', light: '#A8A29E' },
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    * { touch-action: manipulation; }
+    body { overscroll-behavior: contain; min-height: 100vh; min-height: 100dvh; background: #FAF6F1; font-family: 'Source Sans 3', sans-serif; color: #292524; }
+    .card-warm { background: #fff; border: 1px solid #E7E0D6; border-radius: 14px; box-shadow: 0 2px 8px rgba(120,53,15,0.08); transition: box-shadow 200ms, transform 200ms; }
+    .btn-warm { border: none; border-radius: 12px; font-weight: 600; font-family: 'Lexend', sans-serif; min-height: 56px; min-width: 56px; box-shadow: 0 2px 8px rgba(120,53,15,0.15); transition: all 150ms; cursor: pointer; }
+    .btn-warm:active { transform: translateY(2px); box-shadow: 0 1px 3px rgba(120,53,15,0.1); }
+    .badge-warm { border-radius: 8px; padding: 4px 12px; font-weight: 600; font-size: 13px; }
+
+    @keyframes success-overlay {
+      0% { opacity: 0; transform: scale(0.8); }
+      50% { opacity: 1; transform: scale(1.05); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+    .animate-success { animation: success-overlay 0.5s ease-out forwards; }
+
+    @keyframes check-pop {
+      0% { transform: scale(0); opacity: 0; }
+      60% { transform: scale(1.2); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .animate-check { animation: check-pop 0.4s ease-out 0.2s forwards; opacity: 0; }
+  </style>
+</head>
+<body>
+  <div class="max-w-[375px] mx-auto min-h-screen bg-cream relative">
+
+    <!-- Contenu principal -->
+    <div id="main-content" class="pb-36">
+      <!-- Header -->
+      <div class="px-5 pt-4 flex items-center gap-3">
+        <a href="03-ouvrier-taches.html" class="w-10 h-10 rounded-xl bg-surface flex items-center justify-center no-underline" style="box-shadow: 0 2px 6px rgba(120,53,15,0.08);">
+          <svg class="w-5 h-5 text-text-muted" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+        </a>
+        <a href="00-index.html" class="text-text-muted text-sm no-underline">Retour</a>
+      </div>
+
+      <!-- Titre + statut -->
+      <div class="px-5 pt-5">
+        <h1 class="font-heading text-xl font-bold text-text">Carrelage cuisine 201</h1>
+        <div class="flex items-center gap-3 mt-3">
+          <span class="badge-warm bg-sand text-terra">En cours</span>
+          <span class="flex items-center gap-1.5 text-text-muted text-sm">
+            <svg class="w-4 h-4 text-accent" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            Prévu pour le 5 avril
+          </span>
+        </div>
+      </div>
+
+      <!-- Description -->
+      <div class="px-5 pt-4">
+        <p class="text-text-muted text-base leading-relaxed">
+          Poser le carrelage 30x30 grès cérame coloris sable dans la cuisine du logement 201.
+          Prévoir joints souples en périphérie. Colle flexible obligatoire.
+        </p>
+      </div>
+
+      <!-- Photos -->
+      <div class="px-5 pt-5">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="font-heading font-semibold text-sm text-text-muted uppercase tracking-wide">Photos</h2>
+          <a href="05-ouvrier-photo.html" class="text-accent text-sm font-semibold no-underline flex items-center gap-1">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Ajouter
+          </a>
+        </div>
+        <div class="grid grid-cols-2 gap-2.5">
+          <div class="card-warm aspect-square bg-surface flex items-center justify-center overflow-hidden">
+            <div class="w-full h-full bg-gradient-to-br from-sand to-surface flex items-center justify-center">
+              <svg class="w-8 h-8 text-warmgray-light" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            </div>
+          </div>
+          <div class="card-warm aspect-square bg-surface flex items-center justify-center overflow-hidden">
+            <div class="w-full h-full bg-gradient-to-br from-sand to-surface flex items-center justify-center">
+              <svg class="w-8 h-8 text-warmgray-light" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            </div>
+          </div>
+          <div class="card-warm aspect-square bg-surface flex items-center justify-center overflow-hidden">
+            <div class="w-full h-full bg-gradient-to-br from-sand to-surface flex items-center justify-center">
+              <svg class="w-8 h-8 text-warmgray-light" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            </div>
+          </div>
+          <a href="05-ouvrier-photo.html" class="card-warm aspect-square bg-surface flex flex-col items-center justify-center gap-2 no-underline border-2 border-dashed" style="border-color: #D6CFC5;">
+            <svg class="w-7 h-7 text-warmgray-light" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            <span class="text-text-light text-xs font-medium">Ajouter</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Zone raison (toggle) -->
+      <div class="px-5 pt-5">
+        <button id="toggle-reason" class="text-text-muted text-sm font-medium flex items-center gap-2" onclick="toggleReason()">
+          <svg id="reason-chevron" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+          Ajouter un commentaire
+        </button>
+        <div id="reason-area" class="hidden mt-3">
+          <textarea rows="3" placeholder="Note, problème, remarque..." class="w-full bg-surface border border-warmgray-light/30 text-text text-base p-3 resize-none focus:outline-none focus:border-accent" style="border-radius: 12px; font-family: 'Source Sans 3', sans-serif;"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- Boutons fixés en bas -->
+    <div class="fixed bottom-0 left-0 right-0 z-20">
+      <div class="max-w-[375px] mx-auto bg-cream px-5 pb-6 pt-3" style="box-shadow: 0 -4px 16px rgba(120,53,15,0.06);">
+        <div class="flex gap-3">
+          <button onclick="showBlockedReason()" class="btn-warm bg-danger text-white flex-1 flex items-center justify-center gap-2 text-base px-4">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            Bloqué
+          </button>
+          <button onclick="showSuccess()" class="btn-warm bg-success text-white flex-1 flex items-center justify-center gap-2 text-base px-4">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+            Terminé
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Overlay succès (caché) -->
+    <div id="success-overlay" class="fixed inset-0 z-50 hidden">
+      <div class="max-w-[375px] mx-auto min-h-screen flex flex-col items-center justify-center px-8" style="background: #DCFCE7;">
+        <div class="animate-check">
+          <div class="w-24 h-24 rounded-full bg-success flex items-center justify-center mb-6" style="box-shadow: 0 4px 20px rgba(21,128,61,0.25);">
+            <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+        </div>
+        <h2 class="font-heading text-2xl font-bold text-success animate-success">Bien joué !</h2>
+        <p class="text-success/70 text-base mt-2 text-center animate-success">Tâche terminée. Ton conducteur sera notifié.</p>
+        <button onclick="hideSuccess()" class="btn-warm bg-success text-white mt-8 px-8 text-base animate-success">Retour aux tâches</button>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    function toggleReason() {
+      const area = document.getElementById('reason-area');
+      const chevron = document.getElementById('reason-chevron');
+      area.classList.toggle('hidden');
+      chevron.style.transform = area.classList.contains('hidden') ? '' : 'rotate(90deg)';
+    }
+
+    function showBlockedReason() {
+      const area = document.getElementById('reason-area');
+      const chevron = document.getElementById('reason-chevron');
+      area.classList.remove('hidden');
+      chevron.style.transform = 'rotate(90deg)';
+      area.querySelector('textarea').placeholder = 'Décris le problème pour ton conducteur...';
+      area.querySelector('textarea').focus();
+    }
+
+    function showSuccess() {
+      document.getElementById('success-overlay').classList.remove('hidden');
+    }
+
+    function hideSuccess() {
+      document.getElementById('success-overlay').classList.add('hidden');
+    }
+  </script>
+</body>
+</html>

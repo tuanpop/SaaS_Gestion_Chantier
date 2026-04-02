@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ClawBTP — Dashboard Admin</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { heading: ['Space Grotesk','sans-serif'], sans: ['DM Sans','sans-serif'], mono: ['JetBrains Mono','monospace'] },
+          colors: {
+            bg: { DEFAULT: '#0F172A', card: '#1E293B', elevated: '#334155' },
+            accent: '#3B82F6',
+            danger: { DEFAULT: '#EF4444' },
+            warning: { DEFAULT: '#F59E0B' },
+            success: { DEFAULT: '#22C55E' },
+            text: { DEFAULT: '#F8FAFC', muted: '#94A3B8', dim: '#64748B' },
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { background: #0F172A; font-family: 'DM Sans', sans-serif; color: #F8FAFC; }
+    .sidebar { position:fixed;left:0;top:0;bottom:0;width:240px;background:#0B1120;border-right:1px solid rgba(148,163,184,0.15);padding:24px 0;z-index:40;display:flex;flex-direction:column; }
+    .sidebar a { display:flex;align-items:center;gap:12px;padding:12px 24px;color:#64748B;text-decoration:none;font-weight:500;font-size:15px;transition:all 150ms; }
+    .sidebar a:hover { color:#94A3B8;background:rgba(59,130,246,0.1); }
+    .sidebar a.active { color:#3B82F6;background:rgba(59,130,246,0.15);border-left:3px solid #3B82F6;box-shadow:inset 0 0 20px rgba(59,130,246,0.1); }
+    .main-content { margin-left:240px;padding:32px;min-height:100vh; }
+    .card-cockpit { background: #1E293B; border: 1px solid rgba(148,163,184,0.15); border-radius: 12px; }
+    .glow-accent { box-shadow: 0 0 20px rgba(59,130,246,0.3), 0 0 60px rgba(59,130,246,0.1); }
+    .glow-danger { box-shadow: 0 0 15px rgba(239,68,68,0.3); }
+    .glow-warning { box-shadow: 0 0 15px rgba(245,158,11,0.3); }
+    .glow-success { box-shadow: 0 0 15px rgba(34,197,94,0.3); }
+    .btn-cockpit { border-radius: 10px; font-weight: 600; font-family: 'Space Grotesk', sans-serif; cursor: pointer; transition: all 150ms; padding: 10px 20px; border: none; }
+    .btn-cockpit:hover { filter: brightness(1.1); transform: translateY(-1px); }
+    .badge-cockpit { border-radius: 6px; padding: 3px 10px; font-weight: 600; font-size: 12px; display: inline-flex; align-items: center; }
+    .progress-cockpit { height: 6px; background: #334155; border-radius: 999px; overflow: hidden; }
+    .progress-cockpit .fill { height: 100%; border-radius: 999px; transition: width 300ms; }
+    .kpi-card { background: #1E293B; border: 1px solid rgba(148,163,184,0.15); border-radius: 12px; padding: 24px; }
+  </style>
+</head>
+<body>
+<a href="00-index.html" style="position:fixed;top:12px;left:12px;z-index:100;background:rgba(30,41,59,0.9);color:#94A3B8;font-size:12px;padding:6px 12px;border-radius:20px;text-decoration:none;display:inline-flex;align-items:center;gap:4px;box-shadow:0 2px 8px rgba(0,0,0,0.3);font-family:DM Sans,sans-serif">&#8592; Index</a>
+  <!-- Sidebar -->
+  <nav class="sidebar">
+    <div class="px-6 mb-8">
+      <h1 class="font-heading font-[700] text-[22px]"><span class="text-accent" style="text-shadow:0 0 15px rgba(59,130,246,0.5)">Claw</span>BTP</h1>
+    </div>
+    <a href="14-admin-login.html" class="text-text-dim text-sm !text-[13px] mb-2">
+      <i data-lucide="arrow-left" class="w-4 h-4"></i> Prototype
+    </a>
+    <div class="flex-1">
+      <a href="15-admin-dashboard.html" class="active">
+        <i data-lucide="layout-dashboard" class="w-5 h-5"></i> Dashboard
+      </a>
+      <a href="16-admin-chantier-detail.html">
+        <i data-lucide="building-2" class="w-5 h-5"></i> Chantiers
+      </a>
+      <a href="18-admin-equipe.html">
+        <i data-lucide="users" class="w-5 h-5"></i> Equipe
+      </a>
+      <a href="19-admin-notifications.html">
+        <i data-lucide="bell" class="w-5 h-5"></i> Notifications
+      </a>
+      <a href="20-admin-clawbot.html">
+        <i data-lucide="bot" class="w-5 h-5"></i> ClawBot
+      </a>
+    </div>
+    <div class="px-6 mt-auto pt-4 border-t border-white/10">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-full bg-accent/20 flex items-center justify-center text-accent font-heading font-bold text-sm" style="box-shadow:0 0 12px rgba(59,130,246,0.3)">FS</div>
+        <div>
+          <div class="text-sm font-medium text-text">Frederic S.</div>
+          <div class="text-xs text-text-dim">Admin</div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main -->
+  <main class="main-content">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-8">
+      <div>
+        <h1 class="font-heading font-bold text-[28px] text-text">Bonjour Frederic</h1>
+        <p class="text-text-muted text-sm mt-1">Vendredi 3 avril 2026 — Sandau Charpente</p>
+      </div>
+      <div class="flex items-center gap-4">
+        <a href="19-admin-notifications.html" class="relative p-2.5 rounded-xl bg-bg-card border border-white/10 hover:border-accent/30 transition-colors">
+          <i data-lucide="bell" class="w-5 h-5 text-text-muted"></i>
+          <span class="absolute -top-1 -right-1 w-5 h-5 bg-danger text-white text-[11px] font-bold rounded-full flex items-center justify-center" style="box-shadow:0 0 8px rgba(239,68,68,0.5)">3</span>
+        </a>
+        <div class="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center text-accent font-heading font-bold text-sm" style="box-shadow:0 0 15px rgba(59,130,246,0.3)">FS</div>
+      </div>
+    </div>
+
+    <!-- Alertes -->
+    <div class="grid grid-cols-3 gap-4 mb-8">
+      <div class="card-cockpit p-4 border-l-[3px] border-l-danger glow-danger">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-danger/15 flex items-center justify-center">
+            <i data-lucide="alert-triangle" class="w-4 h-4 text-danger" style="filter:drop-shadow(0 0 4px rgba(239,68,68,0.5))"></i>
+          </div>
+          <div>
+            <p class="text-sm font-semibold text-text">Chantier Leclerc — Budget depasse</p>
+            <p class="text-xs text-text-dim mt-0.5">Depassement de 8 200&#8364; (+12%)</p>
+          </div>
+        </div>
+      </div>
+      <div class="card-cockpit p-4 border-l-[3px] border-l-danger glow-danger">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-danger/15 flex items-center justify-center">
+            <i data-lucide="clock" class="w-4 h-4 text-danger" style="filter:drop-shadow(0 0 4px rgba(239,68,68,0.5))"></i>
+          </div>
+          <div>
+            <p class="text-sm font-semibold text-text">Chantier Bertrand — Retard critique</p>
+            <p class="text-xs text-text-dim mt-0.5">5 taches bloquees depuis 3 jours</p>
+          </div>
+        </div>
+      </div>
+      <div class="card-cockpit p-4 border-l-[3px] border-l-warning glow-warning">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-warning/15 flex items-center justify-center">
+            <i data-lucide="thermometer" class="w-4 h-4 text-warning" style="filter:drop-shadow(0 0 4px rgba(245,158,11,0.5))"></i>
+          </div>
+          <div>
+            <p class="text-sm font-semibold text-text">Chantier Dupont — Alerte meteo</p>
+            <p class="text-xs text-text-dim mt-0.5">Pluie prevue lundi — impact placo</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="grid grid-cols-4 gap-4 mb-8">
+      <div class="kpi-card">
+        <div class="flex items-center gap-2 mb-2">
+          <i data-lucide="building-2" class="w-4 h-4 text-text-dim"></i>
+          <span class="text-text-dim text-xs font-medium uppercase tracking-wide">Chantiers actifs</span>
+        </div>
+        <div class="font-mono font-bold text-[36px] text-text leading-none">6</div>
+        <div class="text-text-dim text-xs mt-1">2 en alerte</div>
+      </div>
+      <div class="kpi-card">
+        <div class="flex items-center gap-2 mb-2">
+          <i data-lucide="euro" class="w-4 h-4 text-text-dim"></i>
+          <span class="text-text-dim text-xs font-medium uppercase tracking-wide">Budget total</span>
+        </div>
+        <div class="font-mono font-bold text-[36px] text-text leading-none">487k&#8364;</div>
+        <div class="text-danger text-xs mt-1 font-medium">+3.2% de derive globale</div>
+      </div>
+      <div class="kpi-card">
+        <div class="flex items-center gap-2 mb-2">
+          <i data-lucide="users" class="w-4 h-4 text-text-dim"></i>
+          <span class="text-text-dim text-xs font-medium uppercase tracking-wide">Equipe</span>
+        </div>
+        <div class="font-mono font-bold text-[36px] text-text leading-none">18</div>
+        <div class="text-text-dim text-xs mt-1">3 conducteurs, 15 ouvriers</div>
+      </div>
+      <div class="kpi-card">
+        <div class="flex items-center gap-2 mb-2">
+          <i data-lucide="check-circle" class="w-4 h-4 text-text-dim"></i>
+          <span class="text-text-dim text-xs font-medium uppercase tracking-wide">Taches terminees</span>
+        </div>
+        <div class="font-mono font-bold text-[36px] text-success leading-none">74%</div>
+        <div class="text-text-dim text-xs mt-1">89 / 120 cette semaine</div>
+      </div>
+    </div>
+
+    <!-- Portefeuille chantiers -->
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="font-heading font-semibold text-[20px] text-text">Portefeuille chantiers</h2>
+      <a href="17-admin-chantier-nouveau.html" class="btn-cockpit bg-accent text-white text-sm px-4 py-2 glow-accent flex items-center gap-2">
+        <i data-lucide="plus" class="w-4 h-4"></i> Nouveau chantier
+      </a>
+    </div>
+
+    <div class="grid grid-cols-3 gap-4">
+      <!-- Chantier 1 — Danger -->
+      <a href="16-admin-chantier-detail.html" class="card-cockpit p-5 border-l-[3px] border-l-danger hover:border-white/25 transition-colors cursor-pointer">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-heading font-semibold text-[16px] text-text">Residence Leclerc</h3>
+          <span class="badge-cockpit bg-danger/15 text-danger" style="box-shadow:0 0 8px rgba(239,68,68,0.2)">Retard</span>
+        </div>
+        <p class="text-text-dim text-sm mb-3">Client : SCI Leclerc Patrimoine</p>
+        <div class="progress-cockpit mb-2">
+          <div class="fill bg-danger" style="width:92%;box-shadow:0 0 6px rgba(239,68,68,0.4)"></div>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="font-mono text-sm text-text">62 800&#8364; / 68 000&#8364;</span>
+          <span class="font-mono text-xs text-danger font-medium">92%</span>
+        </div>
+      </a>
+
+      <!-- Chantier 2 — Danger -->
+      <a href="16-admin-chantier-detail.html" class="card-cockpit p-5 border-l-[3px] border-l-danger hover:border-white/25 transition-colors cursor-pointer">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-heading font-semibold text-[16px] text-text">Villa Bertrand</h3>
+          <span class="badge-cockpit bg-danger/15 text-danger" style="box-shadow:0 0 8px rgba(239,68,68,0.2)">Bloque</span>
+        </div>
+        <p class="text-text-dim text-sm mb-3">Client : M. et Mme Bertrand</p>
+        <div class="progress-cockpit mb-2">
+          <div class="fill bg-danger" style="width:85%;box-shadow:0 0 6px rgba(239,68,68,0.4)"></div>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="font-mono text-sm text-text">55 200&#8364; / 65 000&#8364;</span>
+          <span class="font-mono text-xs text-danger font-medium">85%</span>
+        </div>
+      </a>
+
+      <!-- Chantier 3 — Warning -->
+      <a href="16-admin-chantier-detail.html" class="card-cockpit p-5 border-l-[3px] border-l-warning hover:border-white/25 transition-colors cursor-pointer">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-heading font-semibold text-[16px] text-text">Bureaux Dupont</h3>
+          <span class="badge-cockpit bg-warning/15 text-warning" style="box-shadow:0 0 8px rgba(245,158,11,0.2)">Derive</span>
+        </div>
+        <p class="text-text-dim text-sm mb-3">Client : Dupont & Associes</p>
+        <div class="progress-cockpit mb-2">
+          <div class="fill bg-warning" style="width:78%;box-shadow:0 0 6px rgba(245,158,11,0.4)"></div>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="font-mono text-sm text-text">78 500&#8364; / 95 000&#8364;</span>
+          <span class="font-mono text-xs text-warning font-medium">78%</span>
+        </div>
+      </a>
+
+      <!-- Chantier 4 — Warning -->
+      <a href="16-admin-chantier-detail.html" class="card-cockpit p-5 border-l-[3px] border-l-warning hover:border-white/25 transition-colors cursor-pointer">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-heading font-semibold text-[16px] text-text">Renovation Garnier</h3>
+          <span class="badge-cockpit bg-warning/15 text-warning" style="box-shadow:0 0 8px rgba(245,158,11,0.2)">Vigilance</span>
+        </div>
+        <p class="text-text-dim text-sm mb-3">Client : Mme Garnier</p>
+        <div class="progress-cockpit mb-2">
+          <div class="fill bg-warning" style="width:72%;box-shadow:0 0 6px rgba(245,158,11,0.4)"></div>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="font-mono text-sm text-text">42 000&#8364; / 58 000&#8364;</span>
+          <span class="font-mono text-xs text-warning font-medium">72%</span>
+        </div>
+      </a>
+
+      <!-- Chantier 5 — Success -->
+      <a href="16-admin-chantier-detail.html" class="card-cockpit p-5 border-l-[3px] border-l-success hover:border-white/25 transition-colors cursor-pointer">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-heading font-semibold text-[16px] text-text">Maison Martin</h3>
+          <span class="badge-cockpit bg-success/15 text-success" style="box-shadow:0 0 8px rgba(34,197,94,0.2)">En cours</span>
+        </div>
+        <p class="text-text-dim text-sm mb-3">Client : Famille Martin</p>
+        <div class="progress-cockpit mb-2">
+          <div class="fill bg-success" style="width:55%;box-shadow:0 0 6px rgba(34,197,94,0.4)"></div>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="font-mono text-sm text-text">42 000&#8364; / 75 000&#8364;</span>
+          <span class="font-mono text-xs text-success font-medium">55%</span>
+        </div>
+      </a>
+
+      <!-- Chantier 6 — Success -->
+      <a href="16-admin-chantier-detail.html" class="card-cockpit p-5 border-l-[3px] border-l-success hover:border-white/25 transition-colors cursor-pointer">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-heading font-semibold text-[16px] text-text">Loft Moreau</h3>
+          <span class="badge-cockpit bg-success/15 text-success" style="box-shadow:0 0 8px rgba(34,197,94,0.2)">En cours</span>
+        </div>
+        <p class="text-text-dim text-sm mb-3">Client : M. Moreau</p>
+        <div class="progress-cockpit mb-2">
+          <div class="fill bg-success" style="width:38%;box-shadow:0 0 6px rgba(34,197,94,0.4)"></div>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="font-mono text-sm text-text">45 500&#8364; / 126 000&#8364;</span>
+          <span class="font-mono text-xs text-success font-medium">38%</span>
+        </div>
+      </a>
+    </div>
+  </main>
+
+  <script>lucide.createIcons();</script>
+</body>
+</html>

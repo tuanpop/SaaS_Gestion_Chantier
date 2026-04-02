@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -l 'href=\"index\\\\.html\"' *.html)",
+      "Bash(grep -l 'href=\"ouvrier-scan-qr\\\\.html\"' *.html)",
+      "Bash(grep -rL '00-index' *.html)",
+      "Bash(grep -rn 'href=\"index\\\\.html\"\\\\|href=\"ouvrier-scan-qr\\\\.html\"\\\\|href=\"admin-dashboard\\\\.html\"' \"c:/_Git/SaaS_Gestion_Chantier/prototype/\"*.html)",
+      "Bash(grep -rn 'href=\"index\\\\.html\"\\\\|href=\"ouvrier-scan-qr\\\\.html\"\\\\|href=\"admin-dashboard\\\\.html\"' \"c:/_Git/SaaS_Gestion_Chantier/prototype-v2/\"*.html)",
+      "Bash(grep -rn 'href=\"index\\\\.html\"\\\\|href=\"ouvrier-scan-qr\\\\.html\"\\\\|href=\"admin-dashboard\\\\.html\"' \"c:/_Git/SaaS_Gestion_Chantier/prototype-v3/\"*.html)"
+    ]
+  }
+}

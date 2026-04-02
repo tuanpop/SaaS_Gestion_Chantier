@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>ClawBTP — Sélecteur chantier</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { heading: ['Lexend', 'sans-serif'], sans: ['Source Sans 3', 'sans-serif'] },
+          colors: {
+            primary: { DEFAULT: '#78350F', light: '#92400E', dark: '#451A03' },
+            accent: '#C2703E',
+            terra: '#B45309',
+            sand: { DEFAULT: '#FEF3C7', light: '#FFFBEB', dark: '#FDE68A' },
+            cream: '#FAF6F1',
+            warmgray: { DEFAULT: '#78716C', light: '#A8A29E', dark: '#57534E' },
+            danger: { DEFAULT: '#DC2626', bg: '#FEE2E2' },
+            warning: { DEFAULT: '#D97706', bg: '#FEF3C7' },
+            success: { DEFAULT: '#15803D', bg: '#DCFCE7' },
+            surface: '#F5F0E8',
+            text: { DEFAULT: '#292524', muted: '#78716C', light: '#A8A29E' },
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    * { touch-action: manipulation; }
+    body { overscroll-behavior: contain; min-height: 100vh; min-height: 100dvh; background: #FAF6F1; font-family: 'Source Sans 3', sans-serif; color: #292524; }
+    .card-warm { background: #fff; border: 1px solid #E7E0D6; border-radius: 14px; box-shadow: 0 2px 8px rgba(120,53,15,0.08); transition: box-shadow 200ms, transform 200ms; }
+    .card-warm:active { box-shadow: 0 4px 16px rgba(120,53,15,0.14); transform: translateY(-1px); }
+    .badge-warm { border-radius: 8px; padding: 4px 12px; font-weight: 600; font-size: 13px; }
+    .border-left-accent { border-left: 4px solid #C2703E; border-radius: 14px; }
+  </style>
+</head>
+<body>
+  <div class="max-w-[375px] mx-auto min-h-screen bg-cream">
+    <!-- Retour -->
+    <div class="px-5 pt-4">
+      <a href="00-index.html" class="text-text-muted text-sm flex items-center gap-1 no-underline">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+        Retour
+      </a>
+    </div>
+
+    <!-- Titre -->
+    <div class="px-5 pt-6 pb-5">
+      <h1 class="font-heading text-xl font-bold text-text">Tu es sur quel chantier ?</h1>
+      <p class="text-text-muted text-sm mt-1">Choisis ton chantier du jour</p>
+    </div>
+
+    <!-- Liste chantiers -->
+    <div class="px-5 flex flex-col gap-3 pb-8">
+
+      <!-- Chantier 1 -->
+      <a href="03-ouvrier-taches.html" class="card-warm border-left-accent p-4 flex items-center gap-4 no-underline text-text">
+        <div class="w-12 h-12 rounded-xl bg-sand flex items-center justify-center flex-shrink-0">
+          <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v4M12 14v4M16 14v4"/></svg>
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="font-heading font-semibold text-base">Leclerc — Mérignac</p>
+          <p class="text-text-muted text-sm truncate">12 rue du Commerce, 33700 Mérignac</p>
+        </div>
+        <span class="badge-warm bg-sand text-terra flex-shrink-0">3 tâches</span>
+      </a>
+
+      <!-- Chantier 2 -->
+      <a href="03-ouvrier-taches.html" class="card-warm border-left-accent p-4 flex items-center gap-4 no-underline text-text">
+        <div class="w-12 h-12 rounded-xl bg-sand flex items-center justify-center flex-shrink-0">
+          <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v4M12 14v4M16 14v4"/></svg>
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="font-heading font-semibold text-base">Résidence Les Pins</p>
+          <p class="text-text-muted text-sm truncate">45 av. des Pins, 33600 Pessac</p>
+        </div>
+        <span class="badge-warm bg-sand text-terra flex-shrink-0">5 tâches</span>
+      </a>
+
+      <!-- Chantier 3 -->
+      <a href="03-ouvrier-taches.html" class="card-warm border-left-accent p-4 flex items-center gap-4 no-underline text-text">
+        <div class="w-12 h-12 rounded-xl bg-sand flex items-center justify-center flex-shrink-0">
+          <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v4M12 14v4M16 14v4"/></svg>
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="font-heading font-semibold text-base">Mairie — Talence</p>
+          <p class="text-text-muted text-sm truncate">Place de la Mairie, 33400 Talence</p>
+        </div>
+        <span class="badge-warm bg-sand text-terra flex-shrink-0">2 tâches</span>
+      </a>
+
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Claw — Detail projet</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', sans-serif; color: #0F172A; background: #F8FAFC; display: flex; min-height: 100vh; }
+
+    .sidebar { width: 240px; min-height: 100vh; background: linear-gradient(to bottom, #4338CA, #6D28D9); color: #fff; display: flex; flex-direction: column; position: fixed; top: 0; left: 0; bottom: 0; }
+    .sidebar-logo { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 24px; font-weight: 800; padding: 24px 24px 32px; }
+    .sidebar-nav { flex: 1; display: flex; flex-direction: column; gap: 2px; padding: 0 12px; }
+    .nav-item { display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-radius: 10px; font-size: 14px; font-weight: 500; color: rgba(255,255,255,0.7); text-decoration: none; transition: all .15s; }
+    .nav-item:hover { background: rgba(255,255,255,0.1); color: #fff; }
+    .nav-item.active { background: rgba(255,255,255,0.18); color: #fff; font-weight: 600; }
+    .sidebar-bottom { padding: 16px; border-top: 1px solid rgba(255,255,255,0.15); }
+    .sidebar-user { display: flex; align-items: center; gap: 10px; }
+    .user-avatar { width: 36px; height: 36px; border-radius: 10px; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; }
+    .user-info .name { font-size: 13px; font-weight: 600; }
+    .user-info .role { font-size: 11px; opacity: 0.65; }
+
+    .main { margin-left: 240px; flex: 1; padding: 32px; }
+    .back-link { display: inline-flex; align-items: center; gap: 6px; color: #94A3B8; font-size: 13px; text-decoration: none; margin-bottom: 16px; font-family: 'Inter', sans-serif; }
+
+    /* Breadcrumb */
+    .breadcrumb { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #94A3B8; margin-bottom: 20px; }
+    .breadcrumb a { color: #6366F1; text-decoration: none; }
+
+    /* Header */
+    .page-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 28px; }
+    .page-header h1 { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 24px; font-weight: 700; }
+    .header-meta { display: flex; align-items: center; gap: 12px; margin-top: 6px; font-size: 13px; color: #475569; }
+    .status-badge { display: inline-flex; align-items: center; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+    .badge-active { background: #ECFDF5; color: #10B981; }
+
+    /* Tabs */
+    .tabs { display: flex; border-bottom: 2px solid #E2E8F0; margin-bottom: 24px; }
+    .tab { padding: 10px 20px; font-size: 14px; font-weight: 600; color: #94A3B8; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all .15s; }
+    .tab.active { color: #6366F1; border-bottom-color: #6366F1; }
+
+    /* Info summary */
+    .info-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 28px; }
+    .info-card { background: #fff; border: 1px solid #E2E8F0; border-radius: 14px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+    .info-label { font-size: 12px; color: #94A3B8; margin-bottom: 4px; }
+    .info-value { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 16px; font-weight: 700; }
+    .info-value.red { color: #EF4444; }
+
+    /* Budget bar */
+    .budget-section { background: #fff; border: 1px solid #E2E8F0; border-radius: 14px; padding: 18px; margin-bottom: 28px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+    .budget-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .budget-label { font-size: 14px; font-weight: 600; }
+    .budget-values { font-size: 13px; color: #475569; }
+    .budget-values span { color: #EF4444; font-weight: 600; }
+    .budget-bar { height: 10px; background: #E2E8F0; border-radius: 5px; overflow: hidden; position: relative; }
+    .budget-fill { height: 100%; background: #EF4444; border-radius: 5px; }
+
+    /* Table */
+    .table-card { background: #fff; border: 1px solid #E2E8F0; border-radius: 16px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+    table { width: 100%; border-collapse: collapse; }
+    th { text-align: left; padding: 12px 16px; font-size: 12px; font-weight: 600; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #E2E8F0; background: #F8FAFC; }
+    td { padding: 14px 16px; font-size: 14px; border-bottom: 1px solid #F1F5F9; }
+    tr:last-child td { border-bottom: none; }
+    .task-name { font-weight: 600; }
+    .badge-sm { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 16px; font-size: 11px; font-weight: 600; }
+    .badge-green { background: #ECFDF5; color: #10B981; }
+    .badge-orange { background: #FFFBEB; color: #F59E0B; }
+    .badge-red { background: #FEF2F2; color: #EF4444; }
+    .badge-indigo { background: #EEF2FF; color: #6366F1; }
+    .badge-gray { background: #F1F5F9; color: #475569; }
+  </style>
+</head>
+<body>
+  <nav class="sidebar">
+    <div class="sidebar-logo">Claw</div>
+    <div class="sidebar-nav">
+      <a class="nav-item" href="15-admin-dashboard.html"><i data-lucide="bar-chart-3" style="width:18px;height:18px"></i> Dashboard</a>
+      <a class="nav-item active" href="16-admin-chantier-detail.html"><i data-lucide="folder-open" style="width:18px;height:18px"></i> Projets</a>
+      <a class="nav-item" href="18-admin-equipe.html"><i data-lucide="users" style="width:18px;height:18px"></i> Equipe</a>
+      <a class="nav-item" href="19-admin-notifications.html"><i data-lucide="bell" style="width:18px;height:18px"></i> Notifications</a>
+      <a class="nav-item" href="20-admin-clawbot.html"><i data-lucide="bot" style="width:18px;height:18px"></i> ClawBot</a>
+    </div>
+    <div class="sidebar-bottom">
+      <div class="sidebar-user">
+        <div class="user-avatar">FD</div>
+        <div class="user-info"><div class="name">Frederic Duval</div><div class="role">Admin</div></div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="main">
+    <a href="00-index.html" class="back-link"><i data-lucide="arrow-left" style="width:14px;height:14px"></i> Prototype</a>
+
+    <div class="breadcrumb">
+      <a href="15-admin-dashboard.html">Dashboard</a>
+      <i data-lucide="chevron-right" style="width:14px;height:14px"></i>
+      <span>Les Oliviers</span>
+    </div>
+
+    <div class="page-header">
+      <div>
+        <h1>Les Oliviers</h1>
+        <div class="header-meta">
+          <span>Client: SCI Provence</span>
+          <span class="status-badge badge-active">En cours</span>
+          <span>Superviseur: Marc Leroy</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <div class="tab">Infos</div>
+      <div class="tab active">Taches</div>
+      <div class="tab">Photos</div>
+      <div class="tab">Comptes Rendus</div>
+    </div>
+
+    <!-- Info summary -->
+    <div class="info-grid">
+      <div class="info-card">
+        <div class="info-label">Date debut</div>
+        <div class="info-value">15 jan 2026</div>
+      </div>
+      <div class="info-card">
+        <div class="info-label">Date fin prevue</div>
+        <div class="info-value">15 juin 2026</div>
+      </div>
+      <div class="info-card">
+        <div class="info-label">Equipe</div>
+        <div class="info-value">6 operateurs</div>
+      </div>
+      <div class="info-card">
+        <div class="info-label">Budget</div>
+        <div class="info-value red">+12% depassement</div>
+      </div>
+    </div>
+
+    <!-- Budget -->
+    <div class="budget-section">
+      <div class="budget-header">
+        <span class="budget-label">Budget previsionnel vs reel</span>
+        <div class="budget-values">245 000 EUR / 274 000 EUR (<span>+12%</span>)</div>
+      </div>
+      <div class="budget-bar">
+        <div class="budget-fill" style="width:112%"></div>
+      </div>
+    </div>
+
+    <!-- Tasks table -->
+    <div class="table-card">
+      <table>
+        <thead>
+          <tr>
+            <th>Tache</th>
+            <th>Assigne</th>
+            <th>Statut</th>
+            <th>Echeance</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="task-name">Peinture facade nord</td>
+            <td>Pierre Martin</td>
+            <td><span class="badge-sm badge-red">Bloque</span></td>
+            <td>28 mars</td>
+          </tr>
+          <tr>
+            <td class="task-name">Pose carrelage RDC</td>
+            <td>Karim Bensaid</td>
+            <td><span class="badge-sm badge-indigo">En cours</span></td>
+            <td>5 avr</td>
+          </tr>
+          <tr>
+            <td class="task-name">Electricite etage 2</td>
+            <td>Lucas Petit</td>
+            <td><span class="badge-sm badge-green">Termine</span></td>
+            <td>20 mars</td>
+          </tr>
+          <tr>
+            <td class="task-name">Plomberie salle de bain</td>
+            <td>Antoine Roux</td>
+            <td><span class="badge-sm badge-orange">En retard</span></td>
+            <td>1 avr</td>
+          </tr>
+          <tr>
+            <td class="task-name">Menuiserie portes int.</td>
+            <td>Youssef Amrani</td>
+            <td><span class="badge-sm badge-gray">A faire</span></td>
+            <td>10 avr</td>
+          </tr>
+          <tr>
+            <td class="task-name">Isolation combles</td>
+            <td>Pierre Martin</td>
+            <td><span class="badge-sm badge-indigo">En cours</span></td>
+            <td>8 avr</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>lucide.createIcons();</script>
+</body>
+</html>

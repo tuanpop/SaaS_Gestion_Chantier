@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ClawBTP — Scan QR</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            heading: ['Space Grotesk', 'sans-serif'],
+            sans: ['DM Sans', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace']
+          },
+          colors: {
+            bg: { DEFAULT: '#0F172A', card: '#1E293B', elevated: '#334155' },
+            accent: '#3B82F6',
+            danger: { DEFAULT: '#EF4444', glow: 'rgba(239,68,68,0.2)' },
+            warning: { DEFAULT: '#F59E0B', glow: 'rgba(245,158,11,0.2)' },
+            success: { DEFAULT: '#22C55E', glow: 'rgba(34,197,94,0.2)' },
+            text: { DEFAULT: '#F8FAFC', muted: '#94A3B8', dim: '#64748B' },
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    * { touch-action: manipulation; }
+    body {
+      overscroll-behavior: contain;
+      min-height: 100vh; min-height: 100dvh;
+      background: #0F172A;
+      font-family: 'DM Sans', sans-serif;
+      color: #F8FAFC;
+    }
+    .card-cockpit {
+      background: #1E293B;
+      border: 1px solid rgba(148,163,184,0.2);
+      border-radius: 12px;
+      transition: border-color 200ms, box-shadow 200ms;
+    }
+    .card-cockpit:active {
+      border-color: #3B82F6;
+      box-shadow: 0 0 12px rgba(59,130,246,0.3);
+    }
+    .glow-accent { box-shadow: 0 0 16px rgba(59,130,246,0.25); border-color: rgba(59,130,246,0.5); }
+    .btn-cockpit {
+      border: 1px solid rgba(148,163,184,0.3);
+      border-radius: 10px;
+      font-weight: 600;
+      font-family: 'Space Grotesk', sans-serif;
+      min-height: 56px; min-width: 56px;
+      transition: all 150ms;
+      cursor: pointer;
+    }
+    .btn-cockpit:active { transform: scale(0.97); }
+
+    @keyframes pulse-scan {
+      0%, 100% { transform: scale(1); opacity: 0.6; }
+      50% { transform: scale(1.15); opacity: 1; }
+    }
+    @keyframes pulse-glow {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    .scan-ring {
+      animation: pulse-scan 1.5s ease-in-out infinite;
+    }
+    .scan-ring-outer {
+      animation: pulse-scan 1.5s ease-in-out infinite 0.3s;
+    }
+
+    /* Phase transitions */
+    .phase { transition: opacity 0.5s ease, transform 0.5s ease; }
+    .phase-hidden { opacity: 0; transform: translateY(10px); pointer-events: none; position: absolute; }
+    .phase-visible { opacity: 1; transform: translateY(0); }
+  </style>
+</head>
+<body class="bg-bg">
+  <div class="max-w-[375px] mx-auto min-h-screen" style="background:#0F172A">
+    <!-- Retour -->
+    <div class="px-4 pt-4">
+      <a href="00-index.html" class="text-text-dim text-sm flex items-center gap-1">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+        Retour au prototype
+      </a>
+    </div>
+
+    <div class="px-6 pt-12 pb-6 flex flex-col items-center relative">
+      <!-- Logo -->
+      <h1 class="font-heading text-3xl font-bold mb-12"><span class="text-accent">Claw</span>BTP</h1>
+
+      <!-- PHASE 1 : Scan en cours -->
+      <div id="phase-scan" class="phase phase-visible w-full flex flex-col items-center">
+        <div class="card-cockpit p-8 w-full flex flex-col items-center">
+          <!-- Cercles pulsants -->
+          <div class="relative w-32 h-32 flex items-center justify-center mb-6">
+            <div class="absolute inset-0 rounded-full border-2 border-accent/30 scan-ring-outer"></div>
+            <div class="absolute inset-3 rounded-full border-2 border-accent/50 scan-ring"></div>
+            <div class="w-16 h-16 rounded-full bg-accent/20 flex items-center justify-center">
+              <svg class="w-8 h-8 text-accent" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/>
+              </svg>
+            </div>
+          </div>
+          <p class="text-text-muted text-base">Connexion en cours...</p>
+          <div class="flex gap-1 mt-3">
+            <div class="w-2 h-2 rounded-full bg-accent animate-pulse" style="animation-delay:0ms"></div>
+            <div class="w-2 h-2 rounded-full bg-accent animate-pulse" style="animation-delay:200ms"></div>
+            <div class="w-2 h-2 rounded-full bg-accent animate-pulse" style="animation-delay:400ms"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PHASE 2 : Connecte -->
+      <div id="phase-connected" class="phase phase-hidden w-full flex flex-col items-center">
+        <!-- Avatar -->
+        <div class="relative mb-4">
+          <div class="w-20 h-20 rounded-full bg-accent/20 border-2 border-accent glow-accent flex items-center justify-center">
+            <span class="font-heading text-2xl font-bold text-accent">M</span>
+          </div>
+          <div class="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-success flex items-center justify-center">
+            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>
+          </div>
+        </div>
+
+        <h2 class="font-heading text-2xl font-bold mb-1">Bonjour Mohamed !</h2>
+        <p class="text-text-muted mb-6">Bienvenue sur ton espace chantier</p>
+
+        <!-- Card chantier -->
+        <div class="card-cockpit p-4 w-full mb-6">
+          <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-lg bg-accent/20 flex items-center justify-center flex-shrink-0">
+              <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M3 21h18M9 8h1M9 12h1M9 16h1M14 8h1M14 12h1M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"/>
+              </svg>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="font-heading font-semibold text-base">Leclerc — Merignac</p>
+              <p class="text-text-muted text-sm">Agencement interieur</p>
+            </div>
+            <div class="bg-accent/20 text-accent font-mono text-xs font-bold px-2 py-1 rounded-md flex-shrink-0">
+              3 taches
+            </div>
+          </div>
+        </div>
+
+        <!-- CTA -->
+        <button class="btn-cockpit bg-accent text-white w-full text-base flex items-center justify-center gap-2 glow-accent" onclick="window.location.href='ouvrier-taches.html'">
+          Voir mes taches
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Banner PWA -->
+    <div class="px-6 mt-auto pb-6 absolute bottom-0 left-0 right-0 max-w-[375px] mx-auto">
+      <div id="pwa-banner" class="card-cockpit p-3 flex items-center gap-3" style="opacity:0; transition: opacity 0.5s">
+        <div class="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center flex-shrink-0">
+          <svg class="w-4 h-4 text-accent" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+        </div>
+        <p class="text-text-muted text-xs flex-1">Installe ClawBTP sur ton ecran d'accueil pour un acces rapide</p>
+        <button class="text-accent text-xs font-semibold font-heading">Installer</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Transition apres 2s
+    setTimeout(() => {
+      document.getElementById('phase-scan').classList.remove('phase-visible');
+      document.getElementById('phase-scan').classList.add('phase-hidden');
+      setTimeout(() => {
+        document.getElementById('phase-connected').classList.remove('phase-hidden');
+        document.getElementById('phase-connected').classList.add('phase-visible');
+        setTimeout(() => {
+          document.getElementById('pwa-banner').style.opacity = '1';
+        }, 500);
+      }, 300);
+    }, 2000);
+  </script>
+</body>
+</html>

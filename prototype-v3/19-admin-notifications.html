@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ClawBTP - Notifications</title>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#FAF6F1;font-family:'Source Sans 3',sans-serif;color:#292524}
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:240px;background:#451A03;color:#fff;padding:24px 0;z-index:40;display:flex;flex-direction:column}
+.sidebar-logo{font-family:'Lexend',sans-serif;font-weight:700;font-size:22px;padding:0 24px 24px;border-bottom:1px solid rgba(255,255,255,0.1);margin-bottom:16px}
+.sidebar-logo span{color:#C2703E}
+.sidebar a{display:flex;align-items:center;gap:12px;padding:12px 24px;color:#A8A29E;text-decoration:none;font-weight:500;font-size:15px;transition:all 150ms}
+.sidebar a:hover{color:#FEF3C7;background:rgba(194,112,62,0.2)}
+.sidebar a.active{color:#FEF3C7;background:#C2703E;border-radius:0 8px 8px 0;margin-right:12px}
+.sidebar-bottom{margin-top:auto;padding:16px 24px;border-top:1px solid rgba(255,255,255,0.1)}
+.sidebar-user{display:flex;align-items:center;gap:10px;color:#A8A29E;font-size:13px}
+.sidebar-avatar{width:32px;height:32px;border-radius:50%;background:#C2703E;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:600;font-size:12px;font-family:'Lexend',sans-serif}
+.main-content{margin-left:240px;padding:32px;min-height:100vh}
+
+.page-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px}
+.page-title{font-family:'Lexend',sans-serif;font-weight:700;font-size:24px}
+.btn-warm{border:none;border-radius:12px;font-weight:600;font-family:'Lexend',sans-serif;box-shadow:0 2px 8px rgba(120,53,15,0.15);transition:all 150ms;cursor:pointer;padding:8px 16px;font-size:13px;display:inline-flex;align-items:center;gap:6px}
+.btn-warm:active{transform:translateY(2px)}
+.btn-secondary{background:#F5F0E8;color:#78716C;box-shadow:0 2px 8px rgba(120,53,15,0.08)}
+
+.group-label{font-family:'Lexend',sans-serif;font-weight:600;font-size:14px;color:#78716C;margin:20px 0 10px;padding-bottom:8px;border-bottom:1px solid #E7E0D6}
+.notif-card{background:#fff;border:1px solid #E7E0D6;border-radius:14px;box-shadow:0 2px 8px rgba(120,53,15,0.08);padding:16px;margin-bottom:10px;display:flex;gap:12px;align-items:flex-start;transition:all 150ms;cursor:pointer;max-width:700px}
+.notif-card:hover{box-shadow:0 4px 12px rgba(120,53,15,0.12)}
+.notif-unread{border-left:4px solid #C2703E;background:#FAF6F1}
+.notif-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.notif-content{flex:1;min-width:0}
+.notif-title{font-weight:600;font-size:14px;margin-bottom:2px}
+.notif-desc{font-size:13px;color:#57534E;line-height:1.4}
+.notif-time{font-size:11px;color:#A8A29E;margin-top:4px}
+.back-link{display:inline-flex;align-items:center;gap:6px;color:#78716C;font-size:13px;text-decoration:none;margin-bottom:16px}
+</style>
+</head>
+<body>
+
+<nav class="sidebar">
+  <div class="sidebar-logo"><span>Claw</span>BTP</div>
+  <a href="15-admin-dashboard.html"><i data-lucide="layout-dashboard" style="width:18px;height:18px"></i> Dashboard</a>
+  <a href="16-admin-chantier-detail.html"><i data-lucide="hard-hat" style="width:18px;height:18px"></i> Chantiers</a>
+  <a href="18-admin-equipe.html"><i data-lucide="users" style="width:18px;height:18px"></i> Equipe</a>
+  <a href="19-admin-notifications.html" class="active"><i data-lucide="bell" style="width:18px;height:18px"></i> Notifications</a>
+  <a href="20-admin-clawbot.html"><i data-lucide="bot" style="width:18px;height:18px"></i> ClawBot</a>
+  <div class="sidebar-bottom">
+    <div class="sidebar-user">
+      <div class="sidebar-avatar">FD</div>
+      <div>Frederic Duval<br><span style="font-size:11px;color:#78716C">Admin</span></div>
+    </div>
+  </div>
+</nav>
+
+<main class="main-content">
+  <a href="00-index.html" class="back-link"><i data-lucide="arrow-left" style="width:14px;height:14px"></i> Prototype</a>
+
+  <div class="page-header">
+    <div class="page-title">Notifications</div>
+    <button class="btn-warm btn-secondary"><i data-lucide="check-check" style="width:14px;height:14px"></i> Tout marquer comme lu</button>
+  </div>
+
+  <div class="group-label">Aujourd'hui</div>
+
+  <div class="notif-card notif-unread">
+    <div class="notif-icon" style="background:#FEE2E2;color:#DC2626"><i data-lucide="octagon" style="width:18px;height:18px"></i></div>
+    <div class="notif-content">
+      <div class="notif-title">Blocage critique — Pose cloisons RDC</div>
+      <div class="notif-desc">Residence Les Oliviers — Livraison rails non recue depuis 2 jours. Impact planning enduit et peinture.</div>
+      <div class="notif-time">Il y a 1h</div>
+    </div>
+  </div>
+
+  <div class="notif-card notif-unread">
+    <div class="notif-icon" style="background:#FEE2E2;color:#DC2626"><i data-lucide="flag" style="width:18px;height:18px"></i></div>
+    <div class="notif-content">
+      <div class="notif-title">Jalon depasse — Livraison etage 1</div>
+      <div class="notif-desc">Residence Les Oliviers — Echeance depassee de 3 jours.</div>
+      <div class="notif-time">Il y a 3h</div>
+    </div>
+  </div>
+
+  <div class="notif-card notif-unread">
+    <div class="notif-icon" style="background:#FEF3C7;color:#D97706"><i data-lucide="trending-up" style="width:18px;height:18px"></i></div>
+    <div class="notif-content">
+      <div class="notif-title">Derive budget +12% — Bureau Mistral</div>
+      <div class="notif-desc">Materiel faux plafond au-dessus de l'estimation. 1 840 EUR de depassement.</div>
+      <div class="notif-time">Il y a 5h</div>
+    </div>
+  </div>
+
+  <div class="notif-card notif-unread">
+    <div class="notif-icon" style="background:#DCFCE7;color:#15803D"><i data-lucide="file-check" style="width:18px;height:18px"></i></div>
+    <div class="notif-content">
+      <div class="notif-title">CR valide — Bureau Mistral</div>
+      <div class="notif-desc">Jean-Daniel a valide le CR du 02/04. Pret a envoyer au client.</div>
+      <div class="notif-time">Il y a 6h</div>
+    </div>
+  </div>
+
+  <div class="notif-card notif-unread">
+    <div class="notif-icon" style="background:#FEF3C7;color:#B45309"><i data-lucide="user-plus" style="width:18px;height:18px"></i></div>
+    <div class="notif-content">
+      <div class="notif-title">Nouvel ouvrier — Stephane Martin</div>
+      <div class="notif-desc">Sophie a ajoute Stephane Martin (carreleur) et l'a affecte a Maison Dubois.</div>
+      <div class="notif-time">Il y a 8h</div>
+    </div>
+  </div>
+
+  <div class="group-label">Hier</div>
+
+  <div class="notif-card">
+    <div class="notif-icon" style="background:#FEE2E2;color:#DC2626"><i data-lucide="octagon" style="width:18px;height:18px"></i></div>
+    <div class="notif-content">
+      <div class="notif-title">Blocage — Enduit salle de bain</div>
+      <div class="notif-desc">Residence Les Oliviers — Manque enduit, commande en attente.</div>
+      <div class="notif-time">Hier a 17h30</div>
+    </div>
+  </div>
+
+  <div class="notif-card">
+    <div class="notif-icon" style="background:#DCFCE7;color:#15803D"><i data-lucide="check-circle" style="width:18px;height:18px"></i></div>
+    <div class="notif-content">
+      <div class="notif-title">Tache terminee — Electricite salon</div>
+      <div class="notif-desc">Residence Les Oliviers — Rachid a marque la tache comme terminee.</div>
+      <div class="notif-time">Hier a 16h15</div>
+    </div>
+  </div>
+
+  <div class="group-label">Cette semaine</div>
+
+  <div class="notif-card">
+    <div class="notif-icon" style="background:#FEF3C7;color:#D97706"><i data-lucide="trending-up" style="width:18px;height:18px"></i></div>
+    <div class="notif-content">
+      <div class="notif-title">Derive delai — Local Vauban</div>
+      <div class="notif-desc">Retard 4 jours pose carrelage. Sous-traitant indisponible.</div>
+      <div class="notif-time">Lundi 31/03</div>
+    </div>
+  </div>
+</main>
+
+<script>lucide.createIcons()</script>
+</body>
+</html>

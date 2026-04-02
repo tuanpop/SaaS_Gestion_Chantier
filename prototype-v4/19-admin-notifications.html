@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Claw — Notifications</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', sans-serif; color: #0F172A; background: #F8FAFC; display: flex; min-height: 100vh; }
+
+    .sidebar { width: 240px; min-height: 100vh; background: linear-gradient(to bottom, #4338CA, #6D28D9); color: #fff; display: flex; flex-direction: column; position: fixed; top: 0; left: 0; bottom: 0; }
+    .sidebar-logo { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 24px; font-weight: 800; padding: 24px 24px 32px; }
+    .sidebar-nav { flex: 1; display: flex; flex-direction: column; gap: 2px; padding: 0 12px; }
+    .nav-item { display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-radius: 10px; font-size: 14px; font-weight: 500; color: rgba(255,255,255,0.7); text-decoration: none; transition: all .15s; }
+    .nav-item:hover { background: rgba(255,255,255,0.1); color: #fff; }
+    .nav-item.active { background: rgba(255,255,255,0.18); color: #fff; font-weight: 600; }
+    .sidebar-bottom { padding: 16px; border-top: 1px solid rgba(255,255,255,0.15); }
+    .sidebar-user { display: flex; align-items: center; gap: 10px; }
+    .user-avatar { width: 36px; height: 36px; border-radius: 10px; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; }
+    .user-info .name { font-size: 13px; font-weight: 600; }
+    .user-info .role { font-size: 11px; opacity: 0.65; }
+
+    .main { margin-left: 240px; flex: 1; padding: 32px; max-width: 760px; }
+    .back-link { display: inline-flex; align-items: center; gap: 6px; color: #94A3B8; font-size: 13px; text-decoration: none; margin-bottom: 16px; font-family: 'Inter', sans-serif; }
+
+    h1 { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 24px; font-weight: 700; margin-bottom: 24px; }
+
+    .group-label { font-size: 13px; font-weight: 600; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; margin-top: 28px; }
+    .group-label:first-of-type { margin-top: 0; }
+
+    .notif-list { display: flex; flex-direction: column; gap: 8px; }
+    .notif-item { display: flex; align-items: flex-start; gap: 14px; background: #fff; border: 1px solid #E2E8F0; border-radius: 14px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); position: relative; transition: box-shadow .15s; cursor: pointer; }
+    .notif-item:hover { box-shadow: 0 4px 12px rgba(99,102,241,0.08); }
+    .notif-item.unread { border-left: 3px solid #6366F1; }
+    .unread-dot { position: absolute; top: 18px; right: 16px; width: 8px; height: 8px; border-radius: 50%; background: #6366F1; }
+    .notif-icon { width: 40px; height: 40px; min-width: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+    .notif-icon.red { background: #FEF2F2; color: #EF4444; }
+    .notif-icon.orange { background: #FFFBEB; color: #F59E0B; }
+    .notif-icon.green { background: #ECFDF5; color: #10B981; }
+    .notif-icon.indigo { background: #EEF2FF; color: #6366F1; }
+    .notif-body { flex: 1; }
+    .notif-title { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+    .notif-desc { font-size: 13px; color: #475569; line-height: 1.5; }
+    .notif-time { font-size: 12px; color: #94A3B8; margin-top: 6px; }
+  </style>
+</head>
+<body>
+  <nav class="sidebar">
+    <div class="sidebar-logo">Claw</div>
+    <div class="sidebar-nav">
+      <a class="nav-item" href="15-admin-dashboard.html"><i data-lucide="bar-chart-3" style="width:18px;height:18px"></i> Dashboard</a>
+      <a class="nav-item" href="16-admin-chantier-detail.html"><i data-lucide="folder-open" style="width:18px;height:18px"></i> Projets</a>
+      <a class="nav-item" href="18-admin-equipe.html"><i data-lucide="users" style="width:18px;height:18px"></i> Equipe</a>
+      <a class="nav-item active" href="19-admin-notifications.html"><i data-lucide="bell" style="width:18px;height:18px"></i> Notifications</a>
+      <a class="nav-item" href="20-admin-clawbot.html"><i data-lucide="bot" style="width:18px;height:18px"></i> ClawBot</a>
+    </div>
+    <div class="sidebar-bottom">
+      <div class="sidebar-user">
+        <div class="user-avatar">FD</div>
+        <div class="user-info"><div class="name">Frederic Duval</div><div class="role">Admin</div></div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="main">
+    <a href="00-index.html" class="back-link"><i data-lucide="arrow-left" style="width:14px;height:14px"></i> Prototype</a>
+
+    <h1>Notifications</h1>
+
+    <!-- Aujourd'hui -->
+    <div class="group-label">Aujourd'hui</div>
+    <div class="notif-list">
+      <div class="notif-item unread">
+        <div class="unread-dot"></div>
+        <div class="notif-icon red"><i data-lucide="alert-octagon" style="width:18px;height:18px"></i></div>
+        <div class="notif-body">
+          <div class="notif-title">Blocage — Les Oliviers</div>
+          <div class="notif-desc">Peinture facade nord bloquee depuis 3 jours. Pierre Martin attend la livraison du materiel.</div>
+          <div class="notif-time">Il y a 2 heures</div>
+        </div>
+      </div>
+      <div class="notif-item unread">
+        <div class="unread-dot"></div>
+        <div class="notif-icon orange"><i data-lucide="trending-up" style="width:18px;height:18px"></i></div>
+        <div class="notif-body">
+          <div class="notif-title">Depassement budget — Les Oliviers</div>
+          <div class="notif-desc">Le budget reel depasse le previsionnel de 12% (274 000 EUR vs 245 000 EUR).</div>
+          <div class="notif-time">Il y a 4 heures</div>
+        </div>
+      </div>
+      <div class="notif-item unread">
+        <div class="unread-dot"></div>
+        <div class="notif-icon green"><i data-lucide="check-circle" style="width:18px;height:18px"></i></div>
+        <div class="notif-body">
+          <div class="notif-title">Tache terminee — Maison Dubois</div>
+          <div class="notif-desc">Pose du parquet salon terminee par Youssef Amrani.</div>
+          <div class="notif-time">Il y a 5 heures</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hier -->
+    <div class="group-label">Hier</div>
+    <div class="notif-list">
+      <div class="notif-item">
+        <div class="notif-icon orange"><i data-lucide="cloud-rain" style="width:18px;height:18px"></i></div>
+        <div class="notif-body">
+          <div class="notif-title">Alerte meteo — Bureau Mistral</div>
+          <div class="notif-desc">Fortes pluies prevues demain. Impact possible sur les travaux exterieurs.</div>
+          <div class="notif-time">Hier, 18:30</div>
+        </div>
+      </div>
+      <div class="notif-item">
+        <div class="notif-icon indigo"><i data-lucide="file-check" style="width:18px;height:18px"></i></div>
+        <div class="notif-body">
+          <div class="notif-title">CR valide — Local Vauban</div>
+          <div class="notif-desc">Le compte-rendu du 2 avril a ete valide par Sophie Bernard.</div>
+          <div class="notif-time">Hier, 14:15</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cette semaine -->
+    <div class="group-label">Cette semaine</div>
+    <div class="notif-list">
+      <div class="notif-item">
+        <div class="notif-icon orange"><i data-lucide="flag" style="width:18px;height:18px"></i></div>
+        <div class="notif-body">
+          <div class="notif-title">Jalon proche — Bureau Mistral</div>
+          <div class="notif-desc">Livraison phase 1 dans 5 jours, 3 taches restantes a completer.</div>
+          <div class="notif-time">Lundi, 09:00</div>
+        </div>
+      </div>
+      <div class="notif-item">
+        <div class="notif-icon green"><i data-lucide="check-circle" style="width:18px;height:18px"></i></div>
+        <div class="notif-body">
+          <div class="notif-title">Tache terminee — Appart Castellane</div>
+          <div class="notif-desc">Peinture chambre 2 terminee. Projet a 95% d'avancement.</div>
+          <div class="notif-time">Lundi, 16:45</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>lucide.createIcons();</script>
+</body>
+</html>

@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ClawBTP - Connexion</title>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Source Sans 3',sans-serif;color:#292524;min-height:100vh;display:flex}
+.left{flex:1;background:#451A03;color:#fff;display:flex;flex-direction:column;justify-content:center;padding:60px;min-height:100vh}
+.logo{font-family:'Lexend',sans-serif;font-weight:700;font-size:36px;margin-bottom:8px}
+.logo span{color:#C2703E}
+.tagline{font-size:18px;color:#A8A29E;margin-bottom:48px;line-height:1.5}
+.feature{display:flex;align-items:center;gap:14px;margin-bottom:24px;font-size:15px;color:#FEF3C7}
+.feature-icon{width:40px;height:40px;border-radius:10px;background:rgba(194,112,62,0.3);display:flex;align-items:center;justify-content:center;color:#C2703E;flex-shrink:0}
+.right{flex:1;background:#FAF6F1;display:flex;align-items:center;justify-content:center;padding:40px}
+.login-card{width:100%;max-width:420px}
+.tabs-auth{display:flex;gap:8px;margin-bottom:32px}
+.tab-auth{padding:10px 24px;border-radius:8px;font-family:'Lexend',sans-serif;font-weight:600;font-size:14px;background:#F5F0E8;color:#78716C;border:none;cursor:pointer;transition:all 150ms}
+.tab-auth.active{background:#C2703E;color:#fff}
+.login-title{font-family:'Lexend',sans-serif;font-weight:700;font-size:28px;margin-bottom:8px}
+.login-sub{color:#78716C;margin-bottom:28px;font-size:15px}
+.form-group{margin-bottom:20px}
+.form-label{display:block;font-weight:600;font-size:14px;margin-bottom:6px;color:#57534E}
+.form-input{width:100%;padding:14px 16px;background:#F5F0E8;border:1px solid #A8A29E;border-radius:12px;font-size:15px;font-family:'Source Sans 3',sans-serif;color:#292524;transition:all 150ms}
+.form-input:focus{outline:none;border-color:#C2703E;box-shadow:0 0 0 3px rgba(194,112,62,0.15)}
+.btn-warm{border:none;border-radius:12px;font-weight:600;font-family:'Lexend',sans-serif;box-shadow:0 2px 8px rgba(120,53,15,0.15);transition:all 150ms;cursor:pointer;padding:16px;font-size:16px;width:100%;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn-warm:active{transform:translateY(2px);box-shadow:0 1px 3px rgba(120,53,15,0.1)}
+.btn-primary{background:#C2703E;color:#fff;margin-bottom:12px}
+.btn-secondary{background:#F5F0E8;color:#78716C;box-shadow:0 2px 8px rgba(120,53,15,0.08)}
+.divider{text-align:center;color:#A8A29E;font-size:13px;margin:16px 0;position:relative}
+.divider::before,.divider::after{content:'';position:absolute;top:50%;width:40%;height:1px;background:#E7E0D6}
+.divider::before{left:0}
+.divider::after{right:0}
+.trial-note{text-align:center;color:#78716C;font-size:13px;margin-top:24px}
+.trial-note strong{color:#C2703E}
+.forgot{text-align:right;margin-top:-12px;margin-bottom:20px}
+.forgot a{color:#C2703E;font-size:13px;text-decoration:none;font-weight:500}
+@media(max-width:900px){body{flex-direction:column}.left{min-height:auto;padding:40px 30px}.right{padding:30px 20px}}
+</style>
+</head>
+<body>
+<a href="00-index.html" style="position:fixed;top:12px;left:12px;z-index:100;background:rgba(255,255,255,0.95);color:#78716C;font-size:12px;padding:6px 12px;border-radius:20px;text-decoration:none;display:inline-flex;align-items:center;gap:4px;box-shadow:0 2px 8px rgba(0,0,0,0.08);font-family:Source Sans 3,sans-serif">&#8592; Index</a>
+
+<div class="left">
+  <div class="logo"><span>Claw</span>BTP</div>
+  <div class="tagline">Le seul outil BTP que tes ouvriers<br>utilisent vraiment.</div>
+  <div class="feature">
+    <div class="feature-icon"><i data-lucide="qr-code" style="width:20px;height:20px"></i></div>
+    Acces ouvrier par QR code — zero friction
+  </div>
+  <div class="feature">
+    <div class="feature-icon"><i data-lucide="file-text" style="width:20px;height:20px"></i></div>
+    CR journaliers generes par IA
+  </div>
+  <div class="feature">
+    <div class="feature-icon"><i data-lucide="bell" style="width:20px;height:20px"></i></div>
+    Alertes derives budget et delais
+  </div>
+  <div class="feature">
+    <div class="feature-icon"><i data-lucide="bot" style="width:20px;height:20px"></i></div>
+    Assistant IA chantier integre
+  </div>
+</div>
+
+<div class="right">
+  <div class="login-card">
+    <div class="tabs-auth">
+      <button class="tab-auth active">Connexion</button>
+      <button class="tab-auth">Inscription</button>
+    </div>
+    <h2 class="login-title">Bienvenue</h2>
+    <p class="login-sub">Connectez-vous a votre espace ClawBTP</p>
+
+    <div class="form-group">
+      <label class="form-label">Email</label>
+      <input type="email" class="form-input" placeholder="frederic@entreprise.fr" value="frederic@duval-btp.fr">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Mot de passe</label>
+      <input type="password" class="form-input" placeholder="Votre mot de passe" value="********">
+    </div>
+    <div class="forgot"><a href="#">Mot de passe oublie ?</a></div>
+
+    <button class="btn-warm btn-primary" onclick="location.href='admin-dashboard.html'"><i data-lucide="log-in" style="width:18px;height:18px"></i> Se connecter</button>
+
+    <div class="divider">ou</div>
+
+    <button class="btn-warm btn-secondary"><i data-lucide="sparkles" style="width:18px;height:18px"></i> Recevoir un Magic Link</button>
+
+    <div class="trial-note"><strong>14 jours gratuits</strong>, sans carte bancaire</div>
+  </div>
+</div>
+
+<script>
+lucide.createIcons();
+document.querySelectorAll('.tab-auth').forEach(t=>{
+  t.addEventListener('click',()=>{
+    document.querySelectorAll('.tab-auth').forEach(b=>b.classList.remove('active'));
+    t.classList.add('active');
+  });
+});
+</script>
+</body>
+</html>
