@@ -1,0 +1,87 @@
+# === SECRETS — JAMAIS COMMITER ===
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+.env*.local
+**/.env
+**/.env.local
+**/.env.production
+*.pem
+*.key
+
+# === Node / Next.js ===
+node_modules/
+**/node_modules/
+.next/
+**/.next/
+out/
+build/
+dist/
+*.tsbuildinfo
+next-env.d.ts
+
+# === Tests / coverage ===
+coverage/
+**/coverage/
+playwright-report/
+**/playwright-report/
+test-results/
+**/test-results/
+playwright/.cache/
+
+# === Supabase local ===
+**/supabase/.branches/
+**/supabase/.temp/
+**/supabase/seed.sql
+**/supabase/.env
+
+# === Logs ===
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# === OS ===
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# === IDE ===
+.vscode/
+.idea/
+*.swp
+*.swo
+.cursor/
+
+# === Claude Code pipeline (local-only) ===
+.claude/
+CLAUDE.md
+DECISIONLOG.md
+SESSIONLOG.md
+CODEBASECONTEXT.md
+
+# === Mémoire pipeline (local-only) ===
+memory/
+
+# === Documentation interne pipeline (local-only) ===
+docs/
+
+# === Artifacts pipeline non livrables (local-only) ===
+# Garder seulement artifacts/07-code/ (le code) et artifacts/08-infra/ (l'infra)
+artifacts/01-market/
+artifacts/02-prd/
+artifacts/03-specs/
+artifacts/04-ux/
+artifacts/05-architecture/
+artifacts/06-security/
+artifacts/09-llm/
+artifacts/10-qa/
+artifacts/quality-gate/
+artifacts/07-code/IMPLEMENTATION_PLAN.md
+artifacts/07-code/SPRINT_1_PLAN.md
+artifacts/07-code/SPRINT_2_PLAN.md
+artifacts/08-infra/infra.md
+artifacts/memory-global-patches.md

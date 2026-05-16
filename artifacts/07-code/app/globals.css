@@ -1,0 +1,369 @@
+/* globals.css — ClawBTP Sprint 2
+ * Design system Hana (2026-05-15) : Outfit + Public Sans + neubrutalism BTP
+ * Corrige la dette Sprint 1 (Plus Jakarta Sans → Outfit/Public Sans — DECISIONLOG 2026-05-15)
+ * Source de vérité : artifacts/04-ux/ux-design-system.md + mockups/00-index.html
+ */
+
+/* Fonts Google — Outfit (headings) + Public Sans (body) */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Public+Sans:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* ============================================================
+     * Palette ClawBTP — source : mockups/00-index.html lignes 11-27
+     * ============================================================ */
+
+    /* Bleu BTP */
+    --color-primary: #1F4E79;
+    --color-primary-light: #2E75B6;
+    --color-primary-dark: #163958;
+    --color-primary-bg: #D6E4F0;
+
+    /* Accent orange */
+    --color-accent: #F97316;
+    --color-badge-accent-bg: #FFEDD5;
+    --color-badge-accent-text: #C2410C;
+
+    /* Sémantiques */
+    --color-danger: #C00000;
+    --color-danger-bg: #FFCCCC;
+    --color-warning: #833C00;
+    --color-warning-bg: #FCE4D6;
+    --color-success: #1E6B3C;
+    --color-success-bg: #E2EFDA;
+
+    /* Neutres — neubrutalism */
+    --color-cream: #FAFAF8;       /* Fond global (jamais blanc pur) */
+    --color-surface: #F2F2F2;     /* Fond sous-éléments, progress bar track */
+    --color-border-black: #000000;/* Bordures brutalist 2px solid */
+    --color-text-primary: #222222;
+    --color-text-muted: #555555;
+    --color-nav-inactive: #94A3B8;
+    --color-sidebar: #163958;
+
+    /* shadcn/ui tokens mappés sur notre palette */
+    --background: 250 250 248;        /* cream #FAFAF8 */
+    --foreground: 34 34 34;           /* #222222 */
+    --card: 255 255 255;
+    --card-foreground: 34 34 34;
+    --popover: 255 255 255;
+    --popover-foreground: 34 34 34;
+    --primary: 31 78 121;             /* #1F4E79 */
+    --primary-foreground: 255 255 255;
+    --secondary: 242 242 242;         /* surface */
+    --secondary-foreground: 34 34 34;
+    --muted: 242 242 242;
+    --muted-foreground: 85 85 85;     /* #555555 */
+    --accent: 249 115 22;             /* #F97316 */
+    --accent-foreground: 255 255 255;
+    --destructive: 192 0 0;           /* #C00000 */
+    --destructive-foreground: 255 255 255;
+    --border: 0 0 0;                  /* #000 — neubrutalism */
+    --input: 0 0 0;
+    --ring: 249 115 22;               /* accent orange */
+    --radius: 0.375rem;               /* 6px max — spec Hana */
+  }
+
+  /* Base HTML — neubrutalism BTP */
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    /* Public Sans pour le corps par défaut (headings via Tailwind font-heading) */
+    font-family: 'Public Sans', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    background-color: var(--color-cream);
+    color: var(--color-text-primary);
+    font-family: 'Public Sans', system-ui, sans-serif;
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+
+  /* ============================================================
+   * Classes PWA ouvrier/conducteur (ux-design-system.md §6 Responsive)
+   * Appliquées sur les layouts mobile via className
+   * ============================================================ */
+  .mobile-interface {
+    touch-action: manipulation;   /* Supprime délai 300ms tap */
+    overscroll-behavior: contain; /* Empêche pull-to-refresh */
+  }
+}
+
+@layer components {
+  /* ============================================================
+   * Composants neubrutalism BTP — source : ux-design-system.md §4
+   * ============================================================ */
+
+  /* card-brutal — source : §4.1 */
+  .card-brutal {
+    border: 2px solid #000;
+    box-shadow: 4px 4px 0 #000;
+    border-radius: 6px;
+    background: #fff;
+    transition: transform 100ms, box-shadow 100ms;
+  }
+  .card-brutal:active {
+    box-shadow: 2px 2px 0 #000;
+    transform: translate(2px, 2px);
+  }
+  .card-brutal:hover {
+    box-shadow: 2px 2px 0 #000;
+    transform: translate(2px, 2px);
+  }
+  a.card-brutal:hover {
+    box-shadow: 6px 6px 0 #000;
+  }
+
+  /* card-brutal mobile (shadow réduite pour mobile) */
+  .card-brutal-mobile {
+    border: 2px solid #000;
+    box-shadow: 3px 3px 0 #000;
+    border-radius: 6px;
+    background: #fff;
+    transition: transform 100ms, box-shadow 100ms;
+  }
+  .card-brutal-mobile:active {
+    box-shadow: 1px 1px 0 #000;
+    transform: translate(2px, 2px);
+  }
+
+  /* btn-brutal — source : §4.2 */
+  .btn-brutal {
+    border: 2px solid #000;
+    box-shadow: 3px 3px 0 #000;
+    border-radius: 6px;
+    font-weight: 700;
+    font-family: 'Outfit', sans-serif;
+    transition: transform 100ms, box-shadow 100ms;
+    cursor: pointer;
+    padding: 10px 20px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .btn-brutal:hover {
+    box-shadow: 2px 2px 0 #000;
+    transform: translate(1px, 1px);
+  }
+  .btn-brutal:active {
+    box-shadow: 0px 0px 0 #000;
+    transform: translate(3px, 3px);
+  }
+  /* Mobile touch target obligatoire (WCAG + gants) */
+  .btn-brutal-mobile {
+    min-height: 56px;
+    min-width: 56px;
+    font-size: 18px;
+  }
+  /* État disabled */
+  .btn-brutal:disabled,
+  .btn-brutal-disabled {
+    border: 2px solid #999;
+    box-shadow: 3px 3px 0 #999;
+    background: #F2F2F2;
+    color: #555555;
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
+
+  /* input-brutal — source : §4.3 */
+  .input-brutal {
+    border: 2px solid #000;
+    border-radius: 6px;
+    padding: 12px 14px;
+    font-size: 16px; /* JAMAIS moins — iOS zoom sinon */
+    width: 100%;
+    outline: none;
+    font-family: 'Public Sans', sans-serif;
+    background: #fff;
+    transition: border-color 100ms, box-shadow 100ms;
+  }
+  .input-brutal:focus {
+    border-color: #F97316;
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.15);
+  }
+  .input-brutal.error {
+    border-color: #C00000;
+    box-shadow: 0 0 0 3px rgba(192, 0, 0, 0.15);
+  }
+  .input-brutal:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background: #F2F2F2;
+  }
+
+  /* badge — source : §4.4 */
+  .badge {
+    border: 2px solid;
+    border-radius: 4px;
+    padding: 2px 10px;
+    font-weight: 600;
+    font-size: 13px;
+    display: inline-block;
+  }
+  .badge-danger   { background: #FFCCCC; border-color: #C00000; color: #C00000; }
+  .badge-success  { background: #E2EFDA; border-color: #1E6B3C; color: #1E6B3C; }
+  .badge-warning  { background: #FCE4D6; border-color: #833C00; color: #833C00; }
+  .badge-muted    { background: #F2F2F2; border-color: #94A3B8; color: #555555; }
+  .badge-accent   { background: #FFEDD5; border-color: #F97316; color: #C2410C; }
+  .badge-primary  { background: #D6E4F0; border-color: #1F4E79; color: #1F4E79; }
+
+  /* kpi-card — source : §4.5 */
+  .kpi-card {
+    border: 2px solid #000;
+    box-shadow: 3px 3px 0 #000;
+    border-radius: 6px;
+    background: #fff;
+    padding: 20px;
+  }
+  .kpi-value {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 800;
+    font-size: 36px;
+    line-height: 1;
+  }
+
+  /* progress-bar — source : §4.6 */
+  .progress-bar {
+    height: 12px;
+    border: 2px solid #000;
+    border-radius: 6px;
+    background: #F2F2F2;
+    overflow: hidden;
+  }
+  .progress-bar-mobile {
+    height: 8px;
+    border: 1px solid #000;
+    border-radius: 6px;
+    background: #F2F2F2;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    border-radius: 4px;
+  }
+
+  /* sidebar admin — source : §4.7 */
+  .sidebar {
+    position: fixed;
+    left: 0; top: 0; bottom: 0;
+    width: 240px;
+    background: #163958;
+    color: #fff;
+    padding: 24px 0;
+    z-index: 40;
+    border-right: 2px solid #000;
+  }
+  .sidebar a {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 24px;
+    color: #94A3B8;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 15px;
+    transition: background 150ms, color 150ms;
+  }
+  .sidebar a:hover { background: #1F4E79; color: #fff; }
+  .sidebar a.active {
+    background: #F97316;
+    color: #fff;
+    font-weight: 700;
+    border-left: 4px solid #fff;
+  }
+  .main-content {
+    margin-left: 240px;
+    padding: 32px;
+    min-height: 100vh;
+  }
+
+  /* table-brutal — source : §4.13 */
+  .table-brutal {
+    width: 100%;
+    border-collapse: collapse;
+    border: 2px solid #000;
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .table-brutal th {
+    background: #163958;
+    color: #fff;
+    font-family: 'Outfit', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    padding: 12px 16px;
+    text-align: left;
+    border-bottom: 2px solid #000;
+  }
+  .table-brutal td { padding: 12px 16px; border-bottom: 1px solid #E2E8F0; font-size: 14px; }
+  .table-brutal tr:hover td { background: #F2F2F2; }
+
+  /* bottom-nav conducteur — source : §4.9 */
+  .bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 390px;
+    background: #fff;
+    border-top: 2px solid #000;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    padding: 8px 0 env(safe-area-inset-bottom, 8px);
+    z-index: 50;
+  }
+  .bottom-nav a {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 11px;
+    font-weight: 500;
+    color: #555555;
+    gap: 2px;
+    text-decoration: none;
+    padding: 4px 8px;
+    min-height: 56px;
+    min-width: 56px;
+    justify-content: center;
+    position: relative;
+  }
+  .bottom-nav a.active {
+    color: #F97316;
+    font-weight: 700;
+  }
+  .bottom-nav a.active::after {
+    content: '';
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 24px;
+    height: 3px;
+    background: #F97316;
+    border-radius: 2px;
+  }
+
+  /* Bandeau trial — TrialExpiredBanner */
+  .trial-banner-danger {
+    background-color: var(--color-danger-bg);
+    border-bottom: 2px solid var(--color-danger);
+    color: var(--color-danger);
+  }
+  .trial-banner-warning {
+    background-color: var(--color-warning-bg);
+    border-bottom: 2px solid var(--color-warning);
+    color: var(--color-warning);
+  }
+}

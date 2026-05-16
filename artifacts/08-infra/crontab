@@ -1,0 +1,15 @@
+# ClawBTP — crontab supercronic
+# Tous les endpoints sont sécurisés par le header x-cron-secret
+# APP_URL et CRON_SECRET sont injectés via Docker secrets au runtime
+
+# Génération CRs journaliers — tous les jours à 18h00
+0 18 * * * curl -sf -X POST -H "x-cron-secret: ${CRON_SECRET}" "${APP_INTERNAL_URL}/api/cron/cr"
+
+# Détection dérives budget — tous les jours à 07h00
+0 7 * * * curl -sf -X POST -H "x-cron-secret: ${CRON_SECRET}" "${APP_INTERNAL_URL}/api/cron/derive"
+
+# Briefing lundi matin — tous les lundis à 07h30
+30 7 * * 1 curl -sf -X POST -H "x-cron-secret: ${CRON_SECRET}" "${APP_INTERNAL_URL}/api/cron/briefing"
+
+# Vérification jalons — toutes les heures
+0 * * * * curl -sf -X POST -H "x-cron-secret: ${CRON_SECRET}" "${APP_INTERNAL_URL}/api/cron/jalons"

@@ -1,0 +1,25 @@
+# ============================================================
+# ClawBTP — Image cron (supercronic)
+# Image séparée — replicas: 1 OBLIGATOIRE (doublons sinon)
+# ============================================================
+
+FROM alpine:3.20
+
+# supercronic v0.2.33 — cron sans PID 1 ni crontab system
+ENV SUPERCRONIC_VERSION=0.2.33
+ENV SUPERCRONIC_SHA1SUM=3e9f2971f6421a38be7a25d7b3beab89f3a6e82a
+
+RUN apk add --no-cache curl ca-certificates \
+    && curl -fsSL "https://github.com/aptible/supercronic/releases/download/v${SUPERCRONIC_VERSION}/supercronic-linux-amd64" \
+       -o /usr/local/bin/supercronic \
+    && echo "${SUPERCRONIC_SHA1SUM}  /usr/local/bin/supercronic" | sha1sum -c - \
+    && chmod +x /usr/local/bin/supercronic
+
+# Utilisateur non-root
+RUN addgroup -S cron && adduser -S cron -G cron
+
+COPY --chown=cron:cron crontab /etc/crontab
+
+USER cron
+
+CMD ["/usr/local/bin/supercronic", "/etc/crontab"]
