@@ -1,0 +1,65 @@
+# ============================================================
+# ClawBTP — .dockerignore
+# Exclure du contexte de build Docker pour réduire la taille
+# et éviter d'embarquer des secrets ou fichiers inutiles
+# ============================================================
+
+# Dépendances — reconstruites dans le stage builder
+node_modules
+.pnp
+.pnp.js
+
+# Secrets — JAMAIS dans l'image
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env*.local
+
+# Output Next.js — généré pendant le build
+.next
+out
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+docs/
+artifacts/
+
+# Tests — pas en production
+coverage/
+.nyc_output
+tests/
+__tests__/
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+playwright-report/
+test-results/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# TypeScript build info
+*.tsbuildinfo
+
+# Supabase local (pas en production)
+supabase/.temp/
+supabase/seed.sql
