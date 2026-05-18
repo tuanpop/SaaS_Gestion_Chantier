@@ -18,6 +18,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { calculerCouleur } from '@/lib/coloration'
 import { TacheItem } from '@/components/TacheItem'
+import { ArchiveButton } from './archive-button'
 import type { Chantier, TacheWithUser, AffectationWithUser } from '@/types/database'
 
 export const dynamic = 'force-dynamic'
@@ -296,31 +297,3 @@ export default async function ChantierDetailAdminPage({ params }: PageProps) {
   )
 }
 
-// ============================================================
-// ArchiveButton — Client Component pour la confirmation
-// ============================================================
-
-// Inline client component — évite un fichier séparé pour un composant simple
-// La confirmation est implémentée via window.confirm (simple, pas de dépendance shadcn Dialog)
-function ArchiveButton({ chantierId }: { chantierId: string }) {
-  // Ce composant doit être 'use client' mais étant inliné dans un Server Component,
-  // on le définit dans un fichier séparé. Pour l'instant, on utilise un lien simple.
-  // TODO : remplacer par un AlertDialog shadcn/ui dans une itération ultérieure
-  return (
-    <form action={`/api/chantiers/${chantierId}`} method="DELETE">
-      <button
-        type="submit"
-        className="btn-brutal bg-white text-danger text-sm py-2 px-4"
-        onClick={(e) => {
-          e.preventDefault()
-          if (window.confirm('Archiver ce chantier ? Les données seront conservées.')) {
-            void fetch(`/api/chantiers/${chantierId}`, { method: 'DELETE' })
-              .then(() => { window.location.href = '/admin/chantiers' })
-          }
-        }}
-      >
-        Archiver
-      </button>
-    </form>
-  )
-}

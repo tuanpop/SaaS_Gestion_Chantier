@@ -160,20 +160,20 @@ ALTER TABLE taches ENABLE ROW LEVEL SECURITY;
 -- Note ouvriers : pas de JWT Supabase (has_supabase_auth=false) — accès filtré applicativement Sprint 3
 CREATE POLICY "isolation_org" ON chantiers
   FOR ALL TO authenticated
-  USING (organisation_id = (auth.jwt() ->> 'organisation_id')::uuid)
-  WITH CHECK (organisation_id = (auth.jwt() ->> 'organisation_id')::uuid);
+  USING (organisation_id = ((auth.jwt() -> 'app_metadata') ->> 'organisation_id')::uuid)
+  WITH CHECK (organisation_id = ((auth.jwt() -> 'app_metadata') ->> 'organisation_id')::uuid);
 
 -- AFFECTATIONS : isolation_org
 CREATE POLICY "isolation_org" ON affectations
   FOR ALL TO authenticated
-  USING (organisation_id = (auth.jwt() ->> 'organisation_id')::uuid)
-  WITH CHECK (organisation_id = (auth.jwt() ->> 'organisation_id')::uuid);
+  USING (organisation_id = ((auth.jwt() -> 'app_metadata') ->> 'organisation_id')::uuid)
+  WITH CHECK (organisation_id = ((auth.jwt() -> 'app_metadata') ->> 'organisation_id')::uuid);
 
 -- TACHES : isolation_org
 CREATE POLICY "isolation_org" ON taches
   FOR ALL TO authenticated
-  USING (organisation_id = (auth.jwt() ->> 'organisation_id')::uuid)
-  WITH CHECK (organisation_id = (auth.jwt() ->> 'organisation_id')::uuid);
+  USING (organisation_id = ((auth.jwt() -> 'app_metadata') ->> 'organisation_id')::uuid)
+  WITH CHECK (organisation_id = ((auth.jwt() -> 'app_metadata') ->> 'organisation_id')::uuid);
 
 -- ============================================================
 -- Amorce table chats (US-060 — Sprint 8)

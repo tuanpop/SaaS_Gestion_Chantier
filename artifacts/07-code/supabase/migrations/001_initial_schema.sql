@@ -91,10 +91,10 @@ CREATE POLICY "isolation_org" ON organisations
   FOR ALL
   TO authenticated
   USING (
-    id = (auth.jwt() ->> 'organisation_id')::uuid
+    id = ((auth.jwt() -> 'app_metadata') ->> 'organisation_id')::uuid
   )
   WITH CHECK (
-    id = (auth.jwt() ->> 'organisation_id')::uuid
+    id = ((auth.jwt() -> 'app_metadata') ->> 'organisation_id')::uuid
   );
 
 -- Policy users : membres voient uniquement les users de leur organisation
@@ -103,10 +103,10 @@ CREATE POLICY "isolation_org" ON users
   FOR ALL
   TO authenticated
   USING (
-    organisation_id = (auth.jwt() ->> 'organisation_id')::uuid
+    organisation_id = ((auth.jwt() -> 'app_metadata') ->> 'organisation_id')::uuid
   )
   WITH CHECK (
-    organisation_id = (auth.jwt() ->> 'organisation_id')::uuid
+    organisation_id = ((auth.jwt() -> 'app_metadata') ->> 'organisation_id')::uuid
   );
 
 -- ============================================================
