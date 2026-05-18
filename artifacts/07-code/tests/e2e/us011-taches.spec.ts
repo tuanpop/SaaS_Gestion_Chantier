@@ -101,6 +101,112 @@ test.describe('US-011 — Tâches chantier', () => {
   })
 
   // ============================================================
+  // S1 bis : Tâche assignée à un ouvrier — assigned_to non-null + join user
+  // GAP-011-A (Levi 2026-05-16) : le scénario S1 ne couvrait que assigned_to=null.
+  // Ce test vérifie que assigned_to:<uuid> est bien persisté et que le join
+  // assigned_user (nom, prenom) est résolu côté handler (cœur du flow US-011).
+  // ============================================================
+
+  test('S1 bis — Tâche assignée à un ouvrier : assigned_to persisté + join user résolu', async ({ request }) => {
+    const orgA = await createTestOrganisationDirect({ statut: 'trial_active', trialDaysOffset: 14 })
+    const adminSupabase = createClient(SUPABASE_URL, SERVICE_KEY, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    })
+
+    const today = new Date().toISOString().split('T')[0]!
+    const dateFin = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]!
+
+    // Créer un ouvrier dans l'org A (user direct en DB — pas via API users qui demande email/password)
+    const ouvrierId = crypto.randomUUID()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error: userInsertError } = await (adminSupabase.from('users') as any).insert({
+      id: ouvrierId,
+      organisation_id: orgA.organisationId,
+      role: 'ouvrier',
+      nom: 'Diallo',
+      prenom: 'Mohamed',
+      email: null,
+      has_supabase_auth: false,
+      invitation_status: 'active',
+      telephone: null,
+      qr_token: null,
+      avatar_url: null,
+    })
+    expect(userInsertError).toBeNull()
+
+    // Créer un chantier
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: chantierData } = await (adminSupabase.from('chantiers') as any).insert({
+      organisation_id: orgA.organisationId,
+      nom: 'Chantier S1 bis',
+      client_nom: 'Client Test',
+      adresse: '2 rue Test',
+      code_postal: '75002',
+      date_debut: today,
+      date_fin_prevue: dateFin,
+      created_by: orgA.adminUserId,
+    }).select('id').single()
+    const chantierId = (chantierData as { id: string }).id
+
+    // Créer la tâche AVEC assigned_to
+    const response = await request.post(
+      `${BASE_URL}/api/chantiers/${chantierId}/taches`,
+      {
+        data: {
+          titre: 'Découpe carrelage cuisine',
+          assigned_to: ouvrierId,
+          statut: 'a_faire',
+        },
+        headers: {
+          'x-organisation-id': orgA.organisationId,
+          'x-user-id': orgA.adminUserId,
+          'x-user-role': 'admin',
+        },
+      },
+    )
+
+    expect(response.status()).toBe(201)
+    const tache = await response.json() as {
+      id: string
+      assigned_to: string | null
+      assigned_user?: { nom: string; prenom: string } | null
+    }
+
+    // Cœur du test GAP-011-A : assigned_to non-null
+    expect(tache.assigned_to).toBe(ouvrierId)
+
+    // Vérifier que le join est résolu (US-011 S1 demande l'affichage du nom dans la liste)
+    expect(tache.assigned_user).toBeDefined()
+    expect(tache.assigned_user?.nom).toBe('Diallo')
+    expect(tache.assigned_user?.prenom).toBe('Mohamed')
+
+    // Vérifier que la tâche apparaît dans la liste avec assigned_to + join
+    const listResponse = await request.get(
+      `${BASE_URL}/api/chantiers/${chantierId}/taches`,
+      {
+        headers: {
+          'x-organisation-id': orgA.organisationId,
+          'x-user-id': orgA.adminUserId,
+          'x-user-role': 'admin',
+        },
+      },
+    )
+    const taches = await listResponse.json() as Array<{
+      id: string
+      assigned_to: string | null
+      assigned_user?: { nom: string; prenom: string } | null
+    }>
+    const found = taches.find((t) => t.id === tache.id)
+    expect(found?.assigned_to).toBe(ouvrierId)
+    expect(found?.assigned_user?.nom).toBe('Diallo')
+
+    await cleanupTestResources({
+      organisationIds: [orgA.organisationId],
+      authUserIds: [orgA.adminUserId],
+    })
+  })
+
+  // ============================================================
   // S2 : Passage bloqué + raison obligatoire
   // ============================================================
 
