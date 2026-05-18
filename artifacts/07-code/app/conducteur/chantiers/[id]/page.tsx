@@ -171,11 +171,14 @@ export default async function ChantierDetailConduPage({ params }: PageProps) {
           </svg>
           <span>Alertes</span>
         </Link>
-        <Link href="/conducteur/chats">
+        {/* T14 — badge Chats "7" aligné sur page liste conducteur (hardcodé, Sprint 8 pour dynamique) */}
+        {/* Décision : badge Alertes non ajouté (table alertes non implémentée Sprint 2 — voir DECISIONLOG) */}
+        <Link href="/conducteur/chats" className="relative">
           <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
           </svg>
           <span>Chats</span>
+          <span className="absolute -top-1 right-0 w-4 h-4 bg-accent text-white text-[10px] font-bold rounded-full flex items-center justify-center">7</span>
         </Link>
       </nav>
     </>

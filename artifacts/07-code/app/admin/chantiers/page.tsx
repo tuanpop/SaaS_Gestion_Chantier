@@ -11,6 +11,7 @@ import { headers } from 'next/headers'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { calculerCouleur, trierParCouleur } from '@/lib/coloration'
 import { ChantierCard } from '@/components/ChantierCard'
+import { logger } from '@/lib/logger'
 import type { Chantier, ChantierWithColoration } from '@/types/database'
 
 export const metadata = {
@@ -71,6 +72,63 @@ export default async function ChantiersAdminPage() {
   const chantiersTriés = trierParCouleur(chantiersColores)
 
   // ============================================================
+  // T07 — Compteurs tâches + ouvriers par chantier
+  // Agrégation JS in-memory (décision humaine 2026-05-19 : acceptable < 50 chantiers pilote)
+  // Deux requêtes supplémentaires après le fetch principal
+  // ============================================================
+
+  const chantiersIds = chantiers.map((c) => c.id)
+
+  // Guard : si aucun chantier, les Maps restent vides (évite .in() avec tableau vide → erreur Supabase)
+  const tachesParChantier = new Map<string, number>()
+  const tachesTermineesParChantier = new Map<string, number>()
+  const ouvriersParChantier = new Map<string, number>()
+
+  if (chantiersIds.length > 0) {
+    const t0 = performance.now()
+
+    const [tachesResult, ouvriersResult] = await Promise.all([
+      adminClient
+        .from('taches')
+        .select('chantier_id, statut')
+        .in('chantier_id', chantiersIds)
+        .eq('organisation_id', organisationId),
+      adminClient
+        .from('affectations')
+        .select('chantier_id, user_id')
+        .in('chantier_id', chantiersIds)
+        .eq('organisation_id', organisationId)
+        .is('date_fin', null),
+    ])
+
+    const elapsed = performance.now() - t0
+    if (elapsed > 500) {
+      // T07 — décision humaine : logger warning si > 500ms (volume > seuil pilote)
+      logger.warn({ elapsedMs: elapsed.toFixed(0), chantiersCount: chantiersIds.length }, 'T07 compteurs: requêtes agrégation lentes')
+    }
+
+    // Agréger tâches total + terminées par chantier
+    for (const row of (tachesResult.data ?? [])) {
+      const r = row as { chantier_id: string; statut: string }
+      tachesParChantier.set(r.chantier_id, (tachesParChantier.get(r.chantier_id) ?? 0) + 1)
+      if (r.statut === 'termine') {
+        tachesTermineesParChantier.set(r.chantier_id, (tachesTermineesParChantier.get(r.chantier_id) ?? 0) + 1)
+      }
+    }
+
+    // Agréger ouvriers actifs (dédupliqués par user_id) par chantier
+    const seenAff = new Set<string>()
+    for (const row of (ouvriersResult.data ?? [])) {
+      const aff = row as { chantier_id: string; user_id: string }
+      const key = `${aff.chantier_id}:${aff.user_id}`
+      if (!seenAff.has(key)) {
+        seenAff.add(key)
+        ouvriersParChantier.set(aff.chantier_id, (ouvriersParChantier.get(aff.chantier_id) ?? 0) + 1)
+      }
+    }
+  }
+
+  // ============================================================
   // Rendu
   // ============================================================
 
@@ -81,8 +139,13 @@ export default async function ChantiersAdminPage() {
         <div>
           <h1 className="font-heading font-bold text-[28px]">Chantiers</h1>
           <p className="text-xs text-muted mt-0.5 flex items-center gap-1.5">
+            {/* T22 — icône arrow-down-narrow-wide (Lucide) remplace l'icône maison incorrecte */}
             <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M3 6l3 13h12l3-13H3z"/><path d="M3 6L12 2l9 4"/>
+              <path d="m3 16 4 4 4-4"/>
+              <path d="M7 20V4"/>
+              <path d="M11 4h10"/>
+              <path d="M11 8h7"/>
+              <path d="M11 12h4"/>
             </svg>
             Trié par priorité : Dépassé → Dérive → Dans les temps
             {error && <span className="text-danger ml-2">Erreur de chargement</span>}
@@ -133,6 +196,9 @@ export default async function ChantiersAdminPage() {
               chantier={chantier}
               href={`/admin/chantiers/${chantier.id}`}
               variant="desktop"
+              tachesCount={tachesParChantier.get(chantier.id) ?? 0}
+              tachesTermineesCount={tachesTermineesParChantier.get(chantier.id) ?? 0}
+              ouvriersCount={ouvriersParChantier.get(chantier.id) ?? 0}
             />
           ))}
         </div>

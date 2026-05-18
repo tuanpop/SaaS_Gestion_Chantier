@@ -86,6 +86,7 @@
     font-family: 'Public Sans', system-ui, sans-serif;
     min-height: 100vh;
     min-height: 100dvh;
+    overscroll-behavior: contain; /* T13 — empêche pull-to-refresh navigateur (doit être sur body, pas uniquement .mobile-interface) */
   }
 
   /* ============================================================
@@ -121,6 +122,7 @@
   }
   a.card-brutal:hover {
     box-shadow: 6px 6px 0 #000;
+    transform: none; /* T06/T12 — annule le translate(2px,2px) du sélecteur générique .card-brutal:hover sur les liens cliquables */
   }
 
   /* card-brutal mobile (shadow réduite pour mobile) */
@@ -173,6 +175,24 @@
     color: #555555;
     cursor: not-allowed;
     opacity: 0.7;
+  }
+
+  /* tab-brutal — source : §4.1 proto 16-admin-chantier-detail.html l.103-117 */
+  /* T03 — classe absente, nécessaire pour le système de tabs T04 */
+  .tab-brutal {
+    border: 2px solid #000;
+    padding: 10px 24px;
+    font-weight: 700;
+    font-family: 'Outfit', sans-serif;
+    cursor: pointer;
+    font-size: 15px;
+    background: #fff;
+    color: #1F4E79;
+    transition: background 150ms, color 150ms;
+  }
+  .tab-brutal.active {
+    background: #F97316;
+    color: #fff;
   }
 
   /* input-brutal — source : §4.3 */

@@ -357,10 +357,11 @@ export default function NouveauChantierPage() {
 
           {/* Actions */}
           <div className="flex gap-4 pt-4">
+            {/* T10 — disabled:opacity-50 supprimé : .btn-brutal:disabled dans globals.css gère l'état (fond gris #F2F2F2, bordure #999, opacity 0.7) */}
             <button
               type="submit"
               disabled={isLoading}
-              className="btn-brutal bg-accent text-white disabled:opacity-50"
+              className="btn-brutal bg-accent text-white"
             >
               {isLoading ? (
                 <span className="flex items-center gap-2">

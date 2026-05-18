@@ -41,6 +41,17 @@ export default async function ChantiersConduPage() {
 
   const adminClient = createAdminClient()
 
+  // T15 — Initiales depuis prenom+nom (au lieu des 2 premières lettres de l'email)
+  const { data: profil } = await adminClient
+    .from('users')
+    .select('prenom, nom')
+    .eq('id', userId)
+    .single()
+
+  const initiales = profil
+    ? (`${(profil.prenom ?? '').charAt(0)}${(profil.nom ?? '').charAt(0)}`.toUpperCase() || 'SC')
+    : (user.email ?? 'SC').substring(0, 2).toUpperCase()
+
   // Récupérer les IDs des chantiers auxquels le conducteur est affecté
   const { data: affectationsRaw } = await adminClient
     .from('affectations')
@@ -81,9 +92,6 @@ export default async function ChantiersConduPage() {
   }))
 
   const chantiersTriés = trierParCouleur(chantiersColores)
-
-  // Initiales conducteur pour l'avatar
-  const initiales = (user.email ?? 'SC').substring(0, 2).toUpperCase()
 
   return (
     <>

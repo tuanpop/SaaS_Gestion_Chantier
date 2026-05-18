@@ -12,7 +12,7 @@
 // Décision humaine : UI indique l'état, mais la garde de sécurité est dans assertTrialActive().
 //
 // Couleurs : CSS vars --color-danger / --color-warning (globals.css §Palette ClawBTP)
-// Police : Plus Jakarta Sans héritée du body (globals.css)
+// Police : Public Sans héritée du body (globals.css) — corrigée Sprint 2 (T21)
 // ============================================================
 
 import { useState, useMemo } from 'react'
@@ -65,9 +65,10 @@ export function TrialExpiredBanner({ trialEndsAt, statut }: TrialExpiredBannerPr
           Votre essai gratuit a expiré. Passez à un plan payant pour continuer à créer et
           modifier vos données.
         </p>
+        {/* T17 — btn-brutal remplace rounded-md hover:opacity-90 (non conforme design system neubrutalism) */}
         <a
           href="/plans"
-          className="inline-block shrink-0 bg-[var(--color-danger)] text-white text-sm font-semibold px-4 py-1.5 rounded-md hover:opacity-90 transition-opacity duration-150 focus:outline-none focus:ring-2 focus:ring-[var(--color-danger)] focus:ring-offset-2"
+          className="btn-brutal shrink-0 bg-danger text-white text-sm focus:outline-none focus:ring-2 focus:ring-danger focus:ring-offset-2"
         >
           Choisir un plan
         </a>

@@ -24,6 +24,7 @@ interface ChantierCardProps {
   href: string    // lien vers le détail
   variant?: 'desktop' | 'mobile'
   tachesCount?: number
+  tachesTermineesCount?: number // T16 — format "X/Y tâches" (terminées/total) — proto 15-admin-dashboard.html l.278
   ouvriersCount?: number
 }
 
@@ -88,7 +89,7 @@ function getJoursRestants(dateFin: string): number {
 // ChantierCard — Desktop Admin
 // ============================================================
 
-function ChantierCardDesktop({ chantier, href, tachesCount = 0, ouvriersCount = 0 }: ChantierCardProps) {
+function ChantierCardDesktop({ chantier, href, tachesCount = 0, tachesTermineesCount, ouvriersCount = 0 }: ChantierCardProps) {
   const styles = COULEUR_STYLES[chantier.couleur]
   const progress = getBudgetProgress(chantier.budget_depense, chantier.budget_alloue)
   const joursRestants = getJoursRestants(chantier.date_fin_prevue)
@@ -146,7 +147,11 @@ function ChantierCardDesktop({ chantier, href, tachesCount = 0, ouvriersCount = 
       {/* Footer : tâches + ouvriers + badge statut + date fin */}
       <div className="flex justify-between items-center">
         <span className="text-xs text-muted">
-          {tachesCount} tâches &bull; {ouvriersCount} ouvriers
+          {/* T16 — "X/Y tâches" si tachesTermineesCount défini et tâches > 0, sinon "X tâches" */}
+          {tachesTermineesCount !== undefined && tachesCount > 0
+            ? `${tachesTermineesCount}/${tachesCount} tâches`
+            : `${tachesCount} tâche${tachesCount !== 1 ? 's' : ''}`}
+          {' '}&bull; {ouvriersCount} ouvrier{ouvriersCount !== 1 ? 's' : ''}
         </span>
         <div className="flex items-center gap-2">
           {joursRestants >= 0 && joursRestants <= 3 && (

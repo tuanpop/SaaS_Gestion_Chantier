@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Réponse mutable — les cookies Supabase seront injectés via setAll ci-dessous
-    let supabaseResponse = new NextResponse()
+    const supabaseResponse = new NextResponse()
 
     const supabase = createServerClient<Database>(supabaseUrl, supabaseAnonKey, {
       cookies: {
