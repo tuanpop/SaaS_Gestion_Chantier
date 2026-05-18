@@ -13,43 +13,18 @@
 // Alternative : cast `as unknown as` — utilisé pour les reads; adminClient pour les writes.
 
 import { NextRequest, NextResponse } from 'next/server'
-import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { assertTrialActive } from '@/lib/trial-gate'
 import { calculerCouleur, trierParCouleur } from '@/lib/coloration'
 import { toApiResponse } from '@/lib/errors'
 import { logger } from '@/lib/logger'
+import { CreateChantierSchema } from '@/lib/validation/chantiers'
 import type {
   UserRole,
   Chantier,
   ChantierWithColoration,
 } from '@/types/database'
-
-// ============================================================
-// Schémas Zod
-// ============================================================
-
-const CreateChantierSchema = z
-  .object({
-    nom: z.string().min(1).max(100),
-    client_nom: z.string().min(1).max(200),
-    adresse: z.string().min(1).max(500),
-    // US-010 S2 : validation regex 5 chiffres
-    code_postal: z
-      .string()
-      .regex(/^\d{5}$/, 'Code postal : 5 chiffres requis'),
-    budget_alloue: z.number().positive().optional(), // Q5 (2026-05-15) : nullable/optional
-    date_debut: z.string().date(),
-    date_fin_prevue: z.string().date(),
-  })
-  .refine(
-    (data) => data.date_fin_prevue >= data.date_debut,
-    {
-      message: 'date_fin_prevue doit être >= date_debut',
-      path: ['date_fin_prevue'],
-    },
-  )
 
 // ============================================================
 // GET /api/chantiers

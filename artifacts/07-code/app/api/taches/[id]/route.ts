@@ -8,46 +8,13 @@
 // Note TS : adminClient pour les opérations sur taches (pattern Bug A — Zoro 2026-05-15)
 
 import { NextRequest, NextResponse } from 'next/server'
-import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { assertTrialActive } from '@/lib/trial-gate'
 import { toApiResponse } from '@/lib/errors'
 import { logger } from '@/lib/logger'
+import { UpdateTacheSchema } from '@/lib/validation/taches'
 import type { UserRole, TacheWithUser, TablesUpdate } from '@/types/database'
-
-// ============================================================
-// Schéma Zod
-// ============================================================
-
-const UpdateTacheSchema = z
-  .object({
-    titre: z.string().min(1).max(200).optional(),
-    description: z.string().max(2000).nullable().optional(),
-    statut: z
-      .enum(['a_faire', 'en_cours', 'termine', 'bloque'])
-      .optional(),
-    assigned_to: z.string().uuid().nullable().optional(),
-    date_echeance: z.string().date().nullable().optional(),
-    bloque_raison: z.string().min(10).nullable().optional(),
-  })
-  .refine(
-    (data) => {
-      if (data.statut === 'bloque') {
-        return (
-          data.bloque_raison !== null &&
-          data.bloque_raison !== undefined &&
-          data.bloque_raison.length >= 10
-        )
-      }
-      // Si on passe d'un statut bloque à autre chose, bloque_raison peut rester (historique)
-      return true
-    },
-    {
-      message: 'bloque_raison obligatoire (min 10 car.) si statut=bloque',
-      path: ['bloque_raison'],
-    },
-  )
 
 // ============================================================
 // PATCH /api/taches/[id]
