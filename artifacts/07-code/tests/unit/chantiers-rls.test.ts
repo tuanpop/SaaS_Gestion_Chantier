@@ -298,11 +298,14 @@ describeIfSupabase('@integration — RLS chantiers/affectations/taches Sprint 2'
   /**
    * Scénario 3 : GET /api/chantiers/[chantier_org_B_id] -> HTTP 404
    * (Test API — nécessite le serveur Next.js local)
-   * Marqué skip car nécessite un serveur en cours
+   *
+   * Skip permanent : ce scénario est désormais couvert par le test E2E Playwright
+   * "RLS-003 — Conducteur org A GET chantier org B -> 404 (I-06)" dans
+   * tests/e2e/us010-chantier.spec.ts (GAP-RLS-003 fermé 2026-05-19).
+   * Conservé ici en .skip pour traçabilité et documentation du payload attendu.
    */
   it.skip('RLS-003 : conducteur org A GET chantier org B -> HTTP 404', async () => {
-    // Ce test nécessite le serveur Next.js local démarré
-    // Testé via Playwright E2E (tests/e2e/us010-chantier.spec.ts)
+    // Couvert par tests/e2e/us010-chantier.spec.ts (RLS-003).
     const response = await fetch(
       `http://localhost:3000/api/chantiers/${testData.chantierB!.id}`,
       {

@@ -230,4 +230,89 @@ test.describe('US-010 — Gestion chantiers', () => {
 
     await cleanupTestResources({ organisationIds: [org.organisationId], authUserIds: [org.adminUserId] })
   })
+
+  // ============================================================
+  // RLS-003 : conducteur org A GET chantier org B -> HTTP 404 (I-06)
+  // GAP-RLS-003 (Levi 2026-05-16) : le test unitaire chantiers-rls.test.ts:303
+  // était marqué .skip avec un commentaire "testé via Playwright E2E", mais
+  // l'équivalent E2E n'existait pas. Ce test comble le gap : isolation
+  // multi-tenant + I-06 (404 pas 403 pour ne pas révéler l'existence).
+  // ============================================================
+
+  test('RLS-003 — Conducteur org A GET chantier org B -> 404 (I-06)', async ({ request }) => {
+    // Setup : créer deux organisations isolées
+    const orgA = await createTestOrganisationDirect({ statut: 'trial_active', trialDaysOffset: 14 })
+    const orgB = await createTestOrganisationDirect({ statut: 'trial_active', trialDaysOffset: 14 })
+
+    const adminSupabase = createClient(SUPABASE_URL, SERVICE_KEY, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    })
+
+    // Créer un conducteur dans org A (user direct en DB)
+    const conducteurAId = crypto.randomUUID()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error: userInsertError } = await (adminSupabase.from('users') as any).insert({
+      id: conducteurAId,
+      organisation_id: orgA.organisationId,
+      role: 'conducteur',
+      nom: 'Martin',
+      prenom: 'Pierre',
+      email: `conducteur-a-${crypto.randomUUID()}@e2e-clawbtp.test`,
+      has_supabase_auth: false,
+      invitation_status: 'active',
+      telephone: null,
+      qr_token: null,
+      avatar_url: null,
+    })
+    expect(userInsertError).toBeNull()
+
+    // Créer un chantier dans org B (créateur = admin de orgB)
+    const today = new Date().toISOString().split('T')[0]!
+    const dateFin = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]!
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: chantierBData } = await (adminSupabase.from('chantiers') as any)
+      .insert({
+        organisation_id: orgB.organisationId,
+        nom: 'Chantier confidentiel org B',
+        client_nom: 'Client B',
+        adresse: '99 rue Privée',
+        code_postal: '13001',
+        date_debut: today,
+        date_fin_prevue: dateFin,
+        created_by: orgB.adminUserId,
+      })
+      .select('id')
+      .single()
+    const chantierBId = (chantierBData as { id: string }).id
+
+    // Cœur du test RLS-003 : conducteur orgA tente GET sur chantier orgB
+    const response = await request.get(`${BASE_URL}/api/chantiers/${chantierBId}`, {
+      headers: {
+        'x-organisation-id': orgA.organisationId,
+        'x-user-id': conducteurAId,
+        'x-user-role': 'conducteur',
+      },
+    })
+
+    // I-06 : 404 (pas 403 — ne pas révéler l'existence du chantier)
+    expect(response.status()).toBe(404)
+    const body = (await response.json()) as { error: string }
+    expect(body.error).toBe('Ressource introuvable.')
+
+    // Smoke : un GET LEGITIME (admin orgB sur son propre chantier) doit fonctionner
+    // — sinon on ne sait pas si le 404 est lié à la sécurité ou à un bug du handler
+    const legitResponse = await request.get(`${BASE_URL}/api/chantiers/${chantierBId}`, {
+      headers: {
+        'x-organisation-id': orgB.organisationId,
+        'x-user-id': orgB.adminUserId,
+        'x-user-role': 'admin',
+      },
+    })
+    expect(legitResponse.status()).toBe(200)
+
+    await cleanupTestResources({
+      organisationIds: [orgA.organisationId, orgB.organisationId],
+      authUserIds: [orgA.adminUserId, orgB.adminUserId],
+    })
+  })
 })
