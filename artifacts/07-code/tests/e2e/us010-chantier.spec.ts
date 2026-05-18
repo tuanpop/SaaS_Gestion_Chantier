@@ -13,7 +13,11 @@
  */
 
 import { test, expect } from '@playwright/test'
-import { createTestOrganisationDirect, cleanupTestResources } from './helpers/setup'
+import {
+  createTestOrganisationDirect,
+  cleanupTestResources,
+  type CreatedResources,
+} from './helpers/setup'
 import { createClient } from '@supabase/supabase-js'
 
 const BASE_URL = process.env['NEXT_PUBLIC_APP_URL'] ?? 'http://localhost:3000'
@@ -21,14 +25,30 @@ const SUPABASE_URL = process.env['NEXT_PUBLIC_SUPABASE_URL'] ?? ''
 const SERVICE_KEY = process.env['SUPABASE_SERVICE_ROLE_KEY'] ?? ''
 
 // ============================================================
+// State partagé — resources créées (cleanup garanti via afterAll même si un test throw)
+// GAP-cleanup-playwright fixé 2026-05-19 : refactor cleanup inline -> afterAll central
+// ============================================================
+
+const resources: CreatedResources = {
+  organisationIds: [],
+  authUserIds: [],
+}
+
+// ============================================================
 // US-010 S1 : Création chantier + apparition portefeuille
 // ============================================================
 
 test.describe('US-010 — Gestion chantiers', () => {
 
+  test.afterAll(async () => {
+    await cleanupTestResources(resources)
+  })
+
   test('S1 — Admin crée un chantier qui apparaît dans le portefeuille avec pastille verte', async ({ page }) => {
     // Setup : créer une organisation de test
     const org = await createTestOrganisationDirect({ statut: 'trial_active', trialDaysOffset: 14 })
+    resources.organisationIds.push(org.organisationId)
+    resources.authUserIds.push(org.adminUserId)
 
     // Login admin
     await page.goto(`${BASE_URL}/login`)
@@ -64,10 +84,8 @@ test.describe('US-010 — Gestion chantiers', () => {
     await page.goto(`${BASE_URL}/admin/chantiers`)
 
     // Vérifier la pastille colorée (vert = dans les temps)
-    await expect(page.locator('.badge-success').first()).toBeVisible()
-
-    // Cleanup
-    await cleanupTestResources({ organisationIds: [org.organisationId], authUserIds: [org.adminUserId] })
+    // Selector data-testid robuste aux changements de classes CSS (GAP-selectors-fragiles)
+    await expect(page.getByTestId('chantier-status-vert').first()).toBeVisible()
   })
 
   // ============================================================
@@ -76,6 +94,8 @@ test.describe('US-010 — Gestion chantiers', () => {
 
   test('S2 — Code postal invalide : message d\'erreur inline + HTTP 400', async ({ page, request }) => {
     const org = await createTestOrganisationDirect({ statut: 'trial_active', trialDaysOffset: 14 })
+    resources.organisationIds.push(org.organisationId)
+    resources.authUserIds.push(org.adminUserId)
 
     // Login
     await page.goto(`${BASE_URL}/login`)
@@ -102,8 +122,9 @@ test.describe('US-010 — Gestion chantiers', () => {
     await page.click('[type="submit"]')
 
     // Vérifier le message d'erreur inline (validation côté client d'abord)
+    // getByText robuste aux changements de classes CSS (GAP-selectors-fragiles)
     await expect(
-      page.locator('.text-danger').filter({ hasText: /code postal|5 chiffres/i }),
+      page.getByText(/code postal|5 chiffres/i).first(),
     ).toBeVisible({ timeout: 5000 })
 
     // Vérifier aussi que l'API retourne HTTP 400 (test API direct)
@@ -126,8 +147,6 @@ test.describe('US-010 — Gestion chantiers', () => {
     expect(response.status()).toBe(400)
     const body = await response.json() as { fields?: { code_postal?: string[] } }
     expect(body.fields?.code_postal).toBeDefined()
-
-    await cleanupTestResources({ organisationIds: [org.organisationId], authUserIds: [org.adminUserId] })
   })
 
   // ============================================================
@@ -136,6 +155,8 @@ test.describe('US-010 — Gestion chantiers', () => {
 
   test('S3 — Portefeuille 20 chantiers chargé en < 1000ms, rouges en premier', async ({ page }) => {
     const org = await createTestOrganisationDirect({ statut: 'trial_active', trialDaysOffset: 14 })
+    resources.organisationIds.push(org.organisationId)
+    resources.authUserIds.push(org.adminUserId)
     const adminSupabase = createClient(SUPABASE_URL, SERVICE_KEY, {
       auth: { autoRefreshToken: false, persistSession: false },
     })
@@ -225,10 +246,9 @@ test.describe('US-010 — Gestion chantiers', () => {
     expect(elapsed).toBeLessThan(1000)
 
     // Vérifier que les rouges sont en premier
-    const firstBadge = page.locator('.badge-danger').first()
+    // Selector data-testid robuste (GAP-selectors-fragiles)
+    const firstBadge = page.getByTestId('chantier-status-rouge').first()
     await expect(firstBadge).toBeVisible()
-
-    await cleanupTestResources({ organisationIds: [org.organisationId], authUserIds: [org.adminUserId] })
   })
 
   // ============================================================
@@ -243,6 +263,8 @@ test.describe('US-010 — Gestion chantiers', () => {
     // Setup : créer deux organisations isolées
     const orgA = await createTestOrganisationDirect({ statut: 'trial_active', trialDaysOffset: 14 })
     const orgB = await createTestOrganisationDirect({ statut: 'trial_active', trialDaysOffset: 14 })
+    resources.organisationIds.push(orgA.organisationId, orgB.organisationId)
+    resources.authUserIds.push(orgA.adminUserId, orgB.adminUserId)
 
     const adminSupabase = createClient(SUPABASE_URL, SERVICE_KEY, {
       auth: { autoRefreshToken: false, persistSession: false },
@@ -309,10 +331,5 @@ test.describe('US-010 — Gestion chantiers', () => {
       },
     })
     expect(legitResponse.status()).toBe(200)
-
-    await cleanupTestResources({
-      organisationIds: [orgA.organisationId, orgB.organisationId],
-      authUserIds: [orgA.adminUserId, orgB.adminUserId],
-    })
   })
 })

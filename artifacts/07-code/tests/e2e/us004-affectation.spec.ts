@@ -12,14 +12,32 @@
  */
 
 import { test, expect } from '@playwright/test'
-import { createTestOrganisationDirect, cleanupTestResources } from './helpers/setup'
+import {
+  createTestOrganisationDirect,
+  cleanupTestResources,
+  type CreatedResources,
+} from './helpers/setup'
 import { createClient } from '@supabase/supabase-js'
 
 const BASE_URL = process.env['NEXT_PUBLIC_APP_URL'] ?? 'http://localhost:3000'
 const SUPABASE_URL = process.env['NEXT_PUBLIC_SUPABASE_URL'] ?? ''
 const SERVICE_KEY = process.env['SUPABASE_SERVICE_ROLE_KEY'] ?? ''
 
+// ============================================================
+// State partagé — cleanup garanti via afterAll même si un test throw
+// GAP-cleanup-playwright fixé 2026-05-19
+// ============================================================
+
+const resources: CreatedResources = {
+  organisationIds: [],
+  authUserIds: [],
+}
+
 test.describe('US-004 — Affectation ouvrier au chantier', () => {
+
+  test.afterAll(async () => {
+    await cleanupTestResources(resources)
+  })
 
   // ============================================================
   // S1 : Affectation nominale
@@ -27,6 +45,8 @@ test.describe('US-004 — Affectation ouvrier au chantier', () => {
 
   test('S1 — Conducteur affecte Ahmed au chantier -> apparaît dans la liste', async ({ request }) => {
     const org = await createTestOrganisationDirect({ statut: 'trial_active', trialDaysOffset: 14 })
+    resources.organisationIds.push(org.organisationId)
+    resources.authUserIds.push(org.adminUserId)
     const adminSupabase = createClient(SUPABASE_URL, SERVICE_KEY, {
       auth: { autoRefreshToken: false, persistSession: false },
     })
@@ -43,6 +63,7 @@ test.describe('US-004 — Affectation ouvrier au chantier', () => {
     })
 
     const conducteurId = conducteurAuth.user!.id
+    resources.authUserIds.push(conducteurId)
     await adminSupabase.from('users').insert({
       id: conducteurId,
       organisation_id: org.organisationId,
@@ -60,6 +81,7 @@ test.describe('US-004 — Affectation ouvrier au chantier', () => {
     })
 
     const ahmedId = ahmedAuth.user!.id
+    resources.authUserIds.push(ahmedId)
     await adminSupabase.from('users').insert({
       id: ahmedId,
       organisation_id: org.organisationId,
@@ -123,11 +145,7 @@ test.describe('US-004 — Affectation ouvrier au chantier', () => {
     expect(ahmedAff).toBeDefined()
 
     // Note Q3 : "ouvrier voit ses tâches dès date_debut au scan QR" = Sprint 3
-
-    // Cleanup
-    await adminSupabase.auth.admin.deleteUser(conducteurId)
-    await adminSupabase.auth.admin.deleteUser(ahmedId)
-    await cleanupTestResources({ organisationIds: [org.organisationId], authUserIds: [org.adminUserId] })
+    // cleanup géré par afterAll (auth users conducteur + ahmed + org admin)
   })
 
   // ============================================================
@@ -137,6 +155,8 @@ test.describe('US-004 — Affectation ouvrier au chantier', () => {
 
   test('S2 (API) — Ouvrier affecté à 2 chantiers actifs : GET retourne 2 affectations', async ({ request }) => {
     const org = await createTestOrganisationDirect({ statut: 'trial_active', trialDaysOffset: 14 })
+    resources.organisationIds.push(org.organisationId)
+    resources.authUserIds.push(org.adminUserId)
     const adminSupabase = createClient(SUPABASE_URL, SERVICE_KEY, {
       auth: { autoRefreshToken: false, persistSession: false },
     })
@@ -152,6 +172,7 @@ test.describe('US-004 — Affectation ouvrier au chantier', () => {
       email_confirm: true,
     })
     const ahmedId = ahmedAuth.user!.id
+    resources.authUserIds.push(ahmedId)
     await adminSupabase.from('users').insert({
       id: ahmedId,
       organisation_id: org.organisationId,
@@ -244,9 +265,7 @@ test.describe('US-004 — Affectation ouvrier au chantier', () => {
 
     // Note Q3 : le sélecteur QR (UI mobile ouvrier pour choisir entre 2 chantiers) = Sprint 3
     // Sprint 2 prépare les données API — le test UI complet QR est dans Sprint 3
-
-    await adminSupabase.auth.admin.deleteUser(ahmedId)
-    await cleanupTestResources({ organisationIds: [org.organisationId], authUserIds: [org.adminUserId] })
+    // cleanup géré par afterAll
   })
 
   // ============================================================
@@ -256,6 +275,8 @@ test.describe('US-004 — Affectation ouvrier au chantier', () => {
   test('S3 — Conducteur org A affecter ouvrier org B -> HTTP 403', async ({ request }) => {
     const orgA = await createTestOrganisationDirect({ statut: 'trial_active', trialDaysOffset: 14 })
     const orgB = await createTestOrganisationDirect({ statut: 'trial_active', trialDaysOffset: 14 })
+    resources.organisationIds.push(orgA.organisationId, orgB.organisationId)
+    resources.authUserIds.push(orgA.adminUserId, orgB.adminUserId)
     const adminSupabase = createClient(SUPABASE_URL, SERVICE_KEY, {
       auth: { autoRefreshToken: false, persistSession: false },
     })
@@ -271,6 +292,7 @@ test.describe('US-004 — Affectation ouvrier au chantier', () => {
       email_confirm: true,
     })
     const ouvrierBId = ouvrierBAuth.user!.id
+    resources.authUserIds.push(ouvrierBId)
     await adminSupabase.from('users').insert({
       id: ouvrierBId,
       organisation_id: orgB.organisationId,
@@ -313,8 +335,6 @@ test.describe('US-004 — Affectation ouvrier au chantier', () => {
 
     // DoD US-004 : cross-org rejected -> HTTP 403
     expect(response.status()).toBe(403)
-
-    await adminSupabase.auth.admin.deleteUser(ouvrierBId)
-    await cleanupTestResources({ organisationIds: [orgA.organisationId, orgB.organisationId], authUserIds: [orgA.adminUserId, orgB.adminUserId] })
+    // cleanup géré par afterAll (orgA + orgB + admins + ouvrierB)
   })
 })

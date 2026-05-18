@@ -11,14 +11,32 @@
  */
 
 import { test, expect } from '@playwright/test'
-import { createTestOrganisationDirect, cleanupTestResources } from './helpers/setup'
+import {
+  createTestOrganisationDirect,
+  cleanupTestResources,
+  type CreatedResources,
+} from './helpers/setup'
 import { createClient } from '@supabase/supabase-js'
 
 const BASE_URL = process.env['NEXT_PUBLIC_APP_URL'] ?? 'http://localhost:3000'
 const SUPABASE_URL = process.env['NEXT_PUBLIC_SUPABASE_URL'] ?? ''
 const SERVICE_KEY = process.env['SUPABASE_SERVICE_ROLE_KEY'] ?? ''
 
+// ============================================================
+// State partagé — cleanup garanti via afterAll même si un test throw
+// GAP-cleanup-playwright fixé 2026-05-19
+// ============================================================
+
+const resources: CreatedResources = {
+  organisationIds: [],
+  authUserIds: [],
+}
+
 test.describe('US-011 — Tâches chantier', () => {
+
+  test.afterAll(async () => {
+    await cleanupTestResources(resources)
+  })
 
   // ============================================================
   // S1 : Création tâche + assignation
@@ -26,6 +44,8 @@ test.describe('US-011 — Tâches chantier', () => {
 
   test('S1 — Conducteur crée une tâche assignée, statut=a_faire visible dans liste', async ({ request }) => {
     const orgA = await createTestOrganisationDirect({ statut: 'trial_active', trialDaysOffset: 14 })
+    resources.organisationIds.push(orgA.organisationId)
+    resources.authUserIds.push(orgA.adminUserId)
     const adminSupabase = createClient(SUPABASE_URL, SERVICE_KEY, {
       auth: { autoRefreshToken: false, persistSession: false },
     })
@@ -97,7 +117,7 @@ test.describe('US-011 — Tâches chantier', () => {
     // Note Q4 : notification in-app = stub (TODO Sprint 4)
     // Le TODO Sprint 4 dans le handler a été vérifié : aucune insertion dans notifications
 
-    await cleanupTestResources({ organisationIds: [orgA.organisationId], authUserIds: [orgA.adminUserId] })
+    // cleanup géré par afterAll (GAP-cleanup-playwright)
   })
 
   // ============================================================
@@ -109,6 +129,8 @@ test.describe('US-011 — Tâches chantier', () => {
 
   test('S1 bis — Tâche assignée à un ouvrier : assigned_to persisté + join user résolu', async ({ request }) => {
     const orgA = await createTestOrganisationDirect({ statut: 'trial_active', trialDaysOffset: 14 })
+    resources.organisationIds.push(orgA.organisationId)
+    resources.authUserIds.push(orgA.adminUserId)
     const adminSupabase = createClient(SUPABASE_URL, SERVICE_KEY, {
       auth: { autoRefreshToken: false, persistSession: false },
     })
@@ -199,11 +221,7 @@ test.describe('US-011 — Tâches chantier', () => {
     const found = taches.find((t) => t.id === tache.id)
     expect(found?.assigned_to).toBe(ouvrierId)
     expect(found?.assigned_user?.nom).toBe('Diallo')
-
-    await cleanupTestResources({
-      organisationIds: [orgA.organisationId],
-      authUserIds: [orgA.adminUserId],
-    })
+    // cleanup géré par afterAll
   })
 
   // ============================================================
@@ -212,6 +230,8 @@ test.describe('US-011 — Tâches chantier', () => {
 
   test('S2 — Passage bloqué sans raison -> 400 | avec raison >= 10 car. -> 200', async ({ page, request }) => {
     const org = await createTestOrganisationDirect({ statut: 'trial_active', trialDaysOffset: 14 })
+    resources.organisationIds.push(org.organisationId)
+    resources.authUserIds.push(org.adminUserId)
     const adminSupabase = createClient(SUPABASE_URL, SERVICE_KEY, {
       auth: { autoRefreshToken: false, persistSession: false },
     })
@@ -323,8 +343,7 @@ test.describe('US-011 — Tâches chantier', () => {
     const blockedTache = taches.find((t) => t.id === tacheId)
     expect(blockedTache?.statut).toBe('bloque')
     expect(blockedTache?.bloque_raison).toBe('Livraison béton repoussée semaine prochaine')
-
-    await cleanupTestResources({ organisationIds: [org.organisationId], authUserIds: [org.adminUserId] })
+    // cleanup géré par afterAll
   })
 
   // ============================================================
@@ -334,6 +353,8 @@ test.describe('US-011 — Tâches chantier', () => {
   test('S3 — GET /api/taches/[tache_org_B_id] depuis org A -> HTTP 404', async ({ request }) => {
     const orgA = await createTestOrganisationDirect({ statut: 'trial_active', trialDaysOffset: 14 })
     const orgB = await createTestOrganisationDirect({ statut: 'trial_active', trialDaysOffset: 14 })
+    resources.organisationIds.push(orgA.organisationId, orgB.organisationId)
+    resources.authUserIds.push(orgA.adminUserId, orgB.adminUserId)
     const adminSupabase = createClient(SUPABASE_URL, SERVICE_KEY, {
       auth: { autoRefreshToken: false, persistSession: false },
     })
@@ -382,7 +403,6 @@ test.describe('US-011 — Tâches chantier', () => {
 
     // I-06 : 404 (pas 403) — ne révèle pas l'existence de la tâche hors organisation
     expect(response.status()).toBe(404)
-
-    await cleanupTestResources({ organisationIds: [orgA.organisationId, orgB.organisationId], authUserIds: [orgA.adminUserId, orgB.adminUserId] })
+    // cleanup géré par afterAll
   })
 })

@@ -159,7 +159,10 @@ function ChantierCardDesktop({ chantier, href, tachesCount = 0, tachesTermineesC
               J-{joursRestants}
             </span>
           )}
-          <span className={styles.badgeClass + ' text-xs'}>
+          <span
+            className={styles.badgeClass + ' text-xs'}
+            data-testid={`chantier-status-${chantier.couleur}`}
+          >
             {styles.badgeLabel}
           </span>
         </div>
@@ -192,7 +195,10 @@ function ChantierCardMobile({ chantier, href, tachesCount = 0, ouvriersCount = 0
             Client : {chantier.client_nom}
           </div>
         </div>
-        <span className={`${styles.badgeClass} ml-2 shrink-0 text-xs`}>
+        <span
+          className={`${styles.badgeClass} ml-2 shrink-0 text-xs`}
+          data-testid={`chantier-status-${chantier.couleur}`}
+        >
           {styles.badgeLabel}
         </span>
       </div>
