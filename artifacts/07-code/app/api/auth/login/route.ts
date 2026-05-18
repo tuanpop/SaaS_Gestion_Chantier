@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { headers } from 'next/headers'
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { z } from 'zod'
-import { createClient } from '@/lib/supabase/server'
 import { checkRateLimit, RATE_LIMITS } from '@/lib/redis'
 import { toApiResponse } from '@/lib/errors'
 import { createRequestLogger } from '@/lib/logger'
+import type { Database } from '@/types/database'
 
 // ============================================================
 // POST /api/auth/login — Connexion email + password
@@ -80,8 +81,38 @@ export async function POST(request: NextRequest) {
     const { email, password } = parsed.data
 
     // 4. Tentative de connexion via Supabase Auth
-    // await createClient() OBLIGATOIRE — Next.js 15 (D-011)
-    const supabase = await createClient()
+    // IMPORTANT : on crée le client Supabase avec un cookie handler qui écrit
+    // directement sur la NextResponse finale. C'est le seul moyen de propager
+    // les Set-Cookie headers Supabase dans une réponse NextResponse construite
+    // manuellement dans un Route Handler (cookieStore.set() n'écrit PAS sur
+    // une NextResponse manuelle — bug documenté @supabase/ssr + Next.js 15).
+    const supabaseUrl = process.env['NEXT_PUBLIC_SUPABASE_URL']
+    const supabaseAnonKey = process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+      return NextResponse.json(
+        { error: GENERIC_AUTH_ERROR },
+        { status: 500, headers: { 'X-Correlation-Id': correlationId } },
+      )
+    }
+
+    // Réponse mutable — les cookies Supabase seront injectés via setAll ci-dessous
+    let supabaseResponse = new NextResponse()
+
+    const supabase = createServerClient<Database>(supabaseUrl, supabaseAnonKey, {
+      cookies: {
+        getAll() {
+          // Lire les cookies entrants depuis la requête
+          return request.cookies.getAll()
+        },
+        setAll(cookiesToSet: { name: string; value: string; options: CookieOptions }[]) {
+          // Écrire sur la NextResponse mutable — sera copiée sur la réponse finale
+          cookiesToSet.forEach(({ name, value, options }) =>
+            supabaseResponse.cookies.set(name, value, options),
+          )
+        },
+      },
+    })
 
     const { data: authData, error: authError } =
       await supabase.auth.signInWithPassword({ email, password })
@@ -109,8 +140,8 @@ export async function POST(request: NextRequest) {
       'Login successful',
     )
 
-    // 6. HTTP 200 avec données utilisateur publiques uniquement
-    return NextResponse.json(
+    // 6. HTTP 200 — construire la réponse finale et y copier les cookies Supabase
+    const successResponse = NextResponse.json(
       {
         data: {
           user: {
@@ -126,6 +157,17 @@ export async function POST(request: NextRequest) {
         headers: { 'X-Correlation-Id': correlationId },
       },
     )
+
+    // Copier les cookies Supabase (access_token, refresh_token) sur la réponse finale
+    // EN PROPAGEANT TOUTES LES OPTIONS (httpOnly, secure, sameSite, maxAge, path…).
+    // La forme single-arg de cookies.set() accepte un ResponseCookie complet.
+    // Sans propagation des options, les cookies seraient sans httpOnly = XSS-able,
+    // et SameSite par défaut différerait → cookies pas renvoyés sur navigations cross-site.
+    supabaseResponse.cookies.getAll().forEach((cookie) => {
+      successResponse.cookies.set(cookie)
+    })
+
+    return successResponse
   } catch (error) {
     reqLogger.error(
       { error: error instanceof Error ? error.message : String(error), correlationId },

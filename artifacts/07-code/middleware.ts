@@ -129,6 +129,10 @@ export async function middleware(request: NextRequest) {
     error: authError,
   } = await supabase.auth.getUser()
 
+  // Distinguer les requêtes API (retourner JSON) des requêtes de pages (rediriger)
+  // Les routes API commencent par /api/ — toutes les autres sont des pages
+  const isApiRoute = pathname.startsWith('/api/')
+
   if (authError || !user) {
     reqLogger.warn(
       {
@@ -138,13 +142,20 @@ export async function middleware(request: NextRequest) {
       },
       'Unauthorized — missing or invalid JWT',
     )
-    return NextResponse.json(
-      { error: 'Non authentifié.' },
-      {
-        status: 401,
-        headers: { 'X-Correlation-Id': correlationId },
-      },
-    )
+    // Routes API → JSON 401 (attendu par le client fetch)
+    // Routes de pages → redirect /login (évite la 404 Next.js sur réponse JSON inattendue)
+    if (isApiRoute) {
+      return NextResponse.json(
+        { error: 'Non authentifié.' },
+        {
+          status: 401,
+          headers: { 'X-Correlation-Id': correlationId },
+        },
+      )
+    }
+    const loginUrl = new URL('/login', request.url)
+    loginUrl.searchParams.set('redirect', pathname)
+    return NextResponse.redirect(loginUrl)
   }
 
   // 6. Extraire organisation_id et role depuis app_metadata (injectés par l'Auth Hook)
@@ -157,13 +168,16 @@ export async function middleware(request: NextRequest) {
       { userId: user.id, pathname },
       'JWT valide mais claims organisation_id/role manquants — auth-hook non configuré ?',
     )
-    return NextResponse.json(
-      { error: 'Claims JWT invalides. Contactez le support.' },
-      {
-        status: 401,
-        headers: { 'X-Correlation-Id': correlationId },
-      },
-    )
+    if (isApiRoute) {
+      return NextResponse.json(
+        { error: 'Claims JWT invalides. Contactez le support.' },
+        {
+          status: 401,
+          headers: { 'X-Correlation-Id': correlationId },
+        },
+      )
+    }
+    return NextResponse.redirect(new URL('/login', request.url))
   }
 
   // 7. RBAC — routes admin uniquement (E-01)
@@ -209,11 +223,11 @@ export async function middleware(request: NextRequest) {
   })
   finalResponse.headers.set('X-Correlation-Id', correlationId)
 
-  // Propager les cookies de session mis à jour
+  // Propager les cookies de session mis à jour (refresh JWT par Supabase SSR).
+  // Forme single-arg : conserve TOUTES les options (httpOnly, secure, sameSite, maxAge…).
+  // Le passage par 3 args sans options écraserait httpOnly/secure → XSS + risque SameSite.
   response.cookies.getAll().forEach((cookie) => {
-    finalResponse.cookies.set(cookie.name, cookie.value, {
-      // Copier les options du cookie original
-    })
+    finalResponse.cookies.set(cookie)
   })
 
   return finalResponse
@@ -227,10 +241,14 @@ export const config = {
   matcher: [
     // Routes API protégées
     '/api/:path*',
-    // Interfaces par persona
-    '/(admin)/:path*',
-    '/(conducteur)/:path*',
-    // Exclure explicitement les assets Next.js et fichiers statiques
+    // Interfaces par persona — segments URL réels (pas route groups)
+    // Les dossiers app/admin/ et app/conducteur/ sont des segments URL, pas des
+    // route groups Next.js (qui auraient des parenthèses dans le nom de dossier).
+    '/admin/:path*',
+    '/conducteur/:path*',
+    // Catch-all — exclure les assets Next.js et fichiers statiques
+    // Couvre /, /login, /register et toutes les autres routes publiques
+    // (filtrées dans le code via PUBLIC_ROUTES / PUBLIC_PREFIXES)
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)',
   ],
 }
