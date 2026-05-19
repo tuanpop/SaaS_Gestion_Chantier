@@ -253,6 +253,17 @@ async function handleCreateConducteur({
       { error: inviteError?.message, email, organisationId, correlationId },
       'Failed to invite conducteur via Supabase Auth',
     )
+    // Convention messages d'erreur (TECH_CONTEXT.md) — mapper les cas métier prévisibles
+    // vers des HTTP codes + messages clairs UI plutôt que 500 générique.
+    const errMsg = inviteError?.message ?? ''
+    if (errMsg.includes('already been registered') || errMsg.includes('already registered')) {
+      return NextResponse.json(
+        {
+          error: 'Cet email est déjà associé à un compte. Demandez à la personne de se connecter directement, ou utilisez une autre adresse.',
+        },
+        { status: 409, headers: { 'X-Correlation-Id': correlationId } },
+      )
+    }
     return NextResponse.json(
       { error: 'Une erreur interne est survenue.' },
       { status: 500, headers: { 'X-Correlation-Id': correlationId } },
