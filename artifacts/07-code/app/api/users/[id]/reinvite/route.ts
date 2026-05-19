@@ -6,6 +6,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { assertTrialActive } from '@/lib/trial-gate'
 import { toApiResponse, ForbiddenError, NotFoundError } from '@/lib/errors'
 import { createRequestLogger } from '@/lib/logger'
+import { renderEmail, sendEmail, escapeHtml } from '@/lib/notifications/email-layout'
 import type { UserRole, Tables } from '@/types/database'
 
 // ============================================================
@@ -133,30 +134,77 @@ export async function POST(
       )
     }
 
-    // 8. Renvoyer l'invitation via adminClient (opération admin Supabase Auth)
-    // DANGER: bypass RLS intentionnel — inviteUserByEmail opération admin
+    // 8. Renvoyer l'invitation via generateLink + Resend
+    // DANGER: bypass RLS intentionnel — opération admin
+    //
+    // POURQUOI generateLink au lieu de inviteUserByEmail ? (bug observé 2026-05-19)
+    // inviteUserByEmail CRÉE un nouvel auth user. Si l'auth user existe déjà
+    // (cas typique : 1re invitation envoyée mais jamais cliquée), 422 "already
+    // been registered". generateLink('magiclink') marche pour un user existant,
+    // retourne le lien (sans envoyer l'email — on l'envoie nous-mêmes via Resend
+    // avec notre template branded).
     const adminClient = createAdminClient()
-
-    // redirectTo : page set-password après clic email — identique à l'invitation initiale
     const appUrl = process.env['NEXT_PUBLIC_APP_URL'] ?? 'http://localhost:3000'
-    const { error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(
+
+    const { data: linkData, error: linkError } = await adminClient.auth.admin.generateLink({
+      type: 'magiclink',
       email,
-      {
-        data: {
-          organisation_id: organisationId,
-          role: userRecord.role,
-        },
+      options: {
         redirectTo: `${appUrl}/auth/invite`,
       },
-    )
+    })
 
-    if (inviteError) {
+    if (linkError || !linkData?.properties?.action_link) {
       reqLogger.error(
-        { error: inviteError.message, userId, email, correlationId },
-        'Reinvite: failed to send invitation via Supabase Auth',
+        { error: linkError?.message, userId, email, correlationId },
+        'Reinvite: failed to generate magic link',
       )
+      // Convention messages d'erreur (TECH_CONTEXT.md) — mapper les cas métier
+      const errMsg = linkError?.message ?? ''
+      if (errMsg.toLowerCase().includes('user not found')) {
+        return NextResponse.json(
+          { error: 'Utilisateur introuvable dans Supabase Auth. Supprimez puis recréez l\'invitation.' },
+          { status: 404, headers: { 'X-Correlation-Id': correlationId } },
+        )
+      }
       return NextResponse.json(
         { error: 'Une erreur interne est survenue.' },
+        { status: 500, headers: { 'X-Correlation-Id': correlationId } },
+      )
+    }
+
+    const actionLink = linkData.properties.action_link
+
+    // Envoyer l'email via Resend avec notre template branded
+    // Les valeurs user (prenom, nom) passent par escapeHtml — l'URL pas besoin
+    // (générée par Supabase, déjà safe).
+    const html = renderEmail({
+      bodyTemplate: 'invitation-renvoi',
+      title: 'Activez votre compte ClawBTP',
+      preheader: 'Vous avez ete invite(e) a rejoindre ClawBTP',
+      vars: {
+        PRENOM: escapeHtml(userRecord.prenom),
+        NOM: escapeHtml(userRecord.nom),
+        ACTION_URL: actionLink,
+      },
+    })
+
+    try {
+      await sendEmail({
+        to: email,
+        subject: 'Activez votre compte ClawBTP',
+        html,
+        tag: 'reinvite',
+      })
+    } catch (emailErr) {
+      // sendEmail est tolérant en dev/test (warn si pas de RESEND_API_KEY).
+      // Si on est ici, c'est une vraie erreur d'envoi en prod.
+      reqLogger.error(
+        { error: emailErr instanceof Error ? emailErr.message : String(emailErr), userId, email, correlationId },
+        'Reinvite: failed to send email via Resend',
+      )
+      return NextResponse.json(
+        { error: 'Lien généré mais email non envoyé. Réessayez dans quelques minutes.' },
         { status: 500, headers: { 'X-Correlation-Id': correlationId } },
       )
     }

@@ -173,6 +173,9 @@ describe('InviteUserSchema — validation', () => {
 const {
   mockAssertTrial,
   mockAdminInvite,
+  mockAdminGenerateLink,
+  mockSendEmail,
+  mockRenderEmail,
   mockAdminInsert,
   mockAdminDeleteUser,
   mockAdminUpdateEq,
@@ -193,6 +196,9 @@ const {
   return {
     mockAssertTrial: vi.fn(),
     mockAdminInvite: vi.fn(),
+    mockAdminGenerateLink: vi.fn(),
+    mockSendEmail: vi.fn(),
+    mockRenderEmail: vi.fn().mockReturnValue('<html>rendered</html>'),
     mockAdminInsert: vi.fn(),
     mockAdminDeleteUser: vi.fn(),
     // Chaîne finale pour .update().eq().eq()
@@ -235,6 +241,7 @@ vi.mock('@/lib/supabase/admin', () => ({
       admin: {
         inviteUserByEmail: mockAdminInvite,
         deleteUser: mockAdminDeleteUser,
+        generateLink: mockAdminGenerateLink,
       },
     },
     from: () => ({
@@ -246,6 +253,12 @@ vi.mock('@/lib/supabase/admin', () => ({
       }),
     }),
   }),
+}))
+
+vi.mock('@/lib/notifications/email-layout', () => ({
+  renderEmail: mockRenderEmail,
+  sendEmail: mockSendEmail,
+  escapeHtml: (s: string) => s,
 }))
 
 vi.mock('@/lib/trial-gate', () => ({
@@ -483,8 +496,14 @@ describe('POST /api/users/[id]/reinvite — statut invitation', () => {
     mockHeadersMap.set('x-user-id', ADMIN_ID)
     mockHeadersMap.set('x-user-role', 'admin')
     mockHeadersMap.set('x-correlation-id', 'test-corr-id')
-    // Par défaut : inviteUserByEmail réussit
-    mockAdminInvite.mockResolvedValue({ error: null })
+    // Par défaut : generateLink réussit avec un action_link valide
+    mockAdminGenerateLink.mockResolvedValue({
+      data: { properties: { action_link: 'https://supabase.example/auth/v1/verify?token=xyz' } },
+      error: null,
+    })
+    // Par défaut : sendEmail réussit (resolve sans erreur)
+    mockSendEmail.mockResolvedValue(undefined)
+    mockRenderEmail.mockReturnValue('<html>rendered</html>')
     // Par défaut : update invitation_status réussit
     mockAdminUpdateEq.mockResolvedValue({ error: null })
   })

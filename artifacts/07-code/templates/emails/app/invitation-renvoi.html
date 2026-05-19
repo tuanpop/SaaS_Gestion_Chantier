@@ -1,0 +1,26 @@
+<!--
+  Body fragment — Renvoi d'invitation conducteur (via app/api/users/[id]/reinvite)
+  Variables : {{PRENOM}} {{NOM}} {{ACTION_URL}}
+  Source : handleReinvite() — utilise generateLink('magiclink') + Resend
+  Injecte dans _layout.html via renderEmail({ bodyTemplate: 'invitation-renvoi', ... })
+-->
+<p style="margin:0 0 16px 0;">Bonjour {{PRENOM}} {{NOM}},</p>
+
+<p style="margin:0 0 16px 0;">Vous avez ete invite(e) a rejoindre ClawBTP, la plateforme de gestion de chantier dediee au second oeuvre du batiment.</p>
+
+<p style="margin:0 0 24px 0;">Cliquez sur le bouton ci-dessous pour activer votre compte et definir votre mot de passe.</p>
+
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" class="cb-btn" style="margin:28px 0;">
+  <tr>
+    <td align="center" style="background-color:#F97316;">
+      <a href="{{ACTION_URL}}" target="_blank" style="display:inline-block;padding:14px 30px;font-family:'Public Sans',-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;font-weight:600;color:#FFFFFF;text-decoration:none;letter-spacing:0.2px;">
+        Activer mon compte
+      </a>
+    </td>
+  </tr>
+</table>
+
+<p style="margin:0 0 8px 0;font-size:13px;color:#555555;">Si le bouton ne fonctionne pas, copiez-collez ce lien dans votre navigateur :</p>
+<p style="margin:0 0 16px 0;font-size:12px;color:#555555;word-break:break-all;"><a href="{{ACTION_URL}}" style="color:#555555;">{{ACTION_URL}}</a></p>
+
+<p style="margin:24px 0 0 0;font-size:13px;color:#555555;">Ce lien est valide pendant 24 heures. Si vous n'attendiez pas cette invitation, ignorez cet email.</p>
