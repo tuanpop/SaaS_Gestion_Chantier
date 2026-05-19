@@ -94,6 +94,7 @@ export async function GET(request: NextRequest) {
 
     // 2. Requête DB — organisation_id depuis le JWT (T-01, I-01 via RLS)
     // qr_token exclu du SELECT (ne jamais exposer le token chiffré)
+    // deleted_at IS NULL : exclure les membres soft-deleted (migration 003)
     const supabase = await createClient()
     const { data: users, error: dbError } = await supabase
       .from('users')
@@ -101,6 +102,7 @@ export async function GET(request: NextRequest) {
         'id, organisation_id, role, nom, prenom, telephone, email, has_supabase_auth, invitation_status, avatar_url, created_at',
       )
       .eq('organisation_id', organisationId)
+      .is('deleted_at', null)
       .order('created_at', { ascending: true })
 
     if (dbError) {

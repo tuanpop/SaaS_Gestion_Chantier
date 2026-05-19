@@ -58,15 +58,17 @@ export default async function EquipePage() {
 
   // Récupérer les membres de l'organisation
   // qr_token exclu du SELECT (jamais exposé — S-01)
+  // deleted_at IS NULL : exclure les membres soft-deleted (migration 003)
   const { data: usersRaw } = await supabase
     .from('users')
     .select(
       'id, role, nom, prenom, telephone, email, has_supabase_auth, invitation_status, created_at',
     )
     .eq('organisation_id', organisationId)
+    .is('deleted_at', null)
     .order('created_at', { ascending: true })
 
   const users = (usersRaw ?? []) as unknown as UserRow[]
 
-  return <EquipeClient initialUsers={users} />
+  return <EquipeClient initialUsers={users} currentUserId={user.id} />
 }

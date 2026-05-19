@@ -9,11 +9,13 @@ import { createRequestLogger } from '@/lib/logger'
 import type { UserRole, Tables } from '@/types/database'
 
 // ============================================================
-// POST /api/users/[id]/reinvite — Renvoi invitation expirée (admin uniquement)
+// POST /api/users/[id]/reinvite — Renvoi invitation (admin uniquement)
 //
 // Préconditions :
-//   - user.invitation_status = 'expired' (sinon HTTP 400)
-//   - user.role = 'conducteur' (les ouvriers n'ont pas d'invitation)
+//   - user.invitation_status IN ('pending', 'expired') — sinon HTTP 409
+//     Cas 'pending' : email perdu en spam, conducteur n'a pas cliqué à temps
+//     Cas 'expired' : invitation Supabase expirée, besoin d'un nouveau lien
+//     Cas 'active' : refusé — utilisateur déjà connecté, aucune action requise
 // D-012 : assertTrialActive() obligatoire sur cette mutation
 // T-01 : ownership check par organisation_id depuis JWT (jamais depuis body)
 // S-03 : inviteUserByEmail via adminClient (nouvelle invitation Supabase Auth)
@@ -87,15 +89,32 @@ export async function POST(
       throw new NotFoundError('user')
     }
 
-    // 6. Vérifier que l'invitation est bien expirée (sinon 400)
-    if (userRecord.invitation_status !== 'expired') {
+    // 6. Vérifier que l'invitation est renvoyable :
+    //    - 'pending' : OK (email perdu en spam, non cliqué)
+    //    - 'expired' : OK (lien expiré, nouveau lien requis)
+    //    - 'active'  : refusé — utilisateur déjà connecté, aucune invitation requise
+    //    - null      : refusé — ouvriers sans invitation email
+    if (userRecord.invitation_status === 'active') {
       reqLogger.warn(
         { userId, invitationStatus: userRecord.invitation_status, correlationId },
-        'Reinvite: invitation is not expired',
+        'Reinvite: user is already active',
       )
       return NextResponse.json(
         {
-          error: `Impossible de renvoyer l'invitation : statut actuel '${userRecord.invitation_status ?? 'null'}'. Seules les invitations expirées peuvent être renvoyées.`,
+          error: 'Cet utilisateur a déjà activé son compte. Aucune nouvelle invitation requise.',
+        },
+        { status: 409, headers: { 'X-Correlation-Id': correlationId } },
+      )
+    }
+
+    if (userRecord.invitation_status !== 'pending' && userRecord.invitation_status !== 'expired') {
+      reqLogger.warn(
+        { userId, invitationStatus: userRecord.invitation_status, correlationId },
+        'Reinvite: invitation status does not allow reinvite',
+      )
+      return NextResponse.json(
+        {
+          error: 'Impossible de renvoyer une invitation pour cet utilisateur.',
         },
         { status: 400, headers: { 'X-Correlation-Id': correlationId } },
       )

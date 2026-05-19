@@ -63,6 +63,8 @@ interface InviteFormState {
 
 interface EquipeClientProps {
   initialUsers: UserRow[]
+  /** ID de l'admin connecté — le bouton Supprimer est masqué sur sa propre ligne */
+  currentUserId: string
 }
 
 // ============================================================
@@ -121,7 +123,7 @@ function StatutBadge({
 // Composant principal
 // ============================================================
 
-export function EquipeClient({ initialUsers }: EquipeClientProps) {
+export function EquipeClient({ initialUsers, currentUserId }: EquipeClientProps) {
   const router = useRouter()
 
   // ============================================================
@@ -143,6 +145,7 @@ export function EquipeClient({ initialUsers }: EquipeClientProps) {
   const [inviteLoading, setInviteLoading] = useState(false)
   const [inviteError, setInviteError] = useState<string | null>(null)
   const [reinviteLoading, setReinviteLoading] = useState<string | null>(null) // user id en cours
+  const [deleteLoading, setDeleteLoading] = useState<string | null>(null) // user id en cours
   const [toast, setToast] = useState<ToastMsg | null>(null)
 
   // IDs accessibilité
@@ -266,11 +269,42 @@ export function EquipeClient({ initialUsers }: EquipeClientProps) {
         return
       }
 
-      setToast({ type: 'error', message: "Impossible de renvoyer l'invitation." })
+      const data = await res.json() as { error?: string }
+      setToast({ type: 'error', message: data.error ?? "Impossible de renvoyer l'invitation." })
     } catch {
       setToast({ type: 'error', message: "Erreur réseau. Veuillez réessayer." })
     } finally {
       setReinviteLoading(null)
+    }
+  }, [router])
+
+  // ============================================================
+  // Handler — Supprimer un membre (soft delete)
+  // ============================================================
+
+  const handleDelete = useCallback(async (userId: string, userName: string) => {
+    const confirmed = window.confirm(
+      `Supprimer définitivement ${userName} ? Cette action est irréversible. L'utilisateur ne pourra plus se connecter. Les chantiers et tâches existants restent intacts.`,
+    )
+    if (!confirmed) return
+
+    setDeleteLoading(userId)
+
+    try {
+      const res = await fetch(`/api/users/${userId}`, { method: 'DELETE' })
+
+      if (res.status === 204) {
+        setToast({ type: 'success', message: `${userName} a été supprimé.` })
+        router.refresh()
+        return
+      }
+
+      const data = await res.json() as { error?: string }
+      setToast({ type: 'error', message: data.error ?? 'Impossible de supprimer ce membre.' })
+    } catch {
+      setToast({ type: 'error', message: 'Erreur réseau. Veuillez réessayer.' })
+    } finally {
+      setDeleteLoading(null)
     }
   }, [router])
 
@@ -366,38 +400,56 @@ export function EquipeClient({ initialUsers }: EquipeClientProps) {
                   />
                 </td>
                 <td>
-                  {/* Conducteur en attente → Renvoyer invitation */}
-                  {user.role === 'conducteur' && user.invitation_status === 'pending' && (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        void handleReinvite(user.id, `${user.prenom} ${user.nom}`)
-                      }
-                      disabled={reinviteLoading === user.id}
-                      className="btn-brutal bg-white text-[#1F4E79] text-xs px-3 py-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {reinviteLoading === user.id ? 'Envoi...' : 'Renvoyer'}
-                    </button>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {/* Conducteur en attente ou expiré → Renvoyer invitation */}
+                    {user.role === 'conducteur' &&
+                      (user.invitation_status === 'pending' || user.invitation_status === 'expired') && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            void handleReinvite(user.id, `${user.prenom} ${user.nom}`)
+                          }
+                          disabled={reinviteLoading === user.id || deleteLoading === user.id}
+                          className="btn-brutal bg-white text-[#1F4E79] text-xs px-3 py-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {reinviteLoading === user.id ? 'Envoi...' : 'Renvoyer'}
+                        </button>
+                      )}
 
-                  {/* Ouvrier → bouton QR */}
-                  {user.role === 'ouvrier' && (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setModalQr({ open: true, userName: `${user.prenom} ${user.nom}` })
-                      }
-                      className="btn-brutal bg-white text-[#1F4E79] text-xs px-3 py-1.5"
-                    >
-                      QR
-                    </button>
-                  )}
+                    {/* Ouvrier → bouton QR */}
+                    {user.role === 'ouvrier' && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setModalQr({ open: true, userName: `${user.prenom} ${user.nom}` })
+                        }
+                        className="btn-brutal bg-white text-[#1F4E79] text-xs px-3 py-1.5"
+                      >
+                        QR
+                      </button>
+                    )}
 
-                  {/* Admin / conducteur actif → aucune action */}
-                  {(user.role === 'admin' ||
-                    (user.role === 'conducteur' && user.invitation_status !== 'pending')) && (
-                    <span className="text-[#555] text-xs">—</span>
-                  )}
+                    {/* Bouton Supprimer — masqué sur la ligne du user courant */}
+                    {user.id !== currentUserId && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          void handleDelete(user.id, `${user.prenom} ${user.nom}`)
+                        }
+                        disabled={deleteLoading === user.id || reinviteLoading === user.id}
+                        className="btn-brutal bg-white text-[#C00000] border-[#C00000] shadow-[3px_3px_0_#C00000] hover:bg-[#FFCCCC] text-xs px-3 py-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {deleteLoading === user.id ? 'Suppression...' : 'Supprimer'}
+                      </button>
+                    )}
+
+                    {/* Aucune action disponible (uniquement si admin courant — bouton Supprimer masqué) */}
+                    {user.id === currentUserId && user.role !== 'ouvrier' &&
+                      !(user.role === 'conducteur' &&
+                        (user.invitation_status === 'pending' || user.invitation_status === 'expired')) && (
+                      <span className="text-[#555] text-xs">—</span>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}
