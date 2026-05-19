@@ -26,6 +26,7 @@
  * Scénarios POST /api/users/[id]/reinvite :
  *   REINVITE-1 : status 'pending' → 200 (avant ça bloquait)
  *   REINVITE-2 : status 'active' → 409 + message clair
+ *   REINVITE-3 : auth user manquant (suppression manuelle Dashboard) → recréation auto + 200
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
@@ -174,12 +175,15 @@ const {
   mockAssertTrial,
   mockAdminInvite,
   mockAdminGenerateLink,
+  mockAdminCreateUser,
+  mockAdminGetUserById,
   mockSendEmail,
   mockRenderEmail,
   mockAdminInsert,
   mockAdminDeleteUser,
   mockAdminUpdateEq,
   mockUserSelectSingle,
+  mockUserSelectMaybySingle,
   mockHeaders,
   mockHeadersMap,
 } = vi.hoisted(() => {
@@ -197,6 +201,10 @@ const {
     mockAssertTrial: vi.fn(),
     mockAdminInvite: vi.fn(),
     mockAdminGenerateLink: vi.fn(),
+    // createUser avec id custom — utilisé par handleReviveConducteur + reinvite résilience auth user manquant
+    mockAdminCreateUser: vi.fn(),
+    // getUserById — utilisé par reinvite pour vérifier l'existence de l'auth user (REINVITE-3)
+    mockAdminGetUserById: vi.fn(),
     mockSendEmail: vi.fn(),
     mockRenderEmail: vi.fn().mockReturnValue('<html>rendered</html>'),
     mockAdminInsert: vi.fn(),
@@ -205,6 +213,8 @@ const {
     mockAdminUpdateEq: vi.fn(),
     // Chaîne finale pour .select().eq().eq().is().single() (ownership check DELETE users)
     mockUserSelectSingle: vi.fn(),
+    // Chaîne finale pour .select().eq().eq().not().order().limit().maybeSingle() (revive check)
+    mockUserSelectMaybySingle: vi.fn(),
     mockHeaders: vi.fn().mockResolvedValue(headersObj),
     mockHeadersMap: headersMap,
   }
@@ -242,10 +252,28 @@ vi.mock('@/lib/supabase/admin', () => ({
         inviteUserByEmail: mockAdminInvite,
         deleteUser: mockAdminDeleteUser,
         generateLink: mockAdminGenerateLink,
+        // Utilisé par handleReviveConducteur pour recréer l'auth user avec un UUID custom
+        createUser: mockAdminCreateUser,
+        // Utilisé par reinvite pour vérifier l'existence de l'auth user (REINVITE-3)
+        getUserById: mockAdminGetUserById,
       },
     },
     from: () => ({
       insert: mockAdminInsert,
+      select: () => ({
+        eq: () => ({
+          eq: () => ({
+            // Chaîne revive check : .not().order().limit().maybeSingle()
+            not: () => ({
+              order: () => ({
+                limit: () => ({
+                  maybeSingle: mockUserSelectMaybySingle,
+                }),
+              }),
+            }),
+          }),
+        }),
+      }),
       update: () => ({
         eq: () => ({
           eq: mockAdminUpdateEq,
@@ -341,6 +369,8 @@ describe('POST /api/users — handler R-02 (telephone conducteur)', () => {
       error: null,
     })
     mockAdminInsert.mockResolvedValue({ error: null })
+    // Revive check : pas de conducteur soft-deleted pour cet email → chemin normal (inviteUserByEmail)
+    mockUserSelectMaybySingle.mockResolvedValue({ data: null, error: null })
   })
 
   it("H1 — conducteur avec telephone → 201 + telephone propagé à l'insert", async () => {
@@ -501,6 +531,12 @@ describe('POST /api/users/[id]/reinvite — statut invitation', () => {
       data: { properties: { action_link: 'https://supabase.example/auth/v1/verify?token=xyz' } },
       error: null,
     })
+    // Par défaut : auth user EXISTS (cas normal — REINVITE-1, REINVITE-2)
+    // REINVITE-3 override ce mock pour simuler l'auth user manquant.
+    mockAdminGetUserById.mockResolvedValue({
+      data: { user: { id: TARGET_ID, email: 'conducteur@test.fr' } },
+      error: null,
+    })
     // Par défaut : sendEmail réussit (resolve sans erreur)
     mockSendEmail.mockResolvedValue(undefined)
     mockRenderEmail.mockReturnValue('<html>rendered</html>')
@@ -566,5 +602,52 @@ describe('POST /api/users/[id]/reinvite — statut invitation', () => {
     expect(res.status).toBe(409)
     const json = await res.json() as { error: string }
     expect(json.error).toBe('Cet utilisateur a déjà activé son compte. Aucune nouvelle invitation requise.')
+  })
+
+  it('REINVITE-3 — auth user manquant (suppression manuelle Dashboard) → recréation auto + 200', async () => {
+    // Scénario : l'auth user a été supprimé manuellement via le Dashboard Supabase.
+    // getUserById retourne "User not found" → le handler doit recréer l'auth user
+    // avec le MÊME UUID avant d'appeler generateLink.
+    mockUserSelectSingle.mockResolvedValue({
+      data: {
+        id: TARGET_ID,
+        organisation_id: ORG_ID,
+        role: 'conducteur',
+        nom: 'Leclerc',
+        prenom: 'Amélie',
+        email: 'amelie@leclerc.fr',
+        invitation_status: 'pending',
+      },
+      error: null,
+    })
+    // Simuler auth user manquant
+    mockAdminGetUserById.mockResolvedValue({
+      data: { user: null },
+      error: { message: 'User not found' },
+    })
+    // Recréation réussit
+    mockAdminCreateUser.mockResolvedValue({ data: { user: { id: TARGET_ID } }, error: null })
+
+    const { POST } = await import('@/app/api/users/[id]/reinvite/route')
+    const req = new NextRequest(`http://localhost:3000/api/users/${TARGET_ID}/reinvite`, {
+      method: 'POST',
+      headers: {
+        'x-organisation-id': ORG_ID,
+        'x-user-id': ADMIN_ID,
+        'x-user-role': 'admin',
+        'x-correlation-id': 'test-corr-id',
+      },
+    })
+    const res = await POST(req, { params: Promise.resolve({ id: TARGET_ID }) })
+
+    // createUser doit avoir été appelé avec le même UUID
+    expect(mockAdminCreateUser).toHaveBeenCalledWith(
+      expect.objectContaining({ id: TARGET_ID, email: 'amelie@leclerc.fr', email_confirm: false }),
+    )
+    // generateLink est appelé après la recréation → invitation envoyée → 200
+    expect(mockAdminGenerateLink).toHaveBeenCalled()
+    expect(res.status).toBe(200)
+    const json = await res.json() as { data: { invitation_status: string } }
+    expect(json.data.invitation_status).toBe('pending')
   })
 })

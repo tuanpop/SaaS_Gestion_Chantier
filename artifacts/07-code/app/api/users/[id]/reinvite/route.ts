@@ -6,7 +6,8 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { assertTrialActive } from '@/lib/trial-gate'
 import { toApiResponse, ForbiddenError, NotFoundError } from '@/lib/errors'
 import { createRequestLogger } from '@/lib/logger'
-import { renderEmail, sendEmail, escapeHtml, EmailSendError } from '@/lib/notifications/email-layout'
+import { renderEmail, sendEmail, escapeHtml } from '@/lib/notifications/email-layout'
+import { mapEmailErrorToResponse } from '@/lib/notifications/email-errors'
 import type { UserRole, Tables } from '@/types/database'
 
 // ============================================================
@@ -146,6 +147,36 @@ export async function POST(
     const adminClient = createAdminClient()
     const appUrl = process.env['NEXT_PUBLIC_APP_URL'] ?? 'http://localhost:3000'
 
+    // 8a. Vérifier que l'auth user existe encore (cas edge : suppression manuelle Dashboard)
+    // Si l'auth user est absent, generateLink retourne "user not found" → 404 bloquant pour
+    // l'admin. Stratégie de résilience : recréer l'auth user avec le MÊME UUID pour préserver
+    // les FK historiques (taches.assigned_to, affectations.user_id, etc.), puis continuer
+    // vers generateLink normalement.
+    const { data: authUserData, error: getUserError } = await adminClient.auth.admin.getUserById(userId)
+
+    if (getUserError || !authUserData?.user) {
+      reqLogger.warn(
+        { userId, email, correlationId },
+        'Reinvite: auth user missing, recreating with same UUID',
+      )
+      const { error: createError } = await adminClient.auth.admin.createUser({
+        id: userId,
+        email,
+        email_confirm: false,
+        app_metadata: { organisation_id: organisationId, role: userRecord.role },
+      })
+      if (createError) {
+        reqLogger.error(
+          { error: createError.message, userId, email, correlationId },
+          'Reinvite: failed to recreate missing auth user',
+        )
+        return NextResponse.json(
+          { error: 'Impossible de reconstruire le compte technique. Contactez le support.' },
+          { status: 500, headers: { 'X-Correlation-Id': correlationId } },
+        )
+      }
+    }
+
     const { data: linkData, error: linkError } = await adminClient.auth.admin.generateLink({
       type: 'magiclink',
       email,
@@ -197,49 +228,19 @@ export async function POST(
         tag: 'reinvite',
       })
     } catch (emailErr) {
-      // Convention messages d'erreur (TECH_CONTEXT.md) — mapper les cas EmailSendError
-      // vers des codes HTTP + messages UX clairs pour aider l'admin à corriger.
+      // Convention messages d'erreur (TECH_CONTEXT.md) — déléguer au helper DRY
+      // mapEmailErrorToResponse (lib/notifications/email-errors.ts) qui mappe les
+      // codes EmailSendError vers les codes HTTP + messages UX appropriés.
       reqLogger.error(
-        { error: emailErr instanceof Error ? emailErr.message : String(emailErr), userId, email, correlationId },
+        {
+          error: emailErr instanceof Error ? emailErr.message : String(emailErr),
+          userId,
+          email,
+          correlationId,
+        },
         'Reinvite: failed to send email via Resend',
       )
-      if (emailErr instanceof EmailSendError) {
-        switch (emailErr.code) {
-          case 'unverified_domain':
-            return NextResponse.json(
-              {
-                error:
-                  "Le domaine d'envoi configuré dans RESEND_FROM_EMAIL n'est pas vérifié sur Resend. Vérifiez le domaine sur resend.com/domains ou changez la variable d'environnement pour un domaine déjà vérifié.",
-              },
-              { status: 503, headers: { 'X-Correlation-Id': correlationId } },
-            )
-          case 'rate_limit':
-            return NextResponse.json(
-              { error: 'Trop d\'emails envoyés récemment. Réessayez dans quelques minutes.' },
-              { status: 429, headers: { 'X-Correlation-Id': correlationId } },
-            )
-          case 'invalid_recipient':
-            return NextResponse.json(
-              { error: "L'adresse email du destinataire est invalide ou refusée par Resend." },
-              { status: 400, headers: { 'X-Correlation-Id': correlationId } },
-            )
-          case 'missing_api_key':
-            return NextResponse.json(
-              { error: 'Configuration serveur incomplète (RESEND_API_KEY manquante). Contactez le support.' },
-              { status: 503, headers: { 'X-Correlation-Id': correlationId } },
-            )
-          case 'network':
-            return NextResponse.json(
-              { error: 'Réseau injoignable pour envoyer l\'email. Réessayez dans quelques instants.' },
-              { status: 503, headers: { 'X-Correlation-Id': correlationId } },
-            )
-          // case 'http_error' — fallthrough
-        }
-      }
-      return NextResponse.json(
-        { error: 'Lien généré mais email non envoyé. Réessayez dans quelques minutes.' },
-        { status: 500, headers: { 'X-Correlation-Id': correlationId } },
-      )
+      return mapEmailErrorToResponse(emailErr, correlationId)
     }
 
     // 9. Remettre invitation_status à 'pending' après renvoi réussi

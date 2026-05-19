@@ -7,7 +7,9 @@ import { assertTrialActive } from '@/lib/trial-gate'
 import { encryptQR } from '@/lib/crypto'
 import { toApiResponse, ForbiddenError } from '@/lib/errors'
 import { createRequestLogger } from '@/lib/logger'
-import type { UserRole } from '@/types/database'
+import { renderEmail, sendEmail, escapeHtml } from '@/lib/notifications/email-layout'
+import { mapEmailErrorToResponse } from '@/lib/notifications/email-errors'
+import type { UserRole, Database } from '@/types/database'
 
 // ============================================================
 // GET /api/users — Liste des membres (admin uniquement)
@@ -241,6 +243,36 @@ async function handleCreateConducteur({
   // DANGER: adminClient pour inviteUserByEmail — opération admin Supabase Auth
   const adminClient = createAdminClient()
 
+  // ── REVIVE CHECK ──────────────────────────────────────────
+  // Avant d'appeler inviteUserByEmail (qui crée un nouvel auth user),
+  // vérifier si une row soft-deleted existe pour cet email + organisation.
+  // Si oui : revive l'ancienne row en réutilisant son UUID public.users
+  // pour préserver l'historique (taches.assigned_to, affectations, etc.)
+  // et éviter l'accumulation de rows par email en DB.
+  const { data: existingDeleted } = await adminClient
+    .from('users')
+    .select('id')
+    .eq('email', email)
+    .eq('organisation_id', organisationId)
+    .not('deleted_at', 'is', null)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (existingDeleted) {
+    return await handleReviveConducteur({
+      existingId: existingDeleted.id as string,
+      email,
+      nom,
+      prenom,
+      telephone,
+      organisationId,
+      correlationId,
+      reqLogger,
+    })
+  }
+  // ── FIN REVIVE CHECK ─────────────────────────────────────
+
   // Inviter via Supabase Auth (envoie un email d'invitation avec magic link).
   // redirectTo : page qui demande au nouveau conducteur de définir son password
   // avant d'accéder au dashboard. Sans ça, Supabase fallback sur Site URL = home.
@@ -347,6 +379,181 @@ async function handleCreateConducteur({
         invitation_status: 'pending',
       },
     },
+    { status: 201, headers: { 'X-Correlation-Id': correlationId } },
+  )
+}
+
+// ============================================================
+// Revive conducteur — réactive une row soft-deleted existante
+// en réutilisant son ancien UUID (préserve FK historique)
+// ============================================================
+
+interface ReviveConducteurParams {
+  existingId: string
+  nom: string
+  prenom: string
+  email: string
+  telephone: string | null
+  organisationId: string
+  correlationId: string
+  reqLogger: ReturnType<typeof createRequestLogger>
+}
+
+async function handleReviveConducteur({
+  existingId,
+  email,
+  nom,
+  prenom,
+  telephone,
+  organisationId,
+  correlationId,
+  reqLogger,
+}: ReviveConducteurParams): Promise<NextResponse> {
+  const adminClient = createAdminClient()
+  const appUrl = process.env['NEXT_PUBLIC_APP_URL'] ?? 'http://localhost:3000'
+
+  // 1. Recréer l'auth user avec l'ANCIEN UUID (Supabase createUser accepte id custom).
+  //    L'auth user avait été hard-deleted au DELETE. On le recrée maintenant
+  //    pour que Supabase Auth connaisse cet utilisateur et puisse générer des liens.
+  const { error: createError } = await adminClient.auth.admin.createUser({
+    id: existingId,
+    email,
+    email_confirm: false,
+    app_metadata: { organisation_id: organisationId, role: 'conducteur' },
+  })
+
+  if (createError) {
+    // Cas edge : l'auth user n'avait pas été hard-deleted (DELETE incomplet historique)
+    // → message clair pour permettre cleanup manuel, sans exposer les détails internes.
+    reqLogger.error(
+      { error: createError.message, existingId, email, correlationId },
+      'Revive: failed to recreate auth user',
+    )
+    const msg = createError.message?.toLowerCase() ?? ''
+    if (msg.includes('already') || msg.includes('exists')) {
+      return NextResponse.json(
+        {
+          error:
+            'Un compte technique résiduel existe pour cet email. Contactez le support pour cleanup (ID: ' +
+            existingId +
+            ').',
+        },
+        { status: 409, headers: { 'X-Correlation-Id': correlationId } },
+      )
+    }
+    return NextResponse.json(
+      { error: 'Une erreur interne est survenue.' },
+      { status: 500, headers: { 'X-Correlation-Id': correlationId } },
+    )
+  }
+
+  // 2. UPDATE row public.users : clear deleted_at + mettre à jour les champs.
+  //    Ownership enforced via .eq('organisation_id', organisationId) — T-01.
+  // DANGER: adminClient pour bypass RLS — opération admin (même pattern que INSERT ouvrier)
+  // deleted_at absent du type généré database.ts (DECISIONLOG 2026-05-19).
+  // RejectExcessProperties de supabase-js rejette Record<string, unknown> directement.
+  // Workaround : construire le payload avec le type Update exact, puis caster uniquement
+  // `deleted_at: null` (champ absent du type généré) via `as unknown as UsersUpdate`.
+  // À régénérer (type + ce cast) après `supabase db pull` en prod post-migration 003.
+  type UsersUpdate = Database['public']['Tables']['users']['Update']
+  const revivePayload: UsersUpdate & { deleted_at: null } = {
+    nom,
+    prenom,
+    role: 'conducteur',
+    telephone,
+    invitation_status: 'pending',
+    has_supabase_auth: true,
+    deleted_at: null,
+  }
+  const { error: updateError } = await adminClient
+    .from('users')
+    .update(revivePayload as unknown as UsersUpdate)
+    .eq('id', existingId)
+    .eq('organisation_id', organisationId)
+
+  if (updateError) {
+    // Rollback : supprimer l'auth user qu'on vient de créer pour éviter un état
+    // où auth.users a une row mais public.users reste soft-deleted (orphelin).
+    await adminClient.auth.admin.deleteUser(existingId).catch(() => {
+      // Best-effort — si le rollback échoue, l'orphelin sera nettoyé manuellement.
+    })
+    reqLogger.error(
+      { error: updateError.message, existingId, correlationId },
+      'Revive: failed to update public.users — rolled back auth',
+    )
+    return NextResponse.json(
+      { error: 'Une erreur interne est survenue.' },
+      { status: 500, headers: { 'X-Correlation-Id': correlationId } },
+    )
+  }
+
+  // 3. Générer un magic link pour que le conducteur réactivé puisse se connecter.
+  //    On utilise generateLink (pas inviteUserByEmail) car l'auth user existe déjà.
+  const { data: linkData, error: linkError } = await adminClient.auth.admin.generateLink({
+    type: 'magiclink',
+    email,
+    options: { redirectTo: `${appUrl}/auth/invite` },
+  })
+
+  if (linkError || !linkData?.properties?.action_link) {
+    reqLogger.error(
+      { error: linkError?.message, existingId, correlationId },
+      'Revive: failed to generate link — user revived but no email sent',
+    )
+    // L'utilisateur EST revived (public.users cleared) mais sans email.
+    // L'admin peut cliquer "Renvoyer" depuis l'UI pour renvoyer l'invitation.
+    return NextResponse.json(
+      {
+        data: { user_id: existingId, invitation_status: 'pending', email, revived: true },
+        warning:
+          'Compte réactivé mais email non envoyé. Cliquez "Renvoyer" depuis la liste équipe.',
+      },
+      { status: 201, headers: { 'X-Correlation-Id': correlationId } },
+    )
+  }
+
+  // 4. Envoyer l'email via Resend avec le template branded.
+  //    Même template que reinvite (bodyTemplate: 'invitation-renvoi').
+  const html = renderEmail({
+    bodyTemplate: 'invitation-renvoi',
+    title: 'Activez votre compte ClawBTP',
+    preheader: 'Vous avez ete invite(e) a rejoindre ClawBTP',
+    vars: {
+      PRENOM: escapeHtml(prenom),
+      NOM: escapeHtml(nom),
+      ACTION_URL: linkData.properties.action_link,
+    },
+  })
+
+  try {
+    await sendEmail({
+      to: email,
+      subject: 'Activez votre compte ClawBTP',
+      html,
+      tag: 'invite-revive',
+    })
+  } catch (emailErr) {
+    // Convention : ne pas rollback le revive (le user EST revived, juste l'email pas parti).
+    // L'admin peut renvoyer via "Renvoyer" dans l'UI. Mapper l'erreur avec le helper DRY.
+    reqLogger.error(
+      {
+        error: emailErr instanceof Error ? emailErr.message : String(emailErr),
+        existingId,
+        email,
+        correlationId,
+      },
+      'Revive: failed to send email via Resend — user revived, email not sent',
+    )
+    return mapEmailErrorToResponse(emailErr, correlationId)
+  }
+
+  reqLogger.info(
+    { existingId, email, organisationId, correlationId },
+    'Conducteur revived successfully',
+  )
+
+  return NextResponse.json(
+    { data: { user_id: existingId, invitation_status: 'pending', email, revived: true } },
     { status: 201, headers: { 'X-Correlation-Id': correlationId } },
   )
 }
