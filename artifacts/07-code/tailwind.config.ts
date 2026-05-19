@@ -52,10 +52,9 @@ const config: Config = {
         },
         surface: '#F2F2F2',     // Fond sous-éléments, progress bar track
         cream: '#FAFAF8',       // Fond global (jamais blanc pur)
-        muted: {
-          DEFAULT: '#F2F2F2',   // Tailwind compat
-          foreground: '#555555', // Texte secondaire, icônes non-actives
-        },
+        // Aligné sur proto : `text-muted` = #555555 (texte secondaire lisible).
+        // Pour fond gris clair, utiliser `bg-surface` (#F2F2F2) — pas `bg-muted`.
+        muted: '#555555',
         // shadcn/ui compatibility tokens
         background: '#FAFAF8',      // cream
         foreground: '#222222',
