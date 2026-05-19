@@ -66,6 +66,13 @@ const nextConfig = {
   // Output standalone : génère .next/standalone/ pour Docker (Tanjiro Dockerfile multi-stage)
   output: 'standalone',
 
+  // Templates emails — inclure dans le build standalone pour que fs.readFileSync() fonctionne
+  // en production (Next.js output:standalone ne trace que les fichiers importés statiquement).
+  // Pattern : toutes les routes API peuvent lire les templates.
+  outputFileTracingIncludes: {
+    '/api/**/*': ['./templates/**/*'],
+  },
+
   // pino + pino-pretty utilisent un worker thread mal bundlé par webpack — externalise.
   serverExternalPackages: ['pino', 'pino-pretty', 'thread-stream'],
 

@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { checkRateLimit, RATE_LIMITS } from '@/lib/redis'
 import { toApiResponse } from '@/lib/errors'
 import { createRequestLogger } from '@/lib/logger'
+import { renderEmail, sendEmail, escapeHtml } from '@/lib/notifications/email-layout'
 
 // ============================================================
 // POST /api/organisations — Création compte + trial 14j
@@ -205,6 +206,8 @@ export async function POST(request: NextRequest) {
 
 // ============================================================
 // Email de bienvenue (non-bloquant si RESEND_API_KEY absent)
+// Utilise renderEmail + sendEmail de lib/notifications/email-layout.ts
+// Template : templates/emails/app/welcome.html
 // ============================================================
 
 interface WelcomeEmailParams {
@@ -220,46 +223,32 @@ async function sendWelcomeEmail({
   correlationId,
   reqLogger,
 }: WelcomeEmailParams): Promise<void> {
-  const resendApiKey = process.env['RESEND_API_KEY']
-
-  if (!resendApiKey) {
-    // Warning non-bloquant (plan.md §4.2 — si pas de RESEND_API_KEY, logger et continuer)
-    reqLogger.warn(
-      { correlationId },
-      'RESEND_API_KEY manquante — email de bienvenue non envoyé',
-    )
-    return
-  }
+  const appUrl = process.env['NEXT_PUBLIC_APP_URL'] ?? 'https://saas-gestion-chantier.tanren-studio.com'
 
   try {
-    const response = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${resendApiKey}`,
-        'Content-Type': 'application/json',
+    const html = renderEmail({
+      bodyTemplate: 'welcome',
+      title: 'Bienvenue sur ClawBTP',
+      preheader: `Votre espace ${organisationName} est prêt — essai gratuit de 14 jours`,
+      vars: {
+        // escapeHtml() obligatoire sur les valeurs user avant injection dans le template
+        ORG_NAME: escapeHtml(organisationName),
+        APP_URL: appUrl,
       },
-      body: JSON.stringify({
-        from: 'ClawBTP <noreply@clawbtp.fr>',
-        to: [email],
-        subject: `Bienvenue sur ClawBTP — démarrage de votre essai gratuit`,
-        html: `<p>Bonjour,</p>
-               <p>Votre compte ClawBTP pour <strong>${organisationName}</strong> a bien été créé.</p>
-               <p>Votre essai gratuit de 14 jours commence maintenant.</p>
-               <p>Connectez-vous sur <a href="${process.env['NEXT_PUBLIC_APP_URL']}">${process.env['NEXT_PUBLIC_APP_URL']}</a></p>`,
-      }),
     })
 
-    if (!response.ok) {
-      const errorText = await response.text()
-      reqLogger.warn(
-        { status: response.status, error: errorText, correlationId },
-        'Resend API returned non-OK status — welcome email not sent',
-      )
-    } else {
-      reqLogger.info({ email, correlationId }, 'Welcome email sent via Resend')
-    }
+    // sendEmail gere internement : absence RESEND_API_KEY (warn en dev, throw en prod),
+    // timeout AbortController 5s, logging via lib/logger.
+    await sendEmail({
+      to: email,
+      subject: `Bienvenue sur ClawBTP — démarrage de votre essai gratuit`,
+      html,
+      tag: 'welcome',
+    })
+
+    reqLogger.info({ email, correlationId }, 'Welcome email sent via Resend')
   } catch (error) {
-    // Email non critique — ne pas bloquer la création de compte
+    // Email non critique — ne pas bloquer la creation de compte (plan.md §4.2)
     reqLogger.warn(
       { error: error instanceof Error ? error.message : String(error), correlationId },
       'Failed to send welcome email — continuing',
