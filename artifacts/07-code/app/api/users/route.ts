@@ -239,13 +239,17 @@ async function handleCreateConducteur({
   // DANGER: adminClient pour inviteUserByEmail — opération admin Supabase Auth
   const adminClient = createAdminClient()
 
-  // Inviter via Supabase Auth (envoie un email d'invitation avec magic link)
+  // Inviter via Supabase Auth (envoie un email d'invitation avec magic link).
+  // redirectTo : page qui demande au nouveau conducteur de définir son password
+  // avant d'accéder au dashboard. Sans ça, Supabase fallback sur Site URL = home.
+  const appUrl = process.env['NEXT_PUBLIC_APP_URL'] ?? 'http://localhost:3000'
   const { data: inviteData, error: inviteError } =
     await adminClient.auth.admin.inviteUserByEmail(email, {
       data: {
         organisation_id: organisationId,
         role: 'conducteur',
       },
+      redirectTo: `${appUrl}/auth/invite`,
     })
 
   if (inviteError || !inviteData.user) {

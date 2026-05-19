@@ -118,6 +118,8 @@ export async function POST(
     // DANGER: bypass RLS intentionnel — inviteUserByEmail opération admin
     const adminClient = createAdminClient()
 
+    // redirectTo : page set-password après clic email — identique à l'invitation initiale
+    const appUrl = process.env['NEXT_PUBLIC_APP_URL'] ?? 'http://localhost:3000'
     const { error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(
       email,
       {
@@ -125,6 +127,7 @@ export async function POST(
           organisation_id: organisationId,
           role: userRecord.role,
         },
+        redirectTo: `${appUrl}/auth/invite`,
       },
     )
 

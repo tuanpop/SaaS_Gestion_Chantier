@@ -21,6 +21,7 @@ const PUBLIC_ROUTES = new Set([
   '/login',                 // page connexion
   '/register',              // page création compte
   '/signup',                // alias /register (redirect côté serveur)
+  '/auth/invite',           // page set-password post-invitation (session via magic link)
 ])
 
 // Préfixes publics — toute URL commençant par un de ces préfixes est publique
