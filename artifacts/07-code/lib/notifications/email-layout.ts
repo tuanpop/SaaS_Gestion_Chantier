@@ -97,8 +97,41 @@ export interface SendEmailParams {
   tag?: string
 }
 
+/**
+ * Erreur typée pour distinguer les cas Resend dans les handlers appelants.
+ * Le caller peut faire `err instanceof EmailSendError && err.code === 'unverified_domain'`
+ * pour mapper vers un message utilisateur clair.
+ */
+export class EmailSendError extends Error {
+  constructor(
+    message: string,
+    public readonly code:
+      | 'missing_api_key'
+      | 'unverified_domain'
+      | 'rate_limit'
+      | 'invalid_recipient'
+      | 'http_error'
+      | 'network',
+    public readonly status?: number,
+  ) {
+    super(message)
+    this.name = 'EmailSendError'
+  }
+}
+
+function inferErrorCode(status: number, body: string): EmailSendError['code'] {
+  const b = body.toLowerCase()
+  if (b.includes('not verified') || b.includes('domain is not verified')) return 'unverified_domain'
+  if (status === 429 || b.includes('rate limit') || b.includes('too many')) return 'rate_limit'
+  if (status === 422 || b.includes('invalid_to_address') || b.includes('invalid recipient')) return 'invalid_recipient'
+  return 'http_error'
+}
+
 export async function sendEmail({ to, subject, html, tag }: SendEmailParams): Promise<void> {
   const apiKey = process.env['RESEND_API_KEY']
+  // RESEND_FROM_EMAIL doit être un sender vérifié dans Resend.
+  // Format : "Nom Affiché <user@domaine-verifie.com>" ou juste "user@domaine.com".
+  // Default volontairement clawbtp.fr — DOIT être vérifié ou overridé en prod.
   const from = process.env['RESEND_FROM_EMAIL'] ?? 'ClawBTP <noreply@clawbtp.fr>'
   const recipients = Array.isArray(to) ? to : [to]
 
@@ -107,7 +140,7 @@ export async function sendEmail({ to, subject, html, tag }: SendEmailParams): Pr
       // En prod, l'absence de cle est une mis-config bloquante :
       // on throw pour que l'appelant remonte 500 et que l'admin sache pourquoi le mail n'est pas parti.
       logger.error({ tag, subject }, '[email] FAIL — RESEND_API_KEY missing in production')
-      throw new Error('RESEND_API_KEY missing — cannot send email in production')
+      throw new EmailSendError('RESEND_API_KEY missing in production', 'missing_api_key')
     }
     logger.warn({ tag, subject }, '[email] SKIP — RESEND_API_KEY missing (dev/test)')
     return
@@ -118,10 +151,11 @@ export async function sendEmail({ to, subject, html, tag }: SendEmailParams): Pr
     return
   }
 
+  let res: Response
   try {
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), 5000)
-    const res = await fetch(RESEND_URL, {
+    res = await fetch(RESEND_URL, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${apiKey}`,
@@ -131,14 +165,23 @@ export async function sendEmail({ to, subject, html, tag }: SendEmailParams): Pr
       signal: controller.signal,
     })
     clearTimeout(timeout)
-
-    if (!res.ok) {
-      const bodyText = await res.text()
-      logger.error({ tag, status: res.status, body: bodyText, subject }, '[email] Resend HTTP error')
-    } else {
-      logger.info({ tag, subject, to: recipients }, '[email] sent via Resend')
-    }
   } catch (err) {
-    logger.error({ tag, err, subject }, '[email] send failed')
+    // Erreur réseau / timeout (abort)
+    const msg = err instanceof Error ? err.message : String(err)
+    logger.error({ tag, err: msg, subject }, '[email] network/timeout error')
+    throw new EmailSendError(`Network error sending email: ${msg}`, 'network')
   }
+
+  if (!res.ok) {
+    const bodyText = await res.text()
+    const code = inferErrorCode(res.status, bodyText)
+    logger.error({ tag, status: res.status, body: bodyText, subject, from, code }, '[email] Resend HTTP error')
+    throw new EmailSendError(
+      `Resend HTTP ${res.status}: ${bodyText}`,
+      code,
+      res.status,
+    )
+  }
+
+  logger.info({ tag, subject, to: recipients }, '[email] sent via Resend')
 }
