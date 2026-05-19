@@ -22,12 +22,19 @@ import type { UserRole } from '@/types/database'
 // Schéma Zod — discriminatedUnion sur 'role' (plan.md §5.1)
 // ============================================================
 
+// R-02 (Sprint UX-2) — telephone ajouté sur le variant conducteur (décision humaine 2026-05-19)
+// Le champ est optionnel pour les deux rôles. La colonne users.telephone est nullable
+// et déjà utilisée pour les ouvriers depuis Sprint 1.
 const InviteUserSchema = z.discriminatedUnion('role', [
   z.object({
     role: z.literal('conducteur'),
     email: z.string().email().max(255),
     nom: z.string().min(1).max(100),
     prenom: z.string().min(1).max(100),
+    telephone: z
+      .string()
+      .regex(/^\+?[0-9]{10,15}$/)
+      .optional(),
   }),
   z.object({
     role: z.literal('ouvrier'),
@@ -180,6 +187,7 @@ export async function POST(request: NextRequest) {
         nom: userData.nom,
         prenom: userData.prenom,
         email: userData.email,
+        telephone: userData.telephone ?? null,
         organisationId,
         correlationId,
         reqLogger,
@@ -213,6 +221,7 @@ interface CreateConducteurParams {
   nom: string
   prenom: string
   email: string
+  telephone: string | null
   organisationId: string
   correlationId: string
   reqLogger: ReturnType<typeof createRequestLogger>
@@ -222,6 +231,7 @@ async function handleCreateConducteur({
   nom,
   prenom,
   email,
+  telephone,
   organisationId,
   correlationId,
   reqLogger,
@@ -252,6 +262,7 @@ async function handleCreateConducteur({
   const newUserId = inviteData.user.id
 
   // Créer la fiche users (invitation_status='pending')
+  // R-02 : telephone propagé depuis le payload (nullable, champ optionnel)
   const { error: userInsertError } = await adminClient.from('users').insert({
     id: newUserId,
     organisation_id: organisationId,
@@ -261,7 +272,7 @@ async function handleCreateConducteur({
     email,
     has_supabase_auth: true,
     invitation_status: 'pending',
-    telephone: null,
+    telephone,
     qr_token: null,
     avatar_url: null,
   })

@@ -15,6 +15,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { LogoutButton } from '@/components/LogoutButton'
 
 // ============================================================
 // Logique active state
@@ -99,7 +100,7 @@ export function SidebarNavClient() {
   ]
 
   return (
-    <nav className="sidebar">
+    <nav className="sidebar flex flex-col">
       <div className="px-6 mb-8">
         <Link href="/admin" className="block">
           <h1 className="font-heading font-[800] text-[22px] text-white">
@@ -131,6 +132,11 @@ export function SidebarNavClient() {
           </Link>
         )
       })}
+
+      {/* Séparateur + bouton déconnexion — Chantier 2 (Sprint UX-2) */}
+      <div className="mt-auto pt-4 border-t border-[#1F4E79] mx-4">
+        <LogoutButton variant="sidebar" />
+      </div>
     </nav>
   )
 }

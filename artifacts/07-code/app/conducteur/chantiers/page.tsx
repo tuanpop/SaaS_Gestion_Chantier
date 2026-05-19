@@ -11,6 +11,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { calculerCouleur, trierParCouleur } from '@/lib/coloration'
 import { ChantierCard } from '@/components/ChantierCard'
+import { ConducteurAvatarMenu } from '@/components/ConducteurAvatarMenu'
 import type { Chantier, ChantierWithColoration } from '@/types/database'
 
 export const dynamic = 'force-dynamic'
@@ -95,12 +96,10 @@ export default async function ChantiersConduPage() {
 
   return (
     <>
-      {/* Header */}
+      {/* Header — R-05 (Sprint UX-2) : avatar → menu dropdown logout */}
       <header className="bg-primary-dark px-4 py-4 flex items-center justify-between">
         <h1 className="font-heading text-white text-xl font-bold">Mes chantiers</h1>
-        <div className="w-9 h-9 rounded-full border-2 border-black bg-surface flex items-center justify-center text-sm font-bold text-primary-dark">
-          {initiales}
-        </div>
+        <ConducteurAvatarMenu initiales={initiales} />
       </header>
 
       {/* Contenu */}
