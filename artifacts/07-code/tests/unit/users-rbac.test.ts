@@ -287,6 +287,22 @@ vi.mock('@/lib/notifications/email-layout', () => ({
   renderEmail: mockRenderEmail,
   sendEmail: mockSendEmail,
   escapeHtml: (s: string) => s,
+  EmailSendError: class EmailSendError extends Error {
+    constructor(message: string, public readonly code: string, public readonly status?: number) {
+      super(message)
+      this.name = 'EmailSendError'
+    }
+  },
+}))
+
+// mapEmailErrorToResponse utilise dans handleReviveConducteur (catch sendEmail)
+vi.mock('@/lib/notifications/email-errors', () => ({
+  mapEmailErrorToResponse: vi.fn().mockReturnValue(
+    new Response(
+      JSON.stringify({ error: 'Email non envoye. Reessayez.' }),
+      { status: 500 },
+    ),
+  ),
 }))
 
 vi.mock('@/lib/trial-gate', () => ({
@@ -649,5 +665,91 @@ describe('POST /api/users/[id]/reinvite — statut invitation', () => {
     expect(res.status).toBe(200)
     const json = await res.json() as { data: { invitation_status: string } }
     expect(json.data.invitation_status).toBe('pending')
+  })
+})
+
+
+// ============================================================
+// POST /api/users — REVIVE conducteur soft-deleted
+// ============================================================
+
+const REVIVED_ID = 'dddddddd-dddd-dddd-dddd-dddddddddddd'
+
+describe('POST /api/users — REVIVE conducteur soft-deleted', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockAssertTrial.mockResolvedValue(undefined)
+    mockHeadersMap.set('x-organisation-id', ORG_ID)
+    mockHeadersMap.set('x-user-id', ADMIN_ID)
+    mockHeadersMap.set('x-user-role', 'admin')
+    mockHeadersMap.set('x-correlation-id', 'test-corr-id')
+    // Par defaut : revive check trouve une row soft-deleted
+    mockUserSelectMaybySingle.mockResolvedValue({ data: { id: REVIVED_ID }, error: null })
+    mockAdminCreateUser.mockResolvedValue({ error: null })
+    mockAdminUpdateEq.mockResolvedValue({ error: null })
+    mockAdminGenerateLink.mockResolvedValue({
+      data: { properties: { action_link: 'https://example.com/auth/verify?token=revive' } },
+      error: null,
+    })
+    mockSendEmail.mockResolvedValue(undefined)
+    mockRenderEmail.mockReturnValue('<html>rendered-revive</html>')
+  })
+
+  it('REVIVE-1 — row soft-deleted trouvee → createUser + update + generateLink + sendEmail → 201 { revived: true }', async () => {
+    const { POST } = await import('@/app/api/users/route')
+    const req = makeRequest({ role: 'conducteur', email: 'ancien@conducteur.fr', nom: 'Ancien', prenom: 'Jean' })
+    const res = await POST(req)
+
+    expect(mockAdminCreateUser).toHaveBeenCalledWith(
+      expect.objectContaining({ id: REVIVED_ID, email: 'ancien@conducteur.fr', email_confirm: false }),
+    )
+    expect(mockAdminUpdateEq).toHaveBeenCalled()
+    expect(mockAdminGenerateLink).toHaveBeenCalled()
+    expect(mockSendEmail).toHaveBeenCalled()
+    expect(res.status).toBe(201)
+    const json = (await res.json()) as { data: { user_id: string; revived: boolean } }
+    expect(json.data.revived).toBe(true)
+    expect(json.data.user_id).toBe(REVIVED_ID)
+  })
+
+  it('REVIVE-2 — createUser echoue (auth user existe encore) → 409 + message avec ID', async () => {
+    mockAdminCreateUser.mockResolvedValue({ error: { message: 'User already exists with this email' } })
+    const { POST } = await import('@/app/api/users/route')
+    const req = makeRequest({ role: 'conducteur', email: 'residuel@conducteur.fr', nom: 'Residuel', prenom: 'Marc' })
+    const res = await POST(req)
+
+    expect(res.status).toBe(409)
+    const json = (await res.json()) as { error: string }
+    expect(json.error).toContain(REVIVED_ID)
+    expect(mockAdminUpdateEq).not.toHaveBeenCalled()
+    expect(mockAdminGenerateLink).not.toHaveBeenCalled()
+  })
+
+  it('REVIVE-3 — update DB echoue → rollback auth.admin.deleteUser appele → 500', async () => {
+    mockAdminUpdateEq.mockResolvedValue({ error: { message: 'constraint violation' } })
+    mockAdminDeleteUser.mockResolvedValue({ error: null })
+    const { POST } = await import('@/app/api/users/route')
+    const req = makeRequest({ role: 'conducteur', email: 'rollback@conducteur.fr', nom: 'Rollback', prenom: 'Sophie' })
+    const res = await POST(req)
+
+    expect(mockAdminDeleteUser).toHaveBeenCalledWith(REVIVED_ID)
+    expect(mockAdminGenerateLink).not.toHaveBeenCalled()
+    expect(mockSendEmail).not.toHaveBeenCalled()
+    expect(res.status).toBe(500)
+    const json = (await res.json()) as { error: string }
+    expect(json.error).toBe('Une erreur interne est survenue.')
+  })
+
+  it('REVIVE-4 — generateLink echoue → 201 avec warning (user revived, email non envoye)', async () => {
+    mockAdminGenerateLink.mockResolvedValue({ data: null, error: { message: 'internal error' } })
+    const { POST } = await import('@/app/api/users/route')
+    const req = makeRequest({ role: 'conducteur', email: 'nolink@conducteur.fr', nom: 'NoLink', prenom: 'Claire' })
+    const res = await POST(req)
+
+    expect(mockSendEmail).not.toHaveBeenCalled()
+    expect(res.status).toBe(201)
+    const json = (await res.json()) as { data: { revived: boolean }; warning: string }
+    expect(json.data.revived).toBe(true)
+    expect(json.warning).toContain('Renvoyer')
   })
 })
