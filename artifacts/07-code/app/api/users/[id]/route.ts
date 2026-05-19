@@ -211,11 +211,9 @@ export async function DELETE(
     }
 
     // 8. Soft delete : deleted_at = NOW(), qr_token = NULL
-    // Cast vers any sur l'update car deleted_at n'est pas encore dans le type généré (migration 003)
     const { error: updateError } = await adminClient
       .from('users')
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .update({ deleted_at: new Date().toISOString(), qr_token: null } as any)
+      .update({ deleted_at: new Date().toISOString(), qr_token: null })
       .eq('id', userId)
       .eq('organisation_id', organisationId)
 
