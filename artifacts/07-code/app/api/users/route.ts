@@ -299,6 +299,35 @@ async function handleCreateConducteur({
       { error: userInsertError.message, newUserId, organisationId, correlationId },
       'Failed to create conducteur users entry — auth user invited, DB entry missing',
     )
+
+    // ROLLBACK : supprimer le nouvel auth user créé par inviteUserByEmail pour
+    // éviter un état orphelin (auth.users avec une row, public.users sans).
+    // Best-effort : si la suppression échoue, on log mais on retourne quand
+    // même l'erreur d'origine (l'orphelin sera nettoyable manuellement).
+    await adminClient.auth.admin.deleteUser(newUserId).catch((rollbackErr: unknown) => {
+      reqLogger.error(
+        {
+          error: rollbackErr instanceof Error ? rollbackErr.message : String(rollbackErr),
+          newUserId,
+          correlationId,
+        },
+        'Rollback failed — auth user orphan, cleanup manuel requis',
+      )
+    })
+
+    // Convention messages d'erreur (TECH_CONTEXT.md) — mapper le cas duplicate
+    // email vers un message utilisateur clair et actionnable.
+    const errMsg = userInsertError.message ?? ''
+    if (errMsg.includes('idx_users_email') || errMsg.includes('duplicate key')) {
+      return NextResponse.json(
+        {
+          error:
+            "Cet email est déjà associé à un membre supprimé de votre organisation. La migration 004 (partial unique index) doit être appliquée — contactez le support.",
+        },
+        { status: 409, headers: { 'X-Correlation-Id': correlationId } },
+      )
+    }
+
     return NextResponse.json(
       { error: 'Une erreur interne est survenue.' },
       { status: 500, headers: { 'X-Correlation-Id': correlationId } },
