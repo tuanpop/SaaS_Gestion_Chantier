@@ -2,12 +2,39 @@ import Redis from 'ioredis'
 import { logger } from '@/lib/logger'
 
 // ============================================================
+// Kill switch — DISABLE_REDIS=true ou REDIS_URL absent → bypass total
+// ============================================================
+//
+// Bug observé en prod 2026-05-19 : ioredis 5.10.x crash en boucle avec
+// "Cannot read properties of undefined (reading 'auth')" dans
+// node_modules/ioredis/built/redis/event_handler.js:18 (self.condition.auth).
+// Cause racine non identifiée (réseau OK, auth manuelle netcat OK).
+// Workaround : kill switch qui désactive ioredis complètement. Le rate
+// limit devient fail-open permanent. À ré-évaluer Sprint 4+ avec un
+// downgrade ioredis ou un switch vers `redis` officiel.
+//
+const REDIS_DISABLED =
+  process.env['DISABLE_REDIS'] === 'true' || !process.env['REDIS_URL']
+
+// ============================================================
 // Singleton Redis
 // ============================================================
 
 let redisInstance: Redis | null = null
+let redisInitWarned = false
 
 function getRedisInstance(): Redis {
+  if (REDIS_DISABLED) {
+    if (!redisInitWarned) {
+      logger.warn(
+        { hasUrl: !!process.env['REDIS_URL'], disabled: process.env['DISABLE_REDIS'] === 'true' },
+        'Redis désactivé (kill switch) — checkRateLimit retournera fail-open',
+      )
+      redisInitWarned = true
+    }
+    throw new Error('REDIS_DISABLED')
+  }
+
   if (redisInstance) {
     return redisInstance
   }
@@ -126,6 +153,16 @@ export async function checkRateLimit(opts: RateLimitOptions): Promise<RateLimitR
   const now = Date.now()
   const windowStart = now - windowMs
   const windowSec = Math.ceil(windowMs / 1000)
+
+  // Kill switch — court-circuite avant tout appel ioredis pour éviter les
+  // crashes en cascade (bug ioredis 5.10 observé prod 2026-05-19).
+  if (REDIS_DISABLED) {
+    return {
+      allowed: true,
+      remaining: limit,
+      resetAt: new Date(now + windowMs),
+    }
+  }
 
   try {
     const instance = getRedisInstance()
