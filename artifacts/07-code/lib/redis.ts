@@ -24,8 +24,32 @@ function getRedisInstance(): Redis {
     // Timeout de connexion
     connectTimeout: 5000,
     lazyConnect: true,
+    // Limiter les tentatives de reconnexion automatique.
+    // Par défaut ioredis reconnecte indéfiniment avec backoff exponentiel.
+    // Ici : max 10 reconnexions avant d'abandonner (évite la boucle infinie
+    // en cas de Redis définitivement down). Le fail-open dans checkRateLimit
+    // assure que les requêtes continuent même sans Redis.
+    retryStrategy(times: number): number | null {
+      if (times > 10) {
+        // Après 10 tentatives, arrêter les reconnexions automatiques.
+        // checkRateLimit() fait fail-open — l'app continue de fonctionner.
+        logger.warn(
+          { attempts: times },
+          'Redis retry limit atteinte — reconnexion automatique suspendue',
+        )
+        return null // null = ne plus reconnnecter
+      }
+      // Backoff exponentiel plafonné à 3s
+      return Math.min(times * 200, 3000)
+    },
   })
 
+  // Handler d'erreur sur l'instance ioredis.
+  // CRITIQUE : sans ce handler, les erreurs socket ioredis remontent comme
+  // EventEmitter non-handled → uncaughtException → crash process Node.js.
+  // Ce handler absorbe les erreurs au niveau ioredis, avant qu'elles ne
+  // sortent du système d'events. Le filet de sécurité process.on('uncaughtException')
+  // dans instrumentation.ts est une deuxième ligne de défense.
   redisInstance.on('error', (err: Error) => {
     logger.error({ err: err.message }, 'Redis connection error')
   })
@@ -38,12 +62,34 @@ function getRedisInstance(): Redis {
     logger.debug('Redis ready')
   })
 
+  redisInstance.on('reconnecting', (delay: number) => {
+    logger.warn({ delay }, 'Redis reconnecting')
+  })
+
+  redisInstance.on('close', () => {
+    logger.warn('Redis connection closed')
+  })
+
   return redisInstance
 }
 
+/**
+ * Proxy Redis — résout le singleton au moment de chaque accès de propriété.
+ *
+ * Défense en profondeur : le Proxy attrape les exceptions levées par
+ * getRedisInstance() (ex: REDIS_URL absente, initialisation échouée) et
+ * les propage à l'appelant plutôt que de les laisser remonter silencieusement.
+ * checkRateLimit() a un try/catch fail-open qui attrape ces erreurs.
+ */
 export const redis = new Proxy({} as Redis, {
   get(_target, prop) {
-    return getRedisInstance()[prop as keyof Redis]
+    try {
+      return getRedisInstance()[prop as keyof Redis]
+    } catch (err) {
+      // Propage l'erreur pour que checkRateLimit() puisse faire fail-open.
+      // Ne logue pas ici — l'appelant logge dans son propre catch.
+      throw err
+    }
   },
 })
 
