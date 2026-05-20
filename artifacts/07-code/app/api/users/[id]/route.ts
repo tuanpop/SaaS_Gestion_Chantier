@@ -10,15 +10,36 @@ import type { UserRole, Tables } from '@/types/database'
 
 // ============================================================
 // GET /api/users/[id] — Détail d'un membre (admin uniquement)
+// PATCH /api/users/[id] — Modifier nom/prenom/telephone (admin uniquement) — Sprint 2 dette 2026-05-20
 // DELETE /api/users/[id] — Soft delete d'un membre (admin uniquement)
 //
 // T-01 : organisation_id extrait depuis les headers middleware (jamais depuis params/body)
 // Ownership check : users.organisation_id DOIT correspondre au JWT organisation_id
 // qr_token toujours exclu de la réponse (S-01)
-// D-012 : assertTrialActive() sur DELETE (mutation)
+// D-012 : assertTrialActive() sur PATCH et DELETE (mutations)
 // Soft delete : deleted_at = NOW(), qr_token = NULL (migration 003_users_soft_delete.sql)
 // Hard delete Supabase Auth : adminClient.auth.admin.deleteUser() si has_supabase_auth=true
+//
+// PATCH (Sprint 2 dette) : scope volontairement restreint à nom/prenom/telephone.
+// email + role sont destructifs (auth.users + RBAC) et reportés à un sprint ultérieur.
 // ============================================================
+
+// Schéma PATCH : tous les champs optional, au moins un requis (refine).
+const UpdateUserSchema = z
+  .object({
+    nom: z.string().min(1).max(100).optional(),
+    prenom: z.string().min(1).max(100).optional(),
+    // R-02 (Sprint UX-2) : telephone optionnel pour ouvrier et conducteur.
+    // Accepter null pour permettre l'effacement explicite (téléphone retiré).
+    telephone: z
+      .string()
+      .regex(/^\+?[0-9]{10,15}$/, 'Format invalide (10 à 15 chiffres, + optionnel)')
+      .nullable()
+      .optional(),
+  })
+  .refine((data) => Object.values(data).some((v) => v !== undefined), {
+    message: 'Au moins un champ doit être fourni.',
+  })
 
 // Validation du paramètre [id] — doit être un UUID valide
 const IdParamSchema = z.string().uuid('Le paramètre id doit être un UUID valide.')
@@ -241,6 +262,144 @@ export async function DELETE(
     reqLogger.error(
       { error: error instanceof Error ? error.message : String(error), correlationId },
       'Unhandled error in DELETE /api/users/[id]',
+    )
+    return toApiResponse(error, correlationId)
+  }
+}
+
+// ============================================================
+// PATCH /api/users/[id] — Modifier un membre (admin uniquement)
+// Sprint 2 dette (2026-05-20) : auparavant aucune route ne permettait de
+// modifier nom/prenom/telephone d'un membre. Le bouton "Modifier" sur
+// /admin/equipe n'avait donc pas de cible API.
+//
+// Scope volontairement restreint : nom, prenom, telephone uniquement.
+// Champs explicitement exclus (à traiter dans un sprint ultérieur) :
+//   - email : touche auth.users.email + risque casser le login
+//   - role : nécessite reconfiguration auth (has_supabase_auth) + RBAC
+// ============================================================
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const headerStore = await headers()
+  const correlationId = headerStore.get('x-correlation-id') ?? crypto.randomUUID()
+  const reqLogger = createRequestLogger(correlationId)
+
+  try {
+    // 1. Claims (T-01)
+    const organisationId = headerStore.get('x-organisation-id')
+    const role = headerStore.get('x-user-role') as UserRole | null
+
+    if (!organisationId || !role) {
+      return NextResponse.json(
+        { error: 'Non authentifié.' },
+        { status: 401, headers: { 'X-Correlation-Id': correlationId } },
+      )
+    }
+
+    if (role !== 'admin') {
+      reqLogger.warn({ role, correlationId }, 'Non-admin tried to PATCH /api/users/[id]')
+      throw new ForbiddenError()
+    }
+
+    // 2. Valider [id]
+    const resolvedParams = await params
+    const idParsed = IdParamSchema.safeParse(resolvedParams.id)
+    if (!idParsed.success) {
+      return NextResponse.json(
+        { error: 'Identifiant invalide.' },
+        { status: 400, headers: { 'X-Correlation-Id': correlationId } },
+      )
+    }
+    const userId = idParsed.data
+
+    // 3. assertTrialActive (D-012)
+    const supabase = await createClient()
+    await assertTrialActive(supabase, organisationId)
+
+    // 4. Valider body
+    let body: unknown
+    try {
+      body = await request.json()
+    } catch {
+      return NextResponse.json(
+        { error: 'Corps de requête JSON invalide.' },
+        { status: 400, headers: { 'X-Correlation-Id': correlationId } },
+      )
+    }
+
+    const parsed = UpdateUserSchema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: 'Requête invalide.', fields: parsed.error.flatten().fieldErrors },
+        { status: 400, headers: { 'X-Correlation-Id': correlationId } },
+      )
+    }
+
+    // 5. Vérifier ownership + non supprimé
+    // I-06 : 404 générique si hors org / inexistant / soft-deleted
+    const adminClient = createAdminClient()
+    const { data: existing, error: existingError } = await adminClient
+      .from('users')
+      .select('id, role')
+      .eq('id', userId)
+      .eq('organisation_id', organisationId)
+      .is('deleted_at', null)
+      .single()
+
+    if (existingError || !existing) {
+      reqLogger.warn(
+        { userId, organisationId, error: existingError?.message, correlationId },
+        'PATCH users/[id]: user not found, hors org, ou supprimé',
+      )
+      throw new NotFoundError('user')
+    }
+
+    // 6. Construire payload (seulement les champs présents dans parsed.data)
+    type UsersUpdate = Tables<'users'>
+    const updatePayload: Partial<Pick<UsersUpdate, 'nom' | 'prenom' | 'telephone'>> = {}
+    if (parsed.data.nom !== undefined) updatePayload.nom = parsed.data.nom
+    if (parsed.data.prenom !== undefined) updatePayload.prenom = parsed.data.prenom
+    if (parsed.data.telephone !== undefined) updatePayload.telephone = parsed.data.telephone
+
+    // 7. UPDATE
+    const { data: updated, error: updateError } = await adminClient
+      .from('users')
+      .update(updatePayload)
+      .eq('id', userId)
+      .eq('organisation_id', organisationId)
+      .is('deleted_at', null)
+      .select(
+        'id, organisation_id, role, nom, prenom, telephone, email, has_supabase_auth, invitation_status, avatar_url, created_at',
+      )
+      .single()
+
+    if (updateError || !updated) {
+      reqLogger.error(
+        { error: updateError?.message, userId, organisationId, correlationId },
+        'PATCH users/[id]: failed to update',
+      )
+      return NextResponse.json(
+        { error: 'Une erreur interne est survenue.' },
+        { status: 500, headers: { 'X-Correlation-Id': correlationId } },
+      )
+    }
+
+    reqLogger.info(
+      { userId, organisationId, fields: Object.keys(updatePayload), correlationId },
+      'User mis à jour',
+    )
+
+    return NextResponse.json(
+      { data: updated },
+      { status: 200, headers: { 'X-Correlation-Id': correlationId } },
+    )
+  } catch (error) {
+    reqLogger.error(
+      { error: error instanceof Error ? error.message : String(error), correlationId },
+      'Unhandled error in PATCH /api/users/[id]',
     )
     return toApiResponse(error, correlationId)
   }

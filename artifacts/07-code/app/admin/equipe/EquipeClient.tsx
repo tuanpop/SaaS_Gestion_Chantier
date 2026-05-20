@@ -57,6 +57,18 @@ interface InviteFormState {
   telephone: string
 }
 
+// Sprint 2 dette (2026-05-20) — état modal modification membre.
+// userId vide = modal fermée. email/role en lecture seule (scope PATCH = nom/prenom/telephone).
+interface EditFormState {
+  userId: string
+  nom: string
+  prenom: string
+  telephone: string
+  // Champs read-only affichés pour contexte :
+  email: string | null
+  role: UserRole
+}
+
 // ============================================================
 // Props
 // ============================================================
@@ -149,8 +161,14 @@ export function EquipeClient({ initialUsers, currentUserId }: EquipeClientProps)
   const [deleteLoading, setDeleteLoading] = useState<string | null>(null) // user id en cours
   const [toast, setToast] = useState<ToastMsg | null>(null)
 
+  // Sprint 2 dette — modal modification membre
+  const [editForm, setEditForm] = useState<EditFormState | null>(null)
+  const [editLoading, setEditLoading] = useState(false)
+  const [editError, setEditError] = useState<string | null>(null)
+
   // IDs accessibilité
   const inviteErrorId = useId()
+  const editErrorId = useId()
 
   // ============================================================
   // Toast auto-dismiss
@@ -171,6 +189,83 @@ export function EquipeClient({ initialUsers, currentUserId }: EquipeClientProps)
     setInviteError(null)
     setInviteRole('conducteur')
     setModalInvite(true)
+  }
+
+  // Sprint 2 dette — pré-remplir et ouvrir la modal d'édition
+  function openModalEdit(user: UserRow) {
+    setEditForm({
+      userId: user.id,
+      nom: user.nom,
+      prenom: user.prenom,
+      telephone: user.telephone ?? '',
+      email: user.email,
+      role: user.role as UserRole,
+    })
+    setEditError(null)
+  }
+
+  function closeModalEdit() {
+    setEditForm(null)
+    setEditError(null)
+  }
+
+  async function handleEditSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    if (!editForm) return
+
+    const nom = editForm.nom.trim()
+    const prenom = editForm.prenom.trim()
+    const telephoneRaw = editForm.telephone.trim()
+
+    if (!nom || !prenom) {
+      setEditError('Prénom et nom sont requis.')
+      return
+    }
+
+    if (telephoneRaw && !/^\+?[0-9]{10,15}$/.test(telephoneRaw)) {
+      setEditError('Format de téléphone invalide (10 à 15 chiffres, + optionnel).')
+      return
+    }
+
+    // PATCH payload minimal — seulement les champs modifiés
+    const payload: Record<string, string | null> = {}
+    const initial = initialUsers.find((u) => u.id === editForm.userId)
+    if (initial) {
+      if (nom !== initial.nom) payload['nom'] = nom
+      if (prenom !== initial.prenom) payload['prenom'] = prenom
+      const initialTel = initial.telephone ?? ''
+      if (telephoneRaw !== initialTel) {
+        payload['telephone'] = telephoneRaw === '' ? null : telephoneRaw
+      }
+    }
+
+    if (Object.keys(payload).length === 0) {
+      setEditError('Aucune modification à enregistrer.')
+      return
+    }
+
+    setEditLoading(true)
+    try {
+      const res = await fetch(`/api/users/${editForm.userId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+
+      if (res.ok) {
+        closeModalEdit()
+        setToast({ type: 'success', message: 'Membre mis à jour.' })
+        router.refresh()
+        return
+      }
+
+      const data = (await res.json().catch(() => ({ error: null }))) as { error?: string }
+      setEditError(data.error ?? 'Une erreur est survenue. Veuillez réessayer.')
+    } catch {
+      setEditError('Impossible de traiter la demande. Vérifiez votre connexion.')
+    } finally {
+      setEditLoading(false)
+    }
   }
 
   // ============================================================
@@ -402,6 +497,19 @@ export function EquipeClient({ initialUsers, currentUserId }: EquipeClientProps)
                 </td>
                 <td>
                   <div className="flex items-center gap-2">
+                    {/* Sprint 2 dette — bouton Modifier (nom/prenom/telephone) */}
+                    <button
+                      type="button"
+                      data-testid={`edit-member-${user.id}`}
+                      onClick={() => openModalEdit(user)}
+                      disabled={
+                        editLoading || reinviteLoading === user.id || deleteLoading === user.id
+                      }
+                      className="btn-brutal bg-white text-[#1F4E79] text-xs px-3 py-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Modifier
+                    </button>
+
                     {/* Conducteur en attente ou expiré → Renvoyer invitation */}
                     {user.role === 'conducteur' &&
                       (user.invitation_status === 'pending' || user.invitation_status === 'expired') && (
@@ -448,12 +556,8 @@ export function EquipeClient({ initialUsers, currentUserId }: EquipeClientProps)
                       </button>
                     )}
 
-                    {/* Aucune action disponible (uniquement si admin courant — bouton Supprimer masqué) */}
-                    {user.id === currentUserId && user.role !== 'ouvrier' &&
-                      !(user.role === 'conducteur' &&
-                        (user.invitation_status === 'pending' || user.invitation_status === 'expired')) && (
-                      <span className="text-[#555] text-xs">—</span>
-                    )}
+                    {/* Sprint 2 dette : fallback "—" supprimé — le bouton "Modifier"
+                        est toujours présent, donc il n'y a plus de ligne sans action. */}
                   </div>
                 </td>
               </tr>
@@ -739,6 +843,135 @@ export function EquipeClient({ initialUsers, currentUserId }: EquipeClientProps)
             >
               Fermer
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* ======================================================
+          Modal — Modifier un membre (Sprint 2 dette 2026-05-20)
+          Scope : nom, prenom, telephone. email et role read-only.
+          ====================================================== */}
+      {editForm && (
+        <div
+          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) closeModalEdit()
+          }}
+        >
+          <div className="card-brutal p-8 max-w-lg w-full bg-white">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="font-heading font-bold text-[22px]">Modifier un membre</h2>
+              <button
+                type="button"
+                onClick={closeModalEdit}
+                aria-label="Fermer la modal"
+                className="text-[#555] hover:text-[#222] transition-colors"
+              >
+                <X className="w-5 h-5" aria-hidden="true" />
+              </button>
+            </div>
+
+            {editError && (
+              <div
+                id={editErrorId}
+                role="alert"
+                className="mb-4 px-4 py-3 border-2 border-[#C00000] bg-[#FFCCCC] text-[#C00000] text-sm rounded-md"
+              >
+                {editError}
+              </div>
+            )}
+
+            <form
+              onSubmit={(e) => void handleEditSubmit(e)}
+              aria-describedby={editError ? editErrorId : undefined}
+              noValidate
+            >
+              {/* Read-only : role + email pour contexte */}
+              <div className="grid grid-cols-2 gap-4 mb-4 p-3 bg-[#F8F8F8] border border-[#E5E5E5] rounded-md">
+                <div>
+                  <div className="text-xs uppercase text-[#555] font-semibold mb-1">Rôle</div>
+                  <div className="text-sm font-medium">
+                    {editForm.role === 'admin' ? 'Admin' : editForm.role === 'conducteur' ? 'Conducteur' : 'Ouvrier'}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs uppercase text-[#555] font-semibold mb-1">Email</div>
+                  <div className="text-sm font-medium truncate" title={editForm.email ?? '—'}>
+                    {editForm.email ?? '—'}
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label htmlFor="edit-prenom" className="block text-sm font-semibold text-[#222] mb-1.5">
+                    Prénom <span aria-hidden="true" className="text-[#C00000]">*</span>
+                  </label>
+                  <input
+                    id="edit-prenom"
+                    type="text"
+                    autoComplete="given-name"
+                    required
+                    value={editForm.prenom}
+                    onChange={(e) => setEditForm({ ...editForm, prenom: e.target.value })}
+                    disabled={editLoading}
+                    className="input-brutal"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="edit-nom" className="block text-sm font-semibold text-[#222] mb-1.5">
+                    Nom <span aria-hidden="true" className="text-[#C00000]">*</span>
+                  </label>
+                  <input
+                    id="edit-nom"
+                    type="text"
+                    autoComplete="family-name"
+                    required
+                    value={editForm.nom}
+                    onChange={(e) => setEditForm({ ...editForm, nom: e.target.value })}
+                    disabled={editLoading}
+                    className="input-brutal"
+                  />
+                </div>
+              </div>
+
+              <div className="mb-5">
+                <label htmlFor="edit-telephone" className="block text-sm font-semibold text-[#222] mb-1.5">
+                  Téléphone{' '}
+                  <span className="text-[#555] font-normal text-xs">(optionnel)</span>
+                </label>
+                <input
+                  id="edit-telephone"
+                  type="tel"
+                  autoComplete="tel"
+                  value={editForm.telephone}
+                  onChange={(e) => setEditForm({ ...editForm, telephone: e.target.value })}
+                  disabled={editLoading}
+                  className="input-brutal"
+                  placeholder="06 12 34 56 78"
+                />
+              </div>
+
+              <div className="flex gap-3 justify-end">
+                <button
+                  type="button"
+                  onClick={closeModalEdit}
+                  disabled={editLoading}
+                  className="btn-brutal bg-white text-[#1F4E79]"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  data-testid="edit-member-submit"
+                  disabled={editLoading}
+                  aria-busy={editLoading}
+                  className="btn-brutal bg-[#F97316] text-white"
+                >
+                  {editLoading ? 'Enregistrement...' : 'Enregistrer'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
