@@ -39,27 +39,54 @@ export default function InvitePage() {
 
   // 1. Vérifier qu'une session existe (créée par /auth/callback via exchangeCodeForSession)
   //    + Défense en profondeur : refuser le set-password si la session courante
-  //    est un admin. Cas observé prod 2026-05-20 : si /auth/callback rate l'échange
-  //    (code invalide/expiré) ET qu'un admin est connecté dans le même navigateur,
-  //    getUser retourne l'admin → on aurait modifié le password de l'admin.
+  //    est un admin DÉJÀ ACTIF (cas observé prod 2026-05-20 : si /auth/callback
+  //    rate l'échange ET qu'un admin existant est connecté dans le même navigateur,
+  //    getUser retourne l'admin → on aurait modifié le password de l'admin).
+  //
+  //    Sprint 2 dette (2026-05-20 soir) : la version précédente bloquait TOUT
+  //    role=admin, y compris le NOUVEL admin invité dont la session vient d'être
+  //    set par /auth/callback. On distingue maintenant via invitation_status :
+  //      - 'pending' : nouvel admin invité, set-password autorisé
+  //      - 'active' / null : admin pré-existant, bloqué
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    async function checkSession() {
+      const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
         setHasSession(false)
         setCheckingSession(false)
         return
       }
       const role = user.app_metadata?.['role'] as string | undefined
+
       if (role === 'admin') {
-        // Session admin présente — bloquer (le lien d'invite est destiné à un autre user)
-        setAdminBlocked(true)
-        setHasSession(false)
-      } else {
-        setHasSession(true)
-        setEmail(user.email ?? null)
+        // Discriminer admin pré-existant vs admin nouvellement invité (session vient
+        // d'être set par /auth/callback) via invitation_status en DB.
+        // RLS isolation_org permet à l'user de lire son propre row.
+        const { data: row } = await supabase
+          .from('users')
+          .select('invitation_status')
+          .eq('id', user.id)
+          .single()
+
+        const invitationStatus = (row as { invitation_status: string | null } | null)
+          ?.invitation_status
+
+        if (invitationStatus !== 'pending') {
+          // Admin déjà actif → c'est l'admin existant qui a cliqué un mail d'invite
+          // dans son propre navigateur. Bloquer pour éviter d'écraser son password.
+          setAdminBlocked(true)
+          setHasSession(false)
+          setCheckingSession(false)
+          return
+        }
+        // Sinon : nouvel admin invité, set-password autorisé (fall through).
       }
+
+      setHasSession(true)
+      setEmail(user.email ?? null)
       setCheckingSession(false)
-    })
+    }
+    void checkSession()
   }, [supabase])
 
   // 2. Submit : update password puis redirect
