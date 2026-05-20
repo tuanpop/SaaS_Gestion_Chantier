@@ -225,6 +225,250 @@ test.describe('US-011 — Tâches chantier', () => {
   })
 
   // ============================================================
+  // S1 ter : UI conducteur — select assigned_to présent + assignation persistée
+  // GAP-011-A UI (dette Sprint 2 rattrapée 2026-05-20) :
+  //   Sprint 2 a été marqué "validé" sans tester que le FORMULAIRE UI conducteur
+  //   transmettait assigned_to. Le champ a été ajouté à la page nouvelle/page.tsx
+  //   (commit dette 2026-05-20). Ce test exerce le flow complet via Playwright page.
+  // ============================================================
+
+  test('S1 ter — UI conducteur sélectionne un ouvrier dans le select et la tâche est créée assignée', async ({ page, request }) => {
+    const org = await createTestOrganisationDirect({ statut: 'trial_active', trialDaysOffset: 14 })
+    resources.organisationIds.push(org.organisationId)
+    resources.authUserIds.push(org.adminUserId)
+
+    const adminSupabase = createClient(SUPABASE_URL, SERVICE_KEY, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    })
+
+    // 1. Créer un conducteur avec password (login UI possible)
+    const conducteurEmail = `conducteur-${crypto.randomUUID()}@e2e-clawbtp.test`
+    const conducteurPassword = `CondPass${crypto.randomUUID().slice(0, 8)}!`
+    const { data: conducteurAuth, error: conducteurAuthError } =
+      await adminSupabase.auth.admin.createUser({
+        email: conducteurEmail,
+        password: conducteurPassword,
+        app_metadata: { organisation_id: org.organisationId, role: 'conducteur' },
+        email_confirm: true,
+      })
+    expect(conducteurAuthError).toBeNull()
+    expect(conducteurAuth.user).not.toBeNull()
+    const conducteurId = conducteurAuth.user!.id
+    resources.authUserIds.push(conducteurId)
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error: condUserError } = await (adminSupabase.from('users') as any).insert({
+      id: conducteurId,
+      organisation_id: org.organisationId,
+      role: 'conducteur',
+      nom: 'Martin',
+      prenom: 'Marc',
+      email: conducteurEmail,
+      has_supabase_auth: true,
+      invitation_status: 'active',
+      telephone: null,
+      qr_token: null,
+      avatar_url: null,
+    })
+    expect(condUserError).toBeNull()
+
+    // 2. Créer un ouvrier (apparaîtra dans le select)
+    const ouvrierId = crypto.randomUUID()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error: ouvrierError } = await (adminSupabase.from('users') as any).insert({
+      id: ouvrierId,
+      organisation_id: org.organisationId,
+      role: 'ouvrier',
+      nom: 'Diallo',
+      prenom: 'Mohamed',
+      email: null,
+      has_supabase_auth: false,
+      invitation_status: 'active',
+      telephone: null,
+      qr_token: null,
+      avatar_url: null,
+    })
+    expect(ouvrierError).toBeNull()
+
+    // 3. Créer un chantier dont le conducteur est created_by (lui donne l'accès)
+    const today = new Date().toISOString().split('T')[0]!
+    const dateFin = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]!
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: chantierData } = await (adminSupabase.from('chantiers') as any).insert({
+      organisation_id: org.organisationId,
+      nom: 'Chantier S1 ter UI',
+      client_nom: 'Client UI',
+      adresse: '3 rue Test',
+      code_postal: '75003',
+      date_debut: today,
+      date_fin_prevue: dateFin,
+      created_by: conducteurId,
+    }).select('id').single()
+    const chantierId = (chantierData as { id: string }).id
+
+    // 4. Login UI conducteur
+    await page.goto(`${BASE_URL}/login`)
+    await page.fill('[type="email"]', conducteurEmail)
+    await page.fill('[type="password"]', conducteurPassword)
+    await page.click('[type="submit"]')
+    // Conducteur redirigé vers son espace (chantiers)
+    await page.waitForURL(/\/conducteur\/chantiers/, { timeout: 10000 })
+
+    // 5. Aller sur la page de création de tâche
+    await page.goto(`${BASE_URL}/conducteur/chantiers/${chantierId}/taches/nouvelle`)
+
+    // 6. Le select assigned_to doit exister et contenir l'ouvrier
+    const assignedSelect = page.getByTestId('assigned-to-select')
+    await expect(assignedSelect).toBeVisible()
+    // Le texte de l'option contient le nom + rôle
+    await expect(
+      assignedSelect.locator('option', { hasText: /Mohamed Diallo \(Ouvrier\)/ }),
+    ).toHaveCount(1)
+
+    // 7. Remplir le formulaire avec assignation
+    await page.fill('#titre', 'Pose carrelage RDC (UI)')
+    await assignedSelect.selectOption(ouvrierId)
+    await page.click('button[type="submit"]')
+
+    // 8. Redirection vers le détail chantier
+    await page.waitForURL(`${BASE_URL}/conducteur/chantiers/${chantierId}`, { timeout: 10000 })
+
+    // 9. Vérifier via API que la tâche est bien persistée avec assigned_to
+    const listResponse = await request.get(
+      `${BASE_URL}/api/chantiers/${chantierId}/taches`,
+      {
+        headers: {
+          'x-organisation-id': org.organisationId,
+          'x-user-id': conducteurId,
+          'x-user-role': 'conducteur',
+        },
+      },
+    )
+    expect(listResponse.status()).toBe(200)
+    const taches = await listResponse.json() as Array<{
+      titre: string
+      assigned_to: string | null
+      assigned_user?: { nom: string; prenom: string } | null
+    }>
+    const found = taches.find((t) => t.titre === 'Pose carrelage RDC (UI)')
+    expect(found).toBeDefined()
+    expect(found?.assigned_to).toBe(ouvrierId)
+    expect(found?.assigned_user?.nom).toBe('Diallo')
+    expect(found?.assigned_user?.prenom).toBe('Mohamed')
+    // cleanup géré par afterAll
+  })
+
+  // ============================================================
+  // S1 quater : UI admin — modal "+ Nouvelle tâche" depuis le détail chantier
+  // Dette Sprint 2 extension (2026-05-20) — "admin peut tout faire" :
+  //   l'admin doit aussi pouvoir créer une tâche depuis /admin/chantiers/[id].
+  //   Le composant TacheCreateModal (data-testid admin-nouvelle-tache + select
+  //   data-testid admin-tache-assigned-to) est exercé bout-en-bout.
+  // ============================================================
+
+  test('S1 quater — Admin crée une tâche assignée via la modal du tab Tâches', async ({ page, request }) => {
+    const org = await createTestOrganisationDirect({ statut: 'trial_active', trialDaysOffset: 14 })
+    resources.organisationIds.push(org.organisationId)
+    resources.authUserIds.push(org.adminUserId)
+
+    const adminSupabase = createClient(SUPABASE_URL, SERVICE_KEY, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    })
+
+    // 1. Créer un ouvrier (apparaîtra dans le select)
+    const ouvrierId = crypto.randomUUID()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error: ouvrierError } = await (adminSupabase.from('users') as any).insert({
+      id: ouvrierId,
+      organisation_id: org.organisationId,
+      role: 'ouvrier',
+      nom: 'Bernard',
+      prenom: 'Léa',
+      email: null,
+      has_supabase_auth: false,
+      invitation_status: 'active',
+      telephone: null,
+      qr_token: null,
+      avatar_url: null,
+    })
+    expect(ouvrierError).toBeNull()
+
+    // 2. Créer un chantier dans l'org admin
+    const today = new Date().toISOString().split('T')[0]!
+    const dateFin = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]!
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: chantierData } = await (adminSupabase.from('chantiers') as any).insert({
+      organisation_id: org.organisationId,
+      nom: 'Chantier S1 quater Admin UI',
+      client_nom: 'Client Admin',
+      adresse: '4 rue Admin',
+      code_postal: '75004',
+      date_debut: today,
+      date_fin_prevue: dateFin,
+      created_by: org.adminUserId,
+    }).select('id').single()
+    const chantierId = (chantierData as { id: string }).id
+
+    // 3. Login UI admin
+    await page.goto(`${BASE_URL}/login`)
+    await page.fill('[type="email"]', org.email)
+    await page.fill('[type="password"]', org.password)
+    await page.click('[type="submit"]')
+    // Tolère plusieurs destinations post-login (/, /admin, /admin/chantiers) — on attend juste de quitter /login
+    await page.waitForURL((url) => !url.pathname.startsWith('/login'), { timeout: 10000 })
+
+    // 4. Aller sur le détail chantier
+    await page.goto(`${BASE_URL}/admin/chantiers/${chantierId}`)
+
+    // 5. Basculer sur le tab Tâches
+    await page.getByRole('button', { name: /Tâches/i }).click()
+
+    // 6. Cliquer "+ Nouvelle tâche" (le bouton n'existait pas avant la dette)
+    const nouvelleTacheBtn = page.getByTestId('admin-nouvelle-tache')
+    await expect(nouvelleTacheBtn).toBeVisible()
+    await nouvelleTacheBtn.click()
+
+    // 7. La modal s'ouvre — vérifier le select assigned_to et sélectionner l'ouvrier
+    const assignSelect = page.getByTestId('admin-tache-assigned-to')
+    await expect(assignSelect).toBeVisible()
+    await expect(
+      assignSelect.locator('option', { hasText: /Léa Bernard \(Ouvrier\)/ }),
+    ).toHaveCount(1)
+    await assignSelect.selectOption(ouvrierId)
+
+    // 8. Remplir le titre et soumettre
+    await page.fill('#tache-titre', 'Coordination équipe carrelage (admin UI)')
+    await page.getByRole('button', { name: /Créer la tâche/i }).click()
+
+    // 9. Modal se ferme — vérifier qu'elle disparait
+    await expect(assignSelect).not.toBeVisible({ timeout: 10000 })
+
+    // 10. Vérifier via API que la tâche est persistée avec assigned_to
+    const listResponse = await request.get(
+      `${BASE_URL}/api/chantiers/${chantierId}/taches`,
+      {
+        headers: {
+          'x-organisation-id': org.organisationId,
+          'x-user-id': org.adminUserId,
+          'x-user-role': 'admin',
+        },
+      },
+    )
+    expect(listResponse.status()).toBe(200)
+    const taches = await listResponse.json() as Array<{
+      titre: string
+      assigned_to: string | null
+      assigned_user?: { nom: string; prenom: string } | null
+    }>
+    const found = taches.find((t) => t.titre === 'Coordination équipe carrelage (admin UI)')
+    expect(found).toBeDefined()
+    expect(found?.assigned_to).toBe(ouvrierId)
+    expect(found?.assigned_user?.nom).toBe('Bernard')
+    expect(found?.assigned_user?.prenom).toBe('Léa')
+    // cleanup géré par afterAll
+  })
+
+  // ============================================================
   // S2 : Passage bloqué + raison obligatoire
   // ============================================================
 
