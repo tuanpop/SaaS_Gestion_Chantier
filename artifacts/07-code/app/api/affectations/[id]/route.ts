@@ -53,13 +53,19 @@ export async function DELETE(
     const adminClient = createAdminClient()
 
     // 4. Vérifier ownership via organisation_id — T-02
-    // Retourner 404 (I-06) plutôt que de laisser la delete silencieusement échouer
-    const { data: existing, error: existingError } = await adminClient
+    // On récupère user_id + chantier_id : nécessaires pour la désassignation
+    // automatique des tâches (étapes 6-7).
+    // Retourner 404 (I-06) plutôt que de laisser la delete silencieusement échouer.
+    const { data: existingRaw, error: existingError } = await adminClient
       .from('affectations')
-      .select('id, organisation_id')
+      .select('id, organisation_id, user_id, chantier_id')
       .eq('id', affectationId)
       .eq('organisation_id', organisationId)
       .single()
+
+    const existing = existingRaw as
+      | { id: string; organisation_id: string; user_id: string; chantier_id: string }
+      | null
 
     if (existingError || !existing) {
       return NextResponse.json(
@@ -87,7 +93,86 @@ export async function DELETE(
       )
     }
 
-    reqLogger.info({ affectationId, userId }, 'Affectation supprimée')
+    // 6. Désassignation automatique des tâches (Sprint 2 dette 2026-05-20).
+    // Si le membre n'a plus d'autre affectation active sur ce chantier, ses tâches
+    // doivent passer à `assigned_to=NULL` pour pouvoir être réassignées. Sinon
+    // elles restent "assignées à un fantôme" — le membre n'apparaît plus dans la
+    // liste équipe mais reste dans la colonne "Assigné" des tâches.
+    //
+    // Pas de UNIQUE (chantier_id, user_id) côté schéma : on compte explicitement
+    // les affectations restantes pour ce user/chantier avant de désassigner.
+    const { count: remainingCount, error: countError } = await adminClient
+      .from('affectations')
+      .select('id', { count: 'exact', head: true })
+      .eq('chantier_id', existing.chantier_id)
+      .eq('user_id', existing.user_id)
+      .eq('organisation_id', organisationId)
+
+    if (countError) {
+      // Best-effort : on ne fail pas le DELETE déjà effectué — log l'erreur
+      // pour cleanup manuel éventuel. L'admin peut retry le retrait sans effet.
+      reqLogger.error(
+        {
+          error: countError.message,
+          affectationId,
+          memberUserId: existing.user_id,
+          chantierId: existing.chantier_id,
+          actorUserId: userId,
+        },
+        'Erreur count affectations restantes — désassignation tâches non tentée',
+      )
+      return new NextResponse(null, { status: 204 })
+    }
+
+    if ((remainingCount ?? 0) === 0) {
+      // 7. Aucune autre affectation : désassigner les tâches du chantier
+      const { error: updateError, count: tachesUpdatedCount } = await adminClient
+        .from('taches')
+        .update({ assigned_to: null }, { count: 'exact' })
+        .eq('chantier_id', existing.chantier_id)
+        .eq('assigned_to', existing.user_id)
+        .eq('organisation_id', organisationId)
+
+      if (updateError) {
+        reqLogger.error(
+          {
+            error: updateError.message,
+            affectationId,
+            memberUserId: existing.user_id,
+            chantierId: existing.chantier_id,
+            actorUserId: userId,
+          },
+          'Erreur désassignation tâches — cleanup manuel requis',
+        )
+        // Ne pas faire échouer le DELETE : l'affectation EST supprimée.
+        // L'admin peut re-tenter manuellement (PATCH tâche par tâche).
+      } else {
+        reqLogger.info(
+          {
+            affectationId,
+            memberUserId: existing.user_id,
+            chantierId: existing.chantier_id,
+            actorUserId: userId,
+            tachesUpdatedCount: tachesUpdatedCount ?? 0,
+          },
+          tachesUpdatedCount && tachesUpdatedCount > 0
+            ? `Affectation supprimée + ${tachesUpdatedCount} tâche(s) désassignée(s)`
+            : 'Affectation supprimée (aucune tâche à désassigner)',
+        )
+        return new NextResponse(null, { status: 204 })
+      }
+    }
+
+    reqLogger.info(
+      {
+        affectationId,
+        memberUserId: existing.user_id,
+        chantierId: existing.chantier_id,
+        actorUserId: userId,
+        remainingAffectations: remainingCount ?? 0,
+      },
+      'Affectation supprimée (membre conserve d\'autres affectations sur ce chantier)',
+    )
 
     return new NextResponse(null, { status: 204 })
   } catch (error) {
