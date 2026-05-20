@@ -590,8 +590,8 @@ async function handleReviveConducteur({
   }
 
   reqLogger.info(
-    { existingId, email, organisationId, correlationId },
-    'Conducteur revived successfully',
+    { existingId, email, role, organisationId, correlationId },
+    `${role === 'admin' ? 'Admin' : 'Conducteur'} revived successfully`,
   )
 
   return NextResponse.json(
