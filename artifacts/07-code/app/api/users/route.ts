@@ -303,31 +303,39 @@ async function handleCreateConducteur({
   }
   // ── FIN REVIVE CHECK ─────────────────────────────────────
 
-  // Inviter via Supabase Auth (envoie un email d'invitation avec magic link).
-  // redirectTo : page qui demande au nouveau conducteur de définir son password
-  // avant d'accéder au dashboard. Sans ça, Supabase fallback sur Site URL = home.
+  // Sprint 2 dette (2026-05-20 soir) — Refactor : unifier le flow avec handleReviveConducteur
+  // (createUser + generateLink + Resend) au lieu d'inviteUserByEmail.
+  //
+  // Pourquoi : `inviteUserByEmail(email, { data: {...} })` met `data` dans
+  // `user_metadata` (modifiable côté client) et PAS dans `app_metadata`
+  // (claims immutables). En prod, le custom_access_token_hook PG (qui devrait
+  // peupler app_metadata depuis public.users) ne se déclenche pas (dette
+  // PROJECT_STATE). Conséquence observée : nouveau user → login → JWT sans
+  // app_metadata.role ni app_metadata.organisation_id → /admin/chantiers
+  // inaccessible.
+  //
+  // `auth.admin.createUser({ ..., app_metadata })` ÉCRIT directement dans
+  // raw_app_meta_data — le JWT contient les claims sans dépendre du hook.
+  // C'est le pattern qui marche déjà pour le revive.
+  //
+  // Bonus : tous les emails passent désormais par notre template Resend
+  // branded (cohérence + déjà testé).
   const appUrl = process.env['NEXT_PUBLIC_APP_URL'] ?? 'http://localhost:3000'
-  const { data: inviteData, error: inviteError } =
-    await adminClient.auth.admin.inviteUserByEmail(email, {
-      data: {
-        organisation_id: organisationId,
-        role,
-      },
-      // redirectTo : /auth/callback (PKCE exchange) -> /auth/invite (set password).
-      // Sans le callback intermédiaire, le code ?code=XYZ n'est jamais échangé
-      // contre une session, et le set-password modifie la session déjà présente
-      // dans le navigateur (potentiellement celle de l'admin = bug sécurité majeur).
-      redirectTo: `${appUrl}/auth/callback?next=/auth/invite`,
+
+  // 1. Créer l'auth user avec app_metadata directement (workaround hook PG).
+  const { data: createData, error: createError } =
+    await adminClient.auth.admin.createUser({
+      email,
+      email_confirm: false,
+      app_metadata: { organisation_id: organisationId, role },
     })
 
-  if (inviteError || !inviteData.user) {
+  if (createError || !createData.user) {
     reqLogger.error(
-      { error: inviteError?.message, email, organisationId, correlationId },
-      'Failed to invite conducteur via Supabase Auth',
+      { error: createError?.message, email, organisationId, correlationId },
+      'Failed to create auth user',
     )
-    // Convention messages d'erreur (TECH_CONTEXT.md) — mapper les cas métier prévisibles
-    // vers des HTTP codes + messages clairs UI plutôt que 500 générique.
-    const errMsg = inviteError?.message ?? ''
+    const errMsg = createError?.message ?? ''
     if (errMsg.includes('already been registered') || errMsg.includes('already registered')) {
       return NextResponse.json(
         {
@@ -342,9 +350,9 @@ async function handleCreateConducteur({
     )
   }
 
-  const newUserId = inviteData.user.id
+  const newUserId = createData.user.id
 
-  // Créer la fiche users (invitation_status='pending')
+  // 2. Créer la fiche public.users (invitation_status='pending')
   // R-02 : telephone propagé depuis le payload (nullable, champ optionnel)
   const { error: userInsertError } = await adminClient.from('users').insert({
     id: newUserId,
@@ -363,13 +371,11 @@ async function handleCreateConducteur({
   if (userInsertError) {
     reqLogger.error(
       { error: userInsertError.message, newUserId, organisationId, correlationId },
-      'Failed to create conducteur users entry — auth user invited, DB entry missing',
+      'Failed to create users entry — auth user created, DB entry missing',
     )
 
-    // ROLLBACK : supprimer le nouvel auth user créé par inviteUserByEmail pour
-    // éviter un état orphelin (auth.users avec une row, public.users sans).
-    // Best-effort : si la suppression échoue, on log mais on retourne quand
-    // même l'erreur d'origine (l'orphelin sera nettoyable manuellement).
+    // ROLLBACK : supprimer le nouvel auth user pour éviter un orphelin
+    // (auth.users avec une row, public.users sans). Best-effort.
     await adminClient.auth.admin.deleteUser(newUserId).catch((rollbackErr: unknown) => {
       reqLogger.error(
         {
@@ -381,8 +387,6 @@ async function handleCreateConducteur({
       )
     })
 
-    // Convention messages d'erreur (TECH_CONTEXT.md) — mapper le cas duplicate
-    // email vers un message utilisateur clair et actionnable.
     const errMsg = userInsertError.message ?? ''
     if (errMsg.includes('idx_users_email') || errMsg.includes('duplicate key')) {
       return NextResponse.json(
@@ -398,6 +402,68 @@ async function handleCreateConducteur({
       { error: 'Une erreur interne est survenue.' },
       { status: 500, headers: { 'X-Correlation-Id': correlationId } },
     )
+  }
+
+  // 3. Générer un magic link pour set-password.
+  //    type='magiclink' (pas 'invite') : l'auth user vient d'être créé via
+  //    createUser, donc il EXISTE. generateLink('invite') retournerait 422
+  //    "already registered" (bug observé prod 2026-05-20, cf. commit 6ac9557).
+  //    redirectTo /auth/callback : PKCE exchange obligatoire — sinon set-password
+  //    écrase la session admin présente dans le navigateur (bug sécurité, D-035).
+  const { data: linkData, error: linkError } = await adminClient.auth.admin.generateLink({
+    type: 'magiclink',
+    email,
+    options: { redirectTo: `${appUrl}/auth/callback?next=/auth/invite` },
+  })
+
+  if (linkError || !linkData?.properties?.action_link) {
+    reqLogger.error(
+      { error: linkError?.message, newUserId, correlationId },
+      'Invite: failed to generate magic link — user created but no email sent',
+    )
+    // L'user EST créé en DB. L'admin peut cliquer "Renvoyer" depuis la liste.
+    return NextResponse.json(
+      {
+        data: { user_id: newUserId, role, invitation_status: 'pending' },
+        warning:
+          'Compte créé mais email non envoyé. Cliquez "Renvoyer" depuis la liste équipe.',
+      },
+      { status: 201, headers: { 'X-Correlation-Id': correlationId } },
+    )
+  }
+
+  // 4. Envoyer l'email via Resend avec le template branded.
+  //    Même template que reinvite/revive (bodyTemplate: 'invitation-renvoi').
+  const html = renderEmail({
+    bodyTemplate: 'invitation-renvoi',
+    title: 'Activez votre compte ClawBTP',
+    preheader: 'Vous avez ete invite(e) a rejoindre ClawBTP',
+    vars: {
+      PRENOM: escapeHtml(prenom),
+      NOM: escapeHtml(nom),
+      ACTION_URL: linkData.properties.action_link,
+    },
+  })
+
+  try {
+    await sendEmail({
+      to: email,
+      subject: 'Activez votre compte ClawBTP',
+      html,
+      tag: 'invite-new',
+    })
+  } catch (emailErr) {
+    // L'user est créé. Email non envoyé → admin peut "Renvoyer". Map erreur Resend.
+    reqLogger.error(
+      {
+        error: emailErr instanceof Error ? emailErr.message : String(emailErr),
+        newUserId,
+        email,
+        correlationId,
+      },
+      'Invite: failed to send email via Resend — user created, email not sent',
+    )
+    return mapEmailErrorToResponse(emailErr, correlationId)
   }
 
   reqLogger.info(

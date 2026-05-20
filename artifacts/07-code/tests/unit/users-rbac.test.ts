@@ -380,12 +380,21 @@ describe('POST /api/users — handler R-02 (telephone conducteur)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockAssertTrial.mockResolvedValue(undefined)
-    mockAdminInvite.mockResolvedValue({
+    // Sprint 2 dette refactor (2026-05-20 soir) : handleCreateConducteur
+    // utilise désormais createUser + generateLink + sendEmail (workaround
+    // hook PG défaillant qui ne peuplait pas app_metadata depuis
+    // inviteUserByEmail). Mocks alignés.
+    mockAdminCreateUser.mockResolvedValue({
       data: { user: { id: 'new-conducteur-id' } },
       error: null,
     })
+    mockAdminGenerateLink.mockResolvedValue({
+      data: { properties: { action_link: 'https://example.com/magic-link' } },
+      error: null,
+    })
+    mockSendEmail.mockResolvedValue(undefined)
     mockAdminInsert.mockResolvedValue({ error: null })
-    // Revive check : pas de conducteur soft-deleted pour cet email → chemin normal (inviteUserByEmail)
+    // Revive check : pas de conducteur soft-deleted pour cet email → chemin normal (createUser)
     mockUserSelectMaybySingle.mockResolvedValue({ data: null, error: null })
   })
 
