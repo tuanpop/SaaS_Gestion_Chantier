@@ -181,12 +181,16 @@ export async function POST(
     const adminClient = createAdminClient()
 
     // 6. Vérifier que user_id appartient à la MÊME organisation (DoD US-004 cross-org)
-    // I-06 : même réponse 403 si l'utilisateur n'existe pas ou est hors org
+    // I-06 : même réponse 403 si l'utilisateur n'existe pas, est hors org, ou supprimé.
+    // Sprint 2 dette (2026-05-20) : `is('deleted_at', null)` empêche d'affecter un
+    // membre soft-deleted (defense-in-depth — l'UI doit déjà filtrer mais l'API
+    // ne fait jamais confiance au client).
     const { data: targetUser, error: userError } = await adminClient
       .from('users')
       .select('id, role')
       .eq('id', parsed.data.user_id)
       .eq('organisation_id', organisationId)
+      .is('deleted_at', null)
       .single()
 
     if (userError || !targetUser) {

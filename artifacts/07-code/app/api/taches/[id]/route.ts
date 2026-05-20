@@ -84,13 +84,16 @@ export async function PATCH(
       )
     }
 
-    // 5. Si assigned_to change : vérifier appartenance org
+    // 5. Si assigned_to change : vérifier appartenance org + non supprimé
+    // Sprint 2 dette (2026-05-20) : `is('deleted_at', null)` — defense-in-depth contre
+    // la (ré)assignation à un membre soft-deleted depuis /admin/equipe.
     if (parsed.data.assigned_to !== undefined && parsed.data.assigned_to !== null) {
       const { data: assignedUser, error: assignedError } = await adminClient
         .from('users')
         .select('id')
         .eq('id', parsed.data.assigned_to)
         .eq('organisation_id', organisationId)
+        .is('deleted_at', null)
         .single()
 
       if (assignedError || !assignedUser) {

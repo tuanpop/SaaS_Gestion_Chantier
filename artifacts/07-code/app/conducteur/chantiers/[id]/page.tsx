@@ -95,11 +95,14 @@ export default async function ChantierDetailConduPage({ params }: PageProps) {
   const affectations = (affectationsRaw ?? []) as unknown as AffectationWithUser[]
 
   // Récupérer la liste des ouvriers et conducteurs de l'organisation pour l'AffectationForm
+  // Sprint 2 dette (2026-05-20) : filtre deleted_at obligatoire — les membres supprimés
+  // depuis /admin/equipe ne doivent pas réapparaître dans le select d'affectation.
   const { data: membresRaw } = await adminClient
     .from('users')
     .select('id, nom, prenom, role')
     .eq('organisation_id', organisationId)
     .in('role', ['ouvrier', 'conducteur'])
+    .is('deleted_at', null)
     .order('prenom', { ascending: true })
 
   const membres = (membresRaw ?? []) as Array<{

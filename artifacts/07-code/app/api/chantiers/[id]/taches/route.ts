@@ -187,13 +187,16 @@ export async function POST(
 
     const adminClient = createAdminClient()
 
-    // 5. Vérifier que assigned_to (si fourni) appartient à l'organisation
+    // 5. Vérifier que assigned_to (si fourni) appartient à l'organisation et n'est pas supprimé
+    // Sprint 2 dette (2026-05-20) : `is('deleted_at', null)` — defense-in-depth contre
+    // l'assignation à un membre soft-deleted depuis /admin/equipe.
     if (parsed.data.assigned_to) {
       const { data: assignedUser, error: assignedError } = await adminClient
         .from('users')
         .select('id')
         .eq('id', parsed.data.assigned_to)
         .eq('organisation_id', organisationId)
+        .is('deleted_at', null)
         .single()
 
       if (assignedError || !assignedUser) {
