@@ -22,7 +22,7 @@
 
 import { useState, useEffect, useCallback, useId } from 'react'
 import { useRouter } from 'next/navigation'
-import { ScanLine, X } from 'lucide-react'
+import { X } from 'lucide-react'
 import type { Tables } from '@/types/database'
 
 // ============================================================
@@ -131,8 +131,9 @@ export function EquipeClient({ initialUsers, currentUserId }: EquipeClientProps)
   // ============================================================
 
   const [modalInvite, setModalInvite] = useState(false)
-  const [modalQr, setModalQr] = useState<{ open: boolean; userName: string }>({
+  const [modalQr, setModalQr] = useState<{ open: boolean; userId: string; userName: string }>({
     open: false,
+    userId: '',
     userName: '',
   })
   const [inviteRole, setInviteRole] = useState<'conducteur' | 'ouvrier'>('conducteur')
@@ -421,7 +422,11 @@ export function EquipeClient({ initialUsers, currentUserId }: EquipeClientProps)
                       <button
                         type="button"
                         onClick={() =>
-                          setModalQr({ open: true, userName: `${user.prenom} ${user.nom}` })
+                          setModalQr({
+                            open: true,
+                            userId: user.id,
+                            userName: `${user.prenom} ${user.nom}`,
+                          })
                         }
                         className="btn-brutal bg-white text-[#1F4E79] text-xs px-3 py-1.5"
                       >
@@ -684,13 +689,16 @@ export function EquipeClient({ initialUsers, currentUserId }: EquipeClientProps)
       )}
 
       {/* ======================================================
-          Modal — QR Code (placeholder Sprint 3)
+          Modal — QR Code ouvrier
+          PNG servi par GET /api/users/[id]/qr (généré côté serveur)
           ====================================================== */}
       {modalQr.open && (
         <div
           className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
           onClick={(e) => {
-            if (e.target === e.currentTarget) setModalQr({ open: false, userName: '' })
+            if (e.target === e.currentTarget) {
+              setModalQr({ open: false, userId: '', userName: '' })
+            }
           }}
         >
           <div className="card-brutal p-8 max-w-md w-full bg-white text-center">
@@ -698,28 +706,35 @@ export function EquipeClient({ initialUsers, currentUserId }: EquipeClientProps)
               QR Code — {modalQr.userName}
             </h2>
 
-            {/* Placeholder QR */}
-            <div className="card-brutal p-8 text-center mx-auto max-w-xs mb-6">
-              <ScanLine className="w-16 h-16 text-[#555] mx-auto mb-3" aria-hidden="true" />
-              <p className="font-semibold text-[#222] mb-1">Génération du QR disponible Sprint 3</p>
-              <p className="text-[#555] text-sm">
-                Le QR code ouvrier sera généré automatiquement lors de la prochaine mise à jour.
-              </p>
+            {/* QR image */}
+            <div className="card-brutal p-4 mx-auto w-fit mb-6 bg-white">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={`/api/users/${modalQr.userId}/qr`}
+                alt={`QR code de ${modalQr.userName}`}
+                width={280}
+                height={280}
+                className="block"
+              />
             </div>
 
-            {/* Bouton désactivé */}
-            <button
-              type="button"
-              disabled
-              className="btn-brutal w-full justify-center mb-3 disabled:border-[#999] disabled:shadow-[3px_3px_0_#999] disabled:bg-[#F2F2F2] disabled:text-[#555] disabled:cursor-not-allowed"
-            >
-              Générer le QR
-            </button>
+            <p className="text-[#555] text-sm mb-6">
+              À imprimer et remettre à l&apos;ouvrier. Le scan ouvre sa session terrain.
+            </p>
 
-            {/* Fermer */}
+            {/* Imprimer — ouvre le PNG dans un nouvel onglet, l'utilisateur Ctrl+P */}
+            <a
+              href={`/api/users/${modalQr.userId}/qr`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-brutal bg-[#F97316] text-white w-full justify-center mb-3 inline-block"
+            >
+              Ouvrir pour imprimer
+            </a>
+
             <button
               type="button"
-              onClick={() => setModalQr({ open: false, userName: '' })}
+              onClick={() => setModalQr({ open: false, userId: '', userName: '' })}
               className="btn-brutal bg-white text-[#1F4E79] w-full justify-center"
             >
               Fermer
