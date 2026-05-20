@@ -1,5 +1,12 @@
-# Guide de déploiement — ClawBTP
+# Guide de déploiement — ClawBTP (initial Tanjiro)
 *Generé: 2026-05-14 | Stack: Next.js 15 SSR + Redis + supercronic | Cible: VPS Linux + Docker Swarm + Traefik*
+
+---
+
+> ⚠️ **Ce document décrit le déploiement Docker Swarm direct (sans Dokploy) initialement prévu par Tanjiro.**
+> **Il n'est PAS l'état réel de la prod preview.** L'app tourne en réalité via **Dokploy v0.29.4** depuis 2026-05-18.
+> **Source de vérité de l'état actuel : [`PRODUCTION_STATE.md`](./PRODUCTION_STATE.md)** — à lire en priorité pour toute intervention.
+> Ce README reste comme référence de l'option "Docker Swarm direct" au cas où on basculerait hors de Dokploy un jour.
 
 ---
 
