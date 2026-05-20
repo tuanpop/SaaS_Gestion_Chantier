@@ -491,13 +491,13 @@ async function handleReviveConducteur({
     )
   }
 
-  // 3. Générer un lien d'invitation pour que le conducteur réactivé puisse se connecter.
-  //    type='invite' (vs 'magiclink') : 24h d'expiration au lieu de 1h, et
-  //    sémantiquement adapté au flow set-password sur /auth/invite. Moins fragile
-  //    aux Gmail/Outlook preview crawlers qui peuvent consommer les magic links
-  //    avant le clic réel de l'utilisateur (bug observé 2026-05-20).
+  // 3. Générer un lien magique pour que le conducteur réactivé puisse se connecter.
+  //    type='magiclink' (et non 'invite') : on vient de recréer l'auth user via
+  //    createUser, donc il EXISTE. generateLink('invite') retournerait 422
+  //    "already registered" car il essaie de créer un nouveau user (bug observé
+  //    prod 2026-05-20). magiclink est conçu pour les users existants.
   const { data: linkData, error: linkError } = await adminClient.auth.admin.generateLink({
-    type: 'invite',
+    type: 'magiclink',
     email,
     // redirectTo /auth/callback : PKCE code exchange obligatoire (cf. commentaire
     // dans handleCreateConducteur ci-dessus + bug observé prod 2026-05-20).

@@ -177,11 +177,13 @@ export async function POST(
       }
     }
 
-    // type='invite' (vs 'magiclink') : 24h d'expiration au lieu de 1h, plus
-    // tolérant aux Gmail/Outlook preview crawlers qui peuvent consommer le
-    // token avant le clic réel de l'utilisateur (bug observé 2026-05-20).
+    // type='magiclink' est la seule API generateLink qui accepte un user EXISTANT.
+    // type='invite' essaie de CRÉER un auth user → 422 "already registered" si
+    // existe déjà (cas observé prod 2026-05-20 sur tuanpops@gmail.com).
+    // TTL magic link : 1h par défaut (configurable dans Supabase Dashboard
+    // → Auth → Email Templates → Mailer settings si besoin de 24h).
     const { data: linkData, error: linkError } = await adminClient.auth.admin.generateLink({
-      type: 'invite',
+      type: 'magiclink',
       email,
       options: {
         // redirectTo /auth/callback : PKCE code exchange obligatoire pour créer
