@@ -107,6 +107,23 @@ export default async function ChantierDetailAdminPage({ params }: PageProps) {
   const affectations = (affectationsRaw ?? []) as unknown as AffectationWithUser[]
   // T04 — budgetProgress et isEstDepasse supprimés ici (calcul migré dans tabs-client.tsx)
 
+  // Bug 2 fix (Sprint 2 dette) — liste membres assignables pour AffectationForm côté admin
+  // Cohérent avec le fetch dans /conducteur/chantiers/[id]/page.tsx
+  const { data: membresRaw } = await adminClient
+    .from('users')
+    .select('id, nom, prenom, role')
+    .eq('organisation_id', organisationId)
+    .in('role', ['ouvrier', 'conducteur'])
+    .is('deleted_at', null)
+    .order('prenom', { ascending: true })
+
+  const membres = (membresRaw ?? []) as Array<{
+    id: string
+    nom: string
+    prenom: string
+    role: 'ouvrier' | 'conducteur'
+  }>
+
   return (
     <div>
       {/* Header */}
@@ -152,8 +169,10 @@ export default async function ChantierDetailAdminPage({ params }: PageProps) {
       {/* Informations (grille infos + budget + affectations) et Tâches sont dans ChantierDetailAdminTabs */}
       <ChantierDetailAdminTabs
         chantier={chantier}
+        chantierId={chantierId}
         taches={taches}
         affectations={affectations}
+        membres={membres}
         couleurStyles={couleurStyles}
       />
     </div>

@@ -13,16 +13,28 @@
 // Design system Hana : .tab-brutal (globals.css T03), .table-brutal §4.13
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import type { Chantier, TacheWithUser, AffectationWithUser } from '@/types/database'
+import { AffectationForm } from '@/components/AffectationForm'
+import { TacheCreateModal } from '@/components/TacheCreateModal'
 
 // ============================================================
 // Types de props — uniquement des types sérialisables
 // ============================================================
 
+interface AssignableMember {
+  id: string
+  nom: string
+  prenom: string
+  role: 'ouvrier' | 'conducteur'
+}
+
 interface TabsClientProps {
   chantier: Chantier
+  chantierId: string
   taches: TacheWithUser[]
   affectations: AffectationWithUser[]
+  membres: AssignableMember[]
   couleurStyles: {
     border: string
     badge: string
@@ -71,8 +83,19 @@ function statutLabel(statut: string): string {
 // Composant
 // ============================================================
 
-export function ChantierDetailAdminTabs({ chantier, taches, affectations, couleurStyles }: TabsClientProps) {
+export function ChantierDetailAdminTabs({
+  chantier,
+  chantierId,
+  taches,
+  affectations,
+  membres,
+  couleurStyles,
+}: TabsClientProps) {
+  const router = useRouter()
   const [activeTab, setActiveTab] = useState<'infos' | 'taches'>('infos')
+  const [showAffectationForm, setShowAffectationForm] = useState(false)
+  const [showTacheModal, setShowTacheModal] = useState(false)
+  const isArchive = chantier.statut === 'archive'
 
   // Budget progress
   const budgetProgress = chantier.budget_alloue
@@ -199,12 +222,27 @@ export function ChantierDetailAdminTabs({ chantier, taches, affectations, couleu
                 Équipe affectée
                 <span className="ml-2 text-base font-normal text-muted">({affectations.length})</span>
               </h2>
+              {/* Bug 2 fix (Sprint 2 dette) — admin peut affecter (auparavant lecture seule) */}
+              {!isArchive && (
+                <button
+                  type="button"
+                  data-testid="admin-affecter-membre"
+                  onClick={() => setShowAffectationForm(true)}
+                  className="btn-brutal bg-accent text-white text-sm py-2 px-4"
+                >
+                  + Affecter un membre
+                </button>
+              )}
             </div>
 
             {affectations.length === 0 ? (
               <div className="card-brutal p-8 text-center">
                 <p className="font-heading text-lg font-bold mb-2">Aucun membre affecté</p>
-                <p className="text-sm text-muted">Les conducteurs peuvent affecter des membres depuis leur espace.</p>
+                <p className="text-sm text-muted">
+                  {isArchive
+                    ? 'Ce chantier est archivé.'
+                    : 'Cliquez sur « Affecter un membre » pour démarrer.'}
+                </p>
               </div>
             ) : (
               /* T05 — table-brutal directement sur <table> (plus de <div> wrapper) */
@@ -242,10 +280,28 @@ export function ChantierDetailAdminTabs({ chantier, taches, affectations, couleu
       {/* ============ Contenu tab Tâches ============ */}
       {activeTab === 'taches' && (
         <div>
+          {/* Bug 2 extension (Sprint 2 dette) — admin peut créer des tâches */}
+          {!isArchive && (
+            <div className="flex justify-end mb-4">
+              <button
+                type="button"
+                data-testid="admin-nouvelle-tache"
+                onClick={() => setShowTacheModal(true)}
+                className="btn-brutal bg-accent text-white text-sm py-2 px-4"
+              >
+                + Nouvelle tâche
+              </button>
+            </div>
+          )}
+
           {taches.length === 0 ? (
             <div className="card-brutal p-8 text-center">
               <p className="font-heading text-lg font-bold mb-2">Aucune tâche</p>
-              <p className="text-sm text-muted">Les tâches sont créées par les conducteurs de chantier.</p>
+              <p className="text-sm text-muted">
+                {isArchive
+                  ? 'Ce chantier est archivé.'
+                  : 'Cliquez sur « Nouvelle tâche » pour démarrer.'}
+              </p>
             </div>
           ) : (
             /* T19/T23 — tableau tâches en table-brutal (proto 16-admin-chantier-detail.html l.206-255) */
@@ -280,6 +336,32 @@ export function ChantierDetailAdminTabs({ chantier, taches, affectations, couleu
             </table>
           )}
         </div>
+      )}
+
+      {/* Bug 2 fix (Sprint 2 dette) — modal AffectationForm pour admin */}
+      {showAffectationForm && (
+        <AffectationForm
+          chantierId={chantierId}
+          ouvriers={membres}
+          onSuccess={() => {
+            setShowAffectationForm(false)
+            router.refresh()
+          }}
+          onClose={() => setShowAffectationForm(false)}
+        />
+      )}
+
+      {/* Bug 2 extension — modal création tâche pour admin */}
+      {showTacheModal && (
+        <TacheCreateModal
+          chantierId={chantierId}
+          membres={membres}
+          onSuccess={() => {
+            setShowTacheModal(false)
+            router.refresh()
+          }}
+          onClose={() => setShowTacheModal(false)}
+        />
       )}
     </div>
   )
