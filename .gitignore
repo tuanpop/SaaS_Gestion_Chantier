@@ -83,5 +83,7 @@ artifacts/quality-gate/
 artifacts/07-code/IMPLEMENTATION_PLAN.md
 artifacts/07-code/SPRINT_1_PLAN.md
 artifacts/07-code/SPRINT_2_PLAN.md
+artifacts/07-code/IMPLEMENTATION_PLAN_SPRINT_*.md
+artifacts/07-code/SPRINT_*_PLAN.md
 artifacts/08-infra/infra.md
 artifacts/memory-global-patches.md
