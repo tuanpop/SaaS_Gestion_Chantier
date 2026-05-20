@@ -148,7 +148,7 @@ export function EquipeClient({ initialUsers, currentUserId }: EquipeClientProps)
     userId: '',
     userName: '',
   })
-  const [inviteRole, setInviteRole] = useState<'conducteur' | 'ouvrier'>('conducteur')
+  const [inviteRole, setInviteRole] = useState<'admin' | 'conducteur' | 'ouvrier'>('conducteur')
   const [inviteForm, setInviteForm] = useState<InviteFormState>({
     nom: '',
     prenom: '',
@@ -286,8 +286,13 @@ export function EquipeClient({ initialUsers, currentUserId }: EquipeClientProps)
       return
     }
 
-    if (inviteRole === 'conducteur' && !email) {
-      setInviteError("L'email est requis pour un conducteur.")
+    // admin et conducteur : email obligatoire (Supabase Auth + magic link).
+    if ((inviteRole === 'admin' || inviteRole === 'conducteur') && !email) {
+      setInviteError(
+        inviteRole === 'admin'
+          ? "L'email est requis pour un administrateur."
+          : "L'email est requis pour un conducteur.",
+      )
       return
     }
 
@@ -300,26 +305,16 @@ export function EquipeClient({ initialUsers, currentUserId }: EquipeClientProps)
 
     try {
       // Construction du payload selon le rôle
-      // R-02 : telephone inclus pour conducteur ET ouvrier
+      // R-02 : telephone inclus pour les 3 rôles (optionnel)
+      const telephone = inviteForm.telephone.trim()
+        ? { telephone: inviteForm.telephone.trim() }
+        : {}
       const payload =
-        inviteRole === 'conducteur'
-          ? {
-              role: 'conducteur' as const,
-              email,
-              nom,
-              prenom,
-              ...(inviteForm.telephone.trim()
-                ? { telephone: inviteForm.telephone.trim() }
-                : {}),
-            }
-          : {
-              role: 'ouvrier' as const,
-              nom,
-              prenom,
-              ...(inviteForm.telephone.trim()
-                ? { telephone: inviteForm.telephone.trim() }
-                : {}),
-            }
+        inviteRole === 'admin'
+          ? { role: 'admin' as const, email, nom, prenom, ...telephone }
+          : inviteRole === 'conducteur'
+            ? { role: 'conducteur' as const, email, nom, prenom, ...telephone }
+            : { role: 'ouvrier' as const, nom, prenom, ...telephone }
 
       const res = await fetch('/api/users', {
         method: 'POST',
@@ -332,9 +327,11 @@ export function EquipeClient({ initialUsers, currentUserId }: EquipeClientProps)
         setToast({
           type: 'success',
           message:
-            inviteRole === 'conducteur'
-              ? 'Invitation envoyée par email.'
-              : 'Ouvrier créé avec succès.',
+            inviteRole === 'admin'
+              ? 'Invitation administrateur envoyée par email.'
+              : inviteRole === 'conducteur'
+                ? 'Invitation conducteur envoyée par email.'
+                : 'Ouvrier créé avec succès.',
         })
         router.refresh()
         return
@@ -596,6 +593,22 @@ export function EquipeClient({ initialUsers, currentUserId }: EquipeClientProps)
               aria-label="Rôle du collaborateur"
               className="flex mb-6"
             >
+              {/* Sprint 2 dette (2026-05-20) — 3 tabs : Admin / Conducteur / Ouvrier */}
+              <button
+                role="tab"
+                aria-selected={inviteRole === 'admin'}
+                type="button"
+                data-testid="invite-role-admin"
+                onClick={() => {
+                  setInviteRole('admin')
+                  setInviteError(null)
+                }}
+                className={`tab-brutal flex-1 rounded-l-md border-r-0 ${
+                  inviteRole === 'admin' ? 'active' : ''
+                }`}
+              >
+                Admin
+              </button>
               <button
                 role="tab"
                 aria-selected={inviteRole === 'conducteur'}
@@ -604,7 +617,7 @@ export function EquipeClient({ initialUsers, currentUserId }: EquipeClientProps)
                   setInviteRole('conducteur')
                   setInviteError(null)
                 }}
-                className={`tab-brutal flex-1 rounded-l-md border-r-0 ${
+                className={`tab-brutal flex-1 border-r-0 ${
                   inviteRole === 'conducteur' ? 'active' : ''
                 }`}
               >
@@ -683,9 +696,16 @@ export function EquipeClient({ initialUsers, currentUserId }: EquipeClientProps)
                 </div>
               </div>
 
-              {/* CONDUCTEUR : Email requis, Téléphone optionnel */}
-              {inviteRole === 'conducteur' && (
+              {/* ADMIN + CONDUCTEUR : Email requis, Téléphone optionnel
+                  (Sprint 2 dette : variant admin partage le même flow d'invitation
+                  email + Supabase Auth que conducteur — seul le rôle final diffère). */}
+              {(inviteRole === 'admin' || inviteRole === 'conducteur') && (
                 <>
+                  {inviteRole === 'admin' && (
+                    <div className="mb-4 px-4 py-3 border-2 border-[#1F4E79] bg-[#E8F0FA] text-[#1F4E79] text-xs rounded-md">
+                      Un administrateur a tous les droits sur l&apos;organisation (chantiers, équipe, facturation).
+                    </div>
+                  )}
                   <div className="mb-4">
                     <label className="block text-sm font-semibold text-[#222] mb-1.5">
                       Email <span aria-hidden="true" className="text-[#C00000]">*</span>
@@ -701,7 +721,9 @@ export function EquipeClient({ initialUsers, currentUserId }: EquipeClientProps)
                       }
                       disabled={inviteLoading}
                       className="input-brutal"
-                      placeholder="conducteur@chantier.fr"
+                      placeholder={
+                        inviteRole === 'admin' ? 'admin@entreprise.fr' : 'conducteur@chantier.fr'
+                      }
                       inputMode="email"
                     />
                   </div>
