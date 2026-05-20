@@ -12,7 +12,7 @@
 // Proto référencé : mockups/16-admin-chantier-detail.html l.151-156 (tabs) l.206-255 (tableau tâches)
 // Design system Hana : .tab-brutal (globals.css T03), .table-brutal §4.13
 
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { Chantier, TacheWithUser, AffectationWithUser } from '@/types/database'
 import { AffectationForm } from '@/components/AffectationForm'
@@ -328,20 +328,33 @@ export function ChantierDetailAdminTabs({
               </thead>
               <tbody>
                 {taches.map((t) => (
-                  <tr key={t.id}>
-                    <td className="font-semibold">{t.titre}</td>
-                    <td>
-                      {t.assigned_user
-                        ? `${t.assigned_user.prenom} ${t.assigned_user.nom}`
-                        : '—'}
-                    </td>
-                    <td>
-                      <span className={statutBadgeClass(t.statut)}>
-                        {statutLabel(t.statut)}
-                      </span>
-                    </td>
-                    <td>{t.date_echeance ? formatDate(t.date_echeance) : '—'}</td>
-                  </tr>
+                  <Fragment key={t.id}>
+                    <tr>
+                      <td className="font-semibold">{t.titre}</td>
+                      <td>
+                        {t.assigned_user
+                          ? `${t.assigned_user.prenom} ${t.assigned_user.nom}`
+                          : '—'}
+                      </td>
+                      <td>
+                        <span className={statutBadgeClass(t.statut)}>
+                          {statutLabel(t.statut)}
+                        </span>
+                      </td>
+                      <td>{t.date_echeance ? formatDate(t.date_echeance) : '—'}</td>
+                    </tr>
+                    {/* Sprint 2 dette (2026-05-20) — afficher le motif de blocage sous la tâche.
+                        Avant : l'admin ne voyait que le badge "Bloqué" sans raison —
+                        info critique pour superviser. */}
+                    {t.statut === 'bloque' && t.bloque_raison && (
+                      <tr key={`${t.id}-raison`} className="bg-danger-bg/30">
+                        <td colSpan={4} className="text-sm text-danger">
+                          <span className="font-semibold">Motif du blocage :</span>{' '}
+                          {t.bloque_raison}
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
                 ))}
               </tbody>
             </table>
