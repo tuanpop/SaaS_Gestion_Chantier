@@ -193,15 +193,16 @@ export async function DELETE(
     }
 
     // 6. Récupérer le user avec ownership check (T-01)
-    // Cast explicite nécessaire — deleted_at ajouté par migration 003, absent du type généré
+    // Cast explicite nécessaire — deleted_at ajouté par migration 003, absent du type généré.
+    // role inclus pour le pré-check "au moins 1 admin restant" (Sprint 2 dette 2026-05-20).
     const { data: userRecord, error: dbError } = await supabase
       .from('users')
-      .select('id, organisation_id, has_supabase_auth')
+      .select('id, organisation_id, has_supabase_auth, role')
       .eq('id', userId)
       .eq('organisation_id', organisationId)
       .is('deleted_at', null)
       .single() as {
-        data: Pick<Tables<'users'>, 'id' | 'organisation_id' | 'has_supabase_auth'> | null
+        data: Pick<Tables<'users'>, 'id' | 'organisation_id' | 'has_supabase_auth' | 'role'> | null
         error: { message: string } | null
       }
 
@@ -211,6 +212,48 @@ export async function DELETE(
         'DELETE users/[id]: user not found or not in organisation',
       )
       throw new NotFoundError('user')
+    }
+
+    // 6.b Sprint 2 dette (2026-05-20) — invariant métier : au moins un admin doit
+    // exister dans l'organisation à tout moment. Si on supprime un admin et que
+    // c'est le DERNIER, refuser.
+    // En pratique, l'admin courant est non-supprimable (step 5) donc le scénario
+    // "0 admin restant" ne peut arriver que via attaque API directe — défense en
+    // profondeur. Réponse 409 avec message clair pour le diagnostic.
+    if (userRecord.role === 'admin') {
+      const adminCountClient = createAdminClient()
+      const { count: remainingAdminCount, error: countErr } = await adminCountClient
+        .from('users')
+        .select('id', { count: 'exact', head: true })
+        .eq('organisation_id', organisationId)
+        .eq('role', 'admin')
+        .is('deleted_at', null)
+        .neq('id', userId)
+
+      if (countErr) {
+        reqLogger.error(
+          { error: countErr.message, userId, organisationId, correlationId },
+          'DELETE users/[id]: échec du comptage admin restants',
+        )
+        return NextResponse.json(
+          { error: 'Une erreur interne est survenue.' },
+          { status: 500, headers: { 'X-Correlation-Id': correlationId } },
+        )
+      }
+
+      if ((remainingAdminCount ?? 0) === 0) {
+        reqLogger.warn(
+          { userId, organisationId, callerUserId, correlationId },
+          'DELETE users/[id]: tentative suppression dernier admin refusée',
+        )
+        return NextResponse.json(
+          {
+            error:
+              "Impossible de supprimer le dernier administrateur. Une organisation doit conserver au moins un administrateur. Invitez un autre administrateur avant de procéder.",
+          },
+          { status: 409, headers: { 'X-Correlation-Id': correlationId } },
+        )
+      }
     }
 
     // 7. Si le user a un compte Supabase Auth, le supprimer pour bloquer toute connexion future

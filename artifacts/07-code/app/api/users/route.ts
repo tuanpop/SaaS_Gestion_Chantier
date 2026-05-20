@@ -28,6 +28,19 @@ import type { UserRole, Database } from '@/types/database'
 // Le champ est optionnel pour les deux rôles. La colonne users.telephone est nullable
 // et déjà utilisée pour les ouvriers depuis Sprint 1.
 const InviteUserSchema = z.discriminatedUnion('role', [
+  // Sprint 2 dette (2026-05-20) — variant 'admin' ajouté : un admin peut désormais
+  // inviter d'autres admins (org multi-admin). Mêmes champs que conducteur :
+  // email obligatoire (Supabase Auth + magic link d'invitation).
+  z.object({
+    role: z.literal('admin'),
+    email: z.string().email().max(255),
+    nom: z.string().min(1).max(100),
+    prenom: z.string().min(1).max(100),
+    telephone: z
+      .string()
+      .regex(/^\+?[0-9]{10,15}$/)
+      .optional(),
+  }),
   z.object({
     role: z.literal('conducteur'),
     email: z.string().email().max(255),
@@ -186,8 +199,21 @@ export async function POST(request: NextRequest) {
 
     const userData = parsed.data
 
-    if (userData.role === 'conducteur') {
+    if (userData.role === 'admin') {
+      // Sprint 2 dette : invitation admin (mêmes étapes que conducteur, role='admin')
       return await handleCreateConducteur({
+        role: 'admin',
+        nom: userData.nom,
+        prenom: userData.prenom,
+        email: userData.email,
+        telephone: userData.telephone ?? null,
+        organisationId,
+        correlationId,
+        reqLogger,
+      })
+    } else if (userData.role === 'conducteur') {
+      return await handleCreateConducteur({
+        role: 'conducteur',
         nom: userData.nom,
         prenom: userData.prenom,
         email: userData.email,
@@ -222,6 +248,8 @@ export async function POST(request: NextRequest) {
 // ============================================================
 
 interface CreateConducteurParams {
+  // Sprint 2 dette (2026-05-20) — supporte 'admin' + 'conducteur' (même flow auth).
+  role: 'admin' | 'conducteur'
   nom: string
   prenom: string
   email: string
@@ -232,6 +260,7 @@ interface CreateConducteurParams {
 }
 
 async function handleCreateConducteur({
+  role,
   nom,
   prenom,
   email,
@@ -261,6 +290,7 @@ async function handleCreateConducteur({
 
   if (existingDeleted) {
     return await handleReviveConducteur({
+      role,
       existingId: existingDeleted.id as string,
       email,
       nom,
@@ -281,7 +311,7 @@ async function handleCreateConducteur({
     await adminClient.auth.admin.inviteUserByEmail(email, {
       data: {
         organisation_id: organisationId,
-        role: 'conducteur',
+        role,
       },
       // redirectTo : /auth/callback (PKCE exchange) -> /auth/invite (set password).
       // Sans le callback intermédiaire, le code ?code=XYZ n'est jamais échangé
@@ -319,7 +349,7 @@ async function handleCreateConducteur({
   const { error: userInsertError } = await adminClient.from('users').insert({
     id: newUserId,
     organisation_id: organisationId,
-    role: 'conducteur',
+    role,
     nom,
     prenom,
     email,
@@ -371,15 +401,15 @@ async function handleCreateConducteur({
   }
 
   reqLogger.info(
-    { newUserId, organisationId, correlationId },
-    'Conducteur invited successfully',
+    { newUserId, role, organisationId, correlationId },
+    `${role === 'admin' ? 'Admin' : 'Conducteur'} invited successfully`,
   )
 
   return NextResponse.json(
     {
       data: {
         user_id: newUserId,
-        role: 'conducteur',
+        role,
         invitation_status: 'pending',
       },
     },
@@ -393,6 +423,8 @@ async function handleCreateConducteur({
 // ============================================================
 
 interface ReviveConducteurParams {
+  // Sprint 2 dette : supporte revive vers 'admin' ou 'conducteur'.
+  role: 'admin' | 'conducteur'
   existingId: string
   nom: string
   prenom: string
@@ -404,6 +436,7 @@ interface ReviveConducteurParams {
 }
 
 async function handleReviveConducteur({
+  role,
   existingId,
   email,
   nom,
@@ -423,7 +456,7 @@ async function handleReviveConducteur({
     id: existingId,
     email,
     email_confirm: false,
-    app_metadata: { organisation_id: organisationId, role: 'conducteur' },
+    app_metadata: { organisation_id: organisationId, role },
   })
 
   if (createError) {
@@ -463,7 +496,7 @@ async function handleReviveConducteur({
   const revivePayload: UsersUpdate & { deleted_at: null } = {
     nom,
     prenom,
-    role: 'conducteur',
+    role,
     telephone,
     invitation_status: 'pending',
     has_supabase_auth: true,
