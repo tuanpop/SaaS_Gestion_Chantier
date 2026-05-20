@@ -17,6 +17,7 @@ import { useRouter } from 'next/navigation'
 import type { Chantier, TacheWithUser, AffectationWithUser } from '@/types/database'
 import { AffectationForm } from '@/components/AffectationForm'
 import { TacheCreateModal } from '@/components/TacheCreateModal'
+import { RemoveAffectationButton } from '@/components/RemoveAffectationButton'
 
 // ============================================================
 // Types de props — uniquement des types sérialisables
@@ -253,6 +254,7 @@ export function ChantierDetailAdminTabs({
                     <th>Rôle</th>
                     <th>Début</th>
                     <th>Fin</th>
+                    {!isArchive && <th className="text-right">Actions</th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -268,6 +270,15 @@ export function ChantierDetailAdminTabs({
                       </td>
                       <td>{formatDate(aff.date_debut)}</td>
                       <td>{aff.date_fin ? formatDate(aff.date_fin) : '—'}</td>
+                      {!isArchive && (
+                        <td className="text-right">
+                          <RemoveAffectationButton
+                            affectationId={aff.id}
+                            memberName={`${aff.user?.prenom ?? ''} ${aff.user?.nom ?? ''}`.trim()}
+                            variant="compact"
+                          />
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>

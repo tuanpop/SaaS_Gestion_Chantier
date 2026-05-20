@@ -14,6 +14,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { TacheItem } from '@/components/TacheItem'
 import { AffectationForm } from '@/components/AffectationForm'
+import { RemoveAffectationButton } from '@/components/RemoveAffectationButton'
 import type { Chantier, TacheWithUser, AffectationWithUser, Tache } from '@/types/database'
 
 interface MembreOption {
@@ -163,6 +164,11 @@ export function ChantierDetailConducteurClient({
                     Depuis {new Date(aff.date_debut).toLocaleDateString('fr-FR')}
                   </div>
                 </div>
+                <RemoveAffectationButton
+                  affectationId={aff.id}
+                  memberName={`${aff.user?.prenom ?? ''} ${aff.user?.nom ?? ''}`.trim()}
+                  variant="compact"
+                />
               </div>
             ))
           )}
