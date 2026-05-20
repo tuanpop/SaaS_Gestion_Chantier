@@ -8,7 +8,8 @@
 //   2. Conducteur clique le lien dans l'email → Supabase verify → crée session JWT
 //      → redirige vers /auth/invite (configuré dans inviteUserByEmail redirectTo)
 //   3. Cette page lit la session, demande au user de définir un password
-//   4. Submit → supabase.auth.updateUser({ password }) → marque invitation_status='active'
+//   4. Submit → supabase.auth.updateUser({ password })
+//            → PATCH /api/auth/complete-invite (marque invitation_status='active')
 //   5. Redirect vers / (root redirect selon role)
 //
 // Si la session n'existe pas (token expiré, lien réutilisé, etc.) :
@@ -59,27 +60,46 @@ export default function InvitePage() {
       const role = user.app_metadata?.['role'] as string | undefined
 
       if (role === 'admin') {
-        // Discriminer admin pré-existant vs admin nouvellement invité (session vient
-        // d'être set par /auth/callback) via invitation_status en DB.
-        // RLS isolation_org permet à l'user de lire son propre row.
+        // D-040 hardening — Discriminer admin pré-existant vs admin nouvellement invité.
+        //
+        // Deux discriminants indépendants — condition && = fail-safe :
+        //   1. invitation_status === 'pending' (statut DB)
+        //   2. created_at récent (< 5 min) — signal fort qu'on vient de créer ce compte
+        //
+        // Les DEUX doivent être vrais pour laisser passer.
+        // Si l'UN OU L'AUTRE échoue → bloquer (fail-safe par défaut).
+        //
+        // Justification created_at vs alternatives :
+        //   - email_confirmed_at / last_sign_in_at (auth.users) : inaccessibles depuis
+        //     le client Supabase anon sans appel API supplémentaire.
+        //   - created_at (public.users) : accessible via RLS (user peut lire son row).
+        //     Un nouvel invité vient d'être créé → created_at < 5 min est un signal fort.
+        //     Un admin pré-existant a forcément un created_at de plusieurs heures/jours.
         const { data: row } = await supabase
           .from('users')
-          .select('invitation_status')
+          .select('invitation_status, created_at')
           .eq('id', user.id)
           .single()
 
-        const invitationStatus = (row as { invitation_status: string | null } | null)
-          ?.invitation_status
+        const typedRow = row as { invitation_status: string | null; created_at: string } | null
+        const invitationStatus = typedRow?.invitation_status
+        const createdAt = typedRow?.created_at
 
-        if (invitationStatus !== 'pending') {
-          // Admin déjà actif → c'est l'admin existant qui a cliqué un mail d'invite
-          // dans son propre navigateur. Bloquer pour éviter d'écraser son password.
+        const FIVE_MINUTES_MS = 5 * 60 * 1000
+        const isRecentlyCreated = createdAt !== undefined && createdAt !== null
+          ? (Date.now() - new Date(createdAt).getTime()) < FIVE_MINUTES_MS
+          : false
+
+        if (invitationStatus !== 'pending' || !isRecentlyCreated) {
+          // Admin pré-existant OU compte créé il y a > 5 min (fail-safe).
+          // Bloquer pour éviter d'écraser le password d'un admin déjà actif.
           setAdminBlocked(true)
           setHasSession(false)
           setCheckingSession(false)
           return
         }
-        // Sinon : nouvel admin invité, set-password autorisé (fall through).
+        // Sinon : nouvel admin invité (invitation_status='pending' ET créé < 5 min),
+        // set-password autorisé (fall through).
       }
 
       setHasSession(true)
@@ -110,6 +130,34 @@ export default function InvitePage() {
         setErrorMsg(error.message)
         return
       }
+
+      // Marquer invitation_status='active' côté serveur via l'endpoint dédié.
+      // T-01 : l'endpoint lit le user_id depuis la session JWT — jamais depuis body.
+      // Non-bloquant : si l'appel échoue, on continue quand même vers le redirect
+      // (la transition de statut est best-effort ; l'admin peut voir "En attente"
+      // dans la liste mais le compte est fonctionnel). L'erreur est loggée côté
+      // client via console.error — EXCEPTION à la règle no-console : ce composant
+      // est un Client Component ('use client'), lib/logger.ts (pino) ne tourne pas
+      // dans le browser. Le console.error est l'unique fallback autorisé dans ce cas.
+      try {
+        const res = await fetch('/api/auth/complete-invite', { method: 'PATCH' })
+        if (!res.ok) {
+          // console.error autorisé ici : Client Component ('use client'), pino/lib/logger.ts
+          // ne tourne pas dans le browser. La règle no-console autorise console.error
+          // via eslint.config.mjs { allow: ["warn", "error"] }. Ce cas est l'unique
+          // exception au no-console côté client — annoté explicitement par le plan.
+          console.error('[complete-invite] PATCH failed', res.status)
+          // Toast non-bloquant — le redirect se fera quand même
+          setErrorMsg(
+            'Compte créé. La mise à jour du statut a échoué — contactez votre administrateur si le badge reste "En attente".'
+          )
+          // Ne pas return : on continue vers router.push pour ne pas bloquer l'utilisateur
+        }
+      } catch (fetchErr) {
+        // Réseau coupé ou autre erreur inattendue — ne pas bloquer le flow
+        console.error('[complete-invite] fetch error', fetchErr)
+      }
+
       // Succès — root redirect selon role JWT (déjà set par le hook auth)
       router.push('/')
       router.refresh()
