@@ -283,7 +283,11 @@ async function handleCreateConducteur({
         organisation_id: organisationId,
         role: 'conducteur',
       },
-      redirectTo: `${appUrl}/auth/invite`,
+      // redirectTo : /auth/callback (PKCE exchange) -> /auth/invite (set password).
+      // Sans le callback intermédiaire, le code ?code=XYZ n'est jamais échangé
+      // contre une session, et le set-password modifie la session déjà présente
+      // dans le navigateur (potentiellement celle de l'admin = bug sécurité majeur).
+      redirectTo: `${appUrl}/auth/callback?next=/auth/invite`,
     })
 
   if (inviteError || !inviteData.user) {
@@ -495,7 +499,9 @@ async function handleReviveConducteur({
   const { data: linkData, error: linkError } = await adminClient.auth.admin.generateLink({
     type: 'invite',
     email,
-    options: { redirectTo: `${appUrl}/auth/invite` },
+    // redirectTo /auth/callback : PKCE code exchange obligatoire (cf. commentaire
+    // dans handleCreateConducteur ci-dessus + bug observé prod 2026-05-20).
+    options: { redirectTo: `${appUrl}/auth/callback?next=/auth/invite` },
   })
 
   if (linkError || !linkData?.properties?.action_link) {

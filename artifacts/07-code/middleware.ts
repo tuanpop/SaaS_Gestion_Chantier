@@ -22,6 +22,7 @@ const PUBLIC_ROUTES = new Set([
   '/register',              // page création compte
   '/signup',                // alias /register (redirect côté serveur)
   '/auth/invite',           // page set-password post-invitation (session via magic link)
+  '/auth/callback',         // PKCE code exchange Supabase (crée la session du user invité)
 ])
 
 // Préfixes publics — toute URL commençant par un de ces préfixes est publique

@@ -184,7 +184,10 @@ export async function POST(
       type: 'invite',
       email,
       options: {
-        redirectTo: `${appUrl}/auth/invite`,
+        // redirectTo /auth/callback : PKCE code exchange obligatoire pour créer
+        // la session du bon user invité (et non écraser une session admin déjà
+        // présente dans le navigateur — bug sécurité observé prod 2026-05-20).
+        redirectTo: `${appUrl}/auth/callback?next=/auth/invite`,
       },
     })
 

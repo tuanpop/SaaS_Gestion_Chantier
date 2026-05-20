@@ -30,20 +30,33 @@ export default function InvitePage() {
 
   const [checkingSession, setCheckingSession] = useState(true)
   const [hasSession, setHasSession] = useState(false)
+  const [adminBlocked, setAdminBlocked] = useState(false)
   const [email, setEmail] = useState<string | null>(null)
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
-  // 1. Vérifier qu'une session existe (créée par Supabase verify lors du clic email)
+  // 1. Vérifier qu'une session existe (créée par /auth/callback via exchangeCodeForSession)
+  //    + Défense en profondeur : refuser le set-password si la session courante
+  //    est un admin. Cas observé prod 2026-05-20 : si /auth/callback rate l'échange
+  //    (code invalide/expiré) ET qu'un admin est connecté dans le même navigateur,
+  //    getUser retourne l'admin → on aurait modifié le password de l'admin.
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) {
+      if (!user) {
+        setHasSession(false)
+        setCheckingSession(false)
+        return
+      }
+      const role = user.app_metadata?.['role'] as string | undefined
+      if (role === 'admin') {
+        // Session admin présente — bloquer (le lien d'invite est destiné à un autre user)
+        setAdminBlocked(true)
+        setHasSession(false)
+      } else {
         setHasSession(true)
         setEmail(user.email ?? null)
-      } else {
-        setHasSession(false)
       }
       setCheckingSession(false)
     })
@@ -88,6 +101,33 @@ export default function InvitePage() {
     return (
       <main className="min-h-screen flex items-center justify-center bg-cream px-4">
         <p className="text-muted">Vérification de l&apos;invitation...</p>
+      </main>
+    )
+  }
+
+  if (adminBlocked) {
+    return (
+      <main className="min-h-screen flex items-center justify-center bg-cream px-4 py-12">
+        <div className="card-brutal max-w-md w-full p-8">
+          <h1 className="font-heading text-2xl font-bold text-primary-dark mb-3">
+            <span className="text-accent">Claw</span>BTP
+          </h1>
+          <h2 className="font-heading text-xl font-semibold text-primary-dark mb-3">
+            Déconnexion requise
+          </h2>
+          <p className="text-sm mb-3">
+            Vous êtes actuellement connecté en tant qu&apos;administrateur. Pour activer le compte invité, vous devez d&apos;abord vous déconnecter.
+          </p>
+          <p className="text-sm text-muted mb-6">
+            Cliquez sur «&nbsp;Se déconnecter&nbsp;» dans votre espace admin, puis ouvrez à nouveau l&apos;email d&apos;invitation depuis une fenêtre privée (Ctrl+Maj+N) si possible.
+          </p>
+          <Link
+            href="/admin/chantiers"
+            className="btn-brutal bg-accent text-white w-full inline-block text-center"
+          >
+            Retour à mon espace admin
+          </Link>
+        </div>
       </main>
     )
   }
