@@ -141,7 +141,7 @@ export async function POST(
     // POURQUOI generateLink au lieu de inviteUserByEmail ? (bug observé 2026-05-19)
     // inviteUserByEmail CRÉE un nouvel auth user. Si l'auth user existe déjà
     // (cas typique : 1re invitation envoyée mais jamais cliquée), 422 "already
-    // been registered". generateLink('magiclink') marche pour un user existant,
+    // been registered". generateLink('invite') marche pour un user existant,
     // retourne le lien (sans envoyer l'email — on l'envoie nous-mêmes via Resend
     // avec notre template branded).
     const adminClient = createAdminClient()
@@ -177,8 +177,11 @@ export async function POST(
       }
     }
 
+    // type='invite' (vs 'magiclink') : 24h d'expiration au lieu de 1h, plus
+    // tolérant aux Gmail/Outlook preview crawlers qui peuvent consommer le
+    // token avant le clic réel de l'utilisateur (bug observé 2026-05-20).
     const { data: linkData, error: linkError } = await adminClient.auth.admin.generateLink({
-      type: 'magiclink',
+      type: 'invite',
       email,
       options: {
         redirectTo: `${appUrl}/auth/invite`,

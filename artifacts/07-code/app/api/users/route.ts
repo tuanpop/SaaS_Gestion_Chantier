@@ -487,10 +487,13 @@ async function handleReviveConducteur({
     )
   }
 
-  // 3. Générer un magic link pour que le conducteur réactivé puisse se connecter.
-  //    On utilise generateLink (pas inviteUserByEmail) car l'auth user existe déjà.
+  // 3. Générer un lien d'invitation pour que le conducteur réactivé puisse se connecter.
+  //    type='invite' (vs 'magiclink') : 24h d'expiration au lieu de 1h, et
+  //    sémantiquement adapté au flow set-password sur /auth/invite. Moins fragile
+  //    aux Gmail/Outlook preview crawlers qui peuvent consommer les magic links
+  //    avant le clic réel de l'utilisateur (bug observé 2026-05-20).
   const { data: linkData, error: linkError } = await adminClient.auth.admin.generateLink({
-    type: 'magiclink',
+    type: 'invite',
     email,
     options: { redirectTo: `${appUrl}/auth/invite` },
   })

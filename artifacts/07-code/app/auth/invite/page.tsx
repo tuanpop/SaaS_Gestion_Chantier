@@ -100,13 +100,19 @@ export default function InvitePage() {
             <span className="text-accent">Claw</span>BTP
           </h1>
           <h2 className="font-heading text-xl font-semibold text-primary-dark mb-3">
-            Lien d&apos;invitation invalide
+            Lien d&apos;invitation expiré ou consommé
           </h2>
-          <p className="text-sm mb-2">
-            Ce lien d&apos;invitation a expiré ou a déjà été utilisé.
+          <p className="text-sm mb-3">
+            Ce lien n&apos;est plus valide. Cela peut arriver si :
           </p>
+          <ul className="text-sm text-muted mb-4 ml-4 list-disc">
+            <li className="mb-1">Le lien a expiré (24 heures de validité).</li>
+            <li className="mb-1">Vous avez déjà cliqué ce lien et défini votre mot de passe (utilisez la page de connexion).</li>
+            <li className="mb-1">Votre fournisseur email (Gmail, Outlook) a généré un aperçu qui a consommé le lien — c&apos;est un problème connu.</li>
+            <li>Une invitation plus récente a été envoyée — utilisez le dernier email reçu.</li>
+          </ul>
           <p className="text-sm text-muted mb-6">
-            Demandez à votre administrateur de renvoyer une invitation.
+            Demandez à votre administrateur de cliquer sur <strong className="text-primary-dark">&laquo;&nbsp;Renvoyer&nbsp;&raquo;</strong> depuis la page Équipe, puis ouvrez l&apos;email le plus récent.
           </p>
           <Link
             href="/login"
