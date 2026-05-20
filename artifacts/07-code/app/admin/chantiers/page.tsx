@@ -5,6 +5,12 @@
 // Proto référencé : mockups/15-admin-dashboard.html (section "Marge par chantier")
 // Design system Hana : grille 3 colonnes, card-brutal + pastille coloration
 // Implémente : US-010 S1 S3 (liste + perf < 1s)
+//
+// Sprint 2 dette (2026-05-20) — Tabs "Actifs / Archivés" :
+//   l'archive soft-delete (statut='archive', D-013 RGPD) cachait totalement
+//   les chantiers. Le tab "Archivés" permet de les retrouver et d'utiliser
+//   le bouton "Désarchiver" sur le détail. Source : remonté pendant smoke
+//   manuel post-Sprint 2 dette par le PO.
 
 import Link from 'next/link'
 import { headers } from 'next/headers'
@@ -22,10 +28,20 @@ export const metadata = {
 export const dynamic = 'force-dynamic'
 
 // ============================================================
+// Types
+// ============================================================
+
+type Tab = 'actifs' | 'archives'
+
+interface PageProps {
+  searchParams: Promise<{ tab?: string }>
+}
+
+// ============================================================
 // Page
 // ============================================================
 
-export default async function ChantiersAdminPage() {
+export default async function ChantiersAdminPage({ searchParams }: PageProps) {
   // T-01 — organisation_id et role lus depuis les headers injectés par le middleware,
   // jamais depuis app_metadata directement (pattern cohérent avec les routes API).
   // await headers() OBLIGATOIRE — Next.js 15 (D-011).
@@ -42,21 +58,46 @@ export default async function ChantiersAdminPage() {
     )
   }
 
-  // Récupérer les chantiers actifs via adminClient (types Sprint 2)
+  const sp = await searchParams
+  const activeTab: Tab = sp.tab === 'archives' ? 'archives' : 'actifs'
+  const statutFilter = activeTab === 'archives' ? 'archive' : 'actif'
+
   const adminClient = createAdminClient()
+
+  // Compteurs pour les tabs (deux head:true queries pour count seulement)
+  const [actifsCountRes, archivesCountRes] = await Promise.all([
+    adminClient
+      .from('chantiers')
+      .select('*', { count: 'exact', head: true })
+      .eq('organisation_id', organisationId)
+      .eq('statut', 'actif'),
+    adminClient
+      .from('chantiers')
+      .select('*', { count: 'exact', head: true })
+      .eq('organisation_id', organisationId)
+      .eq('statut', 'archive'),
+  ])
+  const countActifs = actifsCountRes.count ?? 0
+  const countArchives = archivesCountRes.count ?? 0
+
+  // Liste du tab actif. Tri différencié :
+  //   actifs    → date_fin_prevue ascendante (les plus urgents en premier)
+  //   archivés  → date_fin_reelle descendante (les plus récemment archivés en premier)
+  const orderColumn = activeTab === 'archives' ? 'date_fin_reelle' : 'date_fin_prevue'
+  const orderAsc = activeTab !== 'archives'
 
   const { data: chantiersRaw, error } = await adminClient
     .from('chantiers')
     .select('*')
     .eq('organisation_id', organisationId)
-    .eq('statut', 'actif')
-    .order('date_fin_prevue', { ascending: true })
+    .eq('statut', statutFilter)
+    .order(orderColumn, { ascending: orderAsc, nullsFirst: false })
 
   const chantiers = (chantiersRaw ?? []) as unknown as Chantier[]
-
   const aujourdhui = new Date()
 
-  // Calculer couleur + trier rouge > orange > vert côté serveur (B.1 coloration)
+  // Calculer couleur (utilisée pour le badge même si archivé — voir ChantierCard
+  // qui neutralise les couleurs et affiche le badge "Archivé").
   const chantiersColores: ChantierWithColoration[] = chantiers.map((c) => ({
     ...c,
     couleur: calculerCouleur(
@@ -69,17 +110,19 @@ export default async function ChantiersAdminPage() {
     ),
   }))
 
-  const chantiersTriés = trierParCouleur(chantiersColores)
+  // Pour les actifs, conserver le tri par couleur (rouge > orange > vert).
+  // Pour les archivés, conserver l'ordre DB (date_fin_reelle desc) — la couleur
+  // n'a plus de sens métier sur un chantier terminé.
+  const chantiersAffichés = activeTab === 'archives'
+    ? chantiersColores
+    : trierParCouleur(chantiersColores)
 
   // ============================================================
   // T07 — Compteurs tâches + ouvriers par chantier
-  // Agrégation JS in-memory (décision humaine 2026-05-19 : acceptable < 50 chantiers pilote)
-  // Deux requêtes supplémentaires après le fetch principal
+  // Pertinent uniquement sur l'onglet actifs (les archivés affichent l'historique figé).
   // ============================================================
 
   const chantiersIds = chantiers.map((c) => c.id)
-
-  // Guard : si aucun chantier, les Maps restent vides (évite .in() avec tableau vide → erreur Supabase)
   const tachesParChantier = new Map<string, number>()
   const tachesTermineesParChantier = new Map<string, number>()
   const ouvriersParChantier = new Map<string, number>()
@@ -103,11 +146,9 @@ export default async function ChantiersAdminPage() {
 
     const elapsed = performance.now() - t0
     if (elapsed > 500) {
-      // T07 — décision humaine : logger warning si > 500ms (volume > seuil pilote)
       logger.warn({ elapsedMs: elapsed.toFixed(0), chantiersCount: chantiersIds.length }, 'T07 compteurs: requêtes agrégation lentes')
     }
 
-    // Agréger tâches total + terminées par chantier
     for (const row of (tachesResult.data ?? [])) {
       const r = row as { chantier_id: string; statut: string }
       tachesParChantier.set(r.chantier_id, (tachesParChantier.get(r.chantier_id) ?? 0) + 1)
@@ -116,7 +157,6 @@ export default async function ChantiersAdminPage() {
       }
     }
 
-    // Agréger ouvriers actifs (dédupliqués par user_id) par chantier
     const seenAff = new Set<string>()
     for (const row of (ouvriersResult.data ?? [])) {
       const aff = row as { chantier_id: string; user_id: string }
@@ -135,19 +175,24 @@ export default async function ChantiersAdminPage() {
   return (
     <div>
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="font-heading font-bold text-[28px]">Chantiers</h1>
           <p className="text-xs text-muted mt-0.5 flex items-center gap-1.5">
-            {/* T22 — icône arrow-down-narrow-wide (Lucide) remplace l'icône maison incorrecte */}
-            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="m3 16 4 4 4-4"/>
-              <path d="M7 20V4"/>
-              <path d="M11 4h10"/>
-              <path d="M11 8h7"/>
-              <path d="M11 12h4"/>
-            </svg>
-            Trié par priorité : Dépassé → Dérive → Dans les temps
+            {activeTab === 'actifs' ? (
+              <>
+                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="m3 16 4 4 4-4"/>
+                  <path d="M7 20V4"/>
+                  <path d="M11 4h10"/>
+                  <path d="M11 8h7"/>
+                  <path d="M11 12h4"/>
+                </svg>
+                Trié par priorité : Dépassé → Dérive → Dans les temps
+              </>
+            ) : (
+              <>Triés par date d&apos;archivage (plus récents en premier)</>
+            )}
             {error && <span className="text-danger ml-2">Erreur de chargement</span>}
           </p>
         </div>
@@ -162,21 +207,44 @@ export default async function ChantiersAdminPage() {
         </Link>
       </div>
 
+      {/* Tabs Actifs / Archivés (Sprint 2 dette 2026-05-20) */}
+      <div className="flex mb-6">
+        <Link
+          href="/admin/chantiers"
+          data-testid="tab-chantiers-actifs"
+          className={`tab-brutal rounded-l-md border-r-0 ${activeTab === 'actifs' ? 'active' : ''}`}
+        >
+          Actifs ({countActifs})
+        </Link>
+        <Link
+          href="/admin/chantiers?tab=archives"
+          data-testid="tab-chantiers-archives"
+          className={`tab-brutal rounded-r-md ${activeTab === 'archives' ? 'active' : ''}`}
+        >
+          Archivés ({countArchives})
+        </Link>
+      </div>
+
       {/* État vide */}
-      {chantiersTriés.length === 0 && !error && (
+      {chantiersAffichés.length === 0 && !error && (
         <div className="card-brutal p-12 text-center">
           <svg className="w-16 h-16 text-muted mx-auto mb-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
             <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
             <polyline points="9 22 9 12 15 12 15 22"/>
           </svg>
-          <p className="font-heading text-xl font-bold mb-2">Aucun chantier actif</p>
-          <p className="text-base text-muted mb-6">Créez votre premier chantier pour commencer le suivi.</p>
-          <Link
-            href="/admin/chantiers/nouveau"
-            className="btn-brutal bg-accent text-white"
-          >
-            Créer un chantier
-          </Link>
+          <p className="font-heading text-xl font-bold mb-2">
+            {activeTab === 'archives' ? 'Aucun chantier archivé' : 'Aucun chantier actif'}
+          </p>
+          <p className="text-base text-muted mb-6">
+            {activeTab === 'archives'
+              ? 'Les chantiers archivés depuis le détail apparaîtront ici.'
+              : 'Créez votre premier chantier pour commencer le suivi.'}
+          </p>
+          {activeTab === 'actifs' && (
+            <Link href="/admin/chantiers/nouveau" className="btn-brutal bg-accent text-white">
+              Créer un chantier
+            </Link>
+          )}
         </div>
       )}
 
@@ -188,9 +256,9 @@ export default async function ChantiersAdminPage() {
       )}
 
       {/* Grille des chantiers — 3 colonnes desktop */}
-      {chantiersTriés.length > 0 && (
+      {chantiersAffichés.length > 0 && (
         <div className="grid grid-cols-3 gap-5">
-          {chantiersTriés.map((chantier) => (
+          {chantiersAffichés.map((chantier) => (
             <ChantierCard
               key={chantier.id}
               chantier={chantier}

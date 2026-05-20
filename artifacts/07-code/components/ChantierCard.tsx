@@ -90,7 +90,17 @@ function getJoursRestants(dateFin: string): number {
 // ============================================================
 
 function ChantierCardDesktop({ chantier, href, tachesCount = 0, tachesTermineesCount, ouvriersCount = 0 }: ChantierCardProps) {
-  const styles = COULEUR_STYLES[chantier.couleur]
+  const isArchive = chantier.statut === 'archive'
+  // Si archivé : neutralise la pastille couleur (gris) — le statut métier n'a plus de sens.
+  const styles = isArchive
+    ? {
+        borderLeft: 'border-l-[4px] border-l-[#999]',
+        pastille: 'bg-[#999]',
+        badgeClass: 'badge badge-muted',
+        badgeLabel: 'Archivé',
+        progressBg: 'bg-[#999]',
+      }
+    : COULEUR_STYLES[chantier.couleur]
   const progress = getBudgetProgress(chantier.budget_depense, chantier.budget_alloue)
   const joursRestants = getJoursRestants(chantier.date_fin_prevue)
   const estDepasse = chantier.budget_alloue !== null && chantier.budget_depense > chantier.budget_alloue
@@ -98,7 +108,7 @@ function ChantierCardDesktop({ chantier, href, tachesCount = 0, tachesTermineesC
   return (
     <Link
       href={href}
-      className={`card-brutal p-5 block hover:shadow-brutal-hover transition-shadow ${styles.borderLeft}`}
+      className={`card-brutal p-5 block hover:shadow-brutal-hover transition-shadow ${styles.borderLeft} ${isArchive ? 'opacity-70' : ''}`}
     >
       {/* Header : nom + pastille */}
       <div className="flex items-center justify-between mb-2">
@@ -154,14 +164,14 @@ function ChantierCardDesktop({ chantier, href, tachesCount = 0, tachesTermineesC
           {' '}&bull; {ouvriersCount} ouvrier{ouvriersCount !== 1 ? 's' : ''}
         </span>
         <div className="flex items-center gap-2">
-          {joursRestants >= 0 && joursRestants <= 3 && (
+          {!isArchive && joursRestants >= 0 && joursRestants <= 3 && (
             <span className="text-xs text-warning font-semibold">
               J-{joursRestants}
             </span>
           )}
           <span
             className={styles.badgeClass + ' text-xs'}
-            data-testid={`chantier-status-${chantier.couleur}`}
+            data-testid={isArchive ? 'chantier-status-archive' : `chantier-status-${chantier.couleur}`}
           >
             {styles.badgeLabel}
           </span>

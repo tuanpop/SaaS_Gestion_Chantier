@@ -18,6 +18,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { calculerCouleur } from '@/lib/coloration'
 import { ArchiveButton } from './archive-button'
+import { UnarchiveButton } from './unarchive-button'
 import { ChantierDetailAdminTabs } from './tabs-client'
 import type { Chantier, TacheWithUser, AffectationWithUser } from '@/types/database'
 // T04 — TacheItem supprimé de cet import (remplacé par tableau inline dans tabs-client.tsx)
@@ -163,7 +164,27 @@ export default async function ChantierDetailAdminPage({ params }: PageProps) {
             <ArchiveButton chantierId={chantierId} />
           </div>
         )}
+
+        {/* Sprint 2 dette — chantier archivé : seul bouton "Désarchiver" disponible */}
+        {chantier.statut === 'archive' && (
+          <div className="flex gap-3">
+            <UnarchiveButton chantierId={chantierId} />
+          </div>
+        )}
       </div>
+
+      {/* Bandeau info chantier archivé */}
+      {chantier.statut === 'archive' && (
+        <div className="card-brutal p-4 border-l-4 border-l-[#999] bg-[#F2F2F2] mb-6">
+          <p className="text-sm">
+            <strong>Chantier archivé</strong>
+            {chantier.date_fin_reelle && (
+              <> le {chantier.date_fin_reelle.split('-').reverse().join('/')}</>
+            )}
+            . Les données restent consultables. Cliquez sur « Désarchiver » pour le réactiver.
+          </p>
+        </div>
+      )}
 
       {/* T04 — Système de tabs : Client Component gère les tabs et tout le contenu tabulé */}
       {/* Informations (grille infos + budget + affectations) et Tâches sont dans ChantierDetailAdminTabs */}
