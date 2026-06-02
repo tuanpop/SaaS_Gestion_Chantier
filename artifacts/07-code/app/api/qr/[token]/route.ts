@@ -16,11 +16,28 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 
+/**
+ * Preserve le domaine public derriere reverse proxy (Traefik/Dokploy).
+ * request.url retournerait `http://0.0.0.0:3000/...` en interne, on prefere
+ * x-forwarded-host -> NEXT_PUBLIC_APP_URL -> host header.
+ */
+function getPublicBaseUrl(request: NextRequest): string {
+  const fwdHost = request.headers.get('x-forwarded-host')
+  const fwdProto = request.headers.get('x-forwarded-proto') ?? 'https'
+  if (fwdHost) return `${fwdProto}://${fwdHost}`
+  const envUrl = process.env['NEXT_PUBLIC_APP_URL']
+  if (envUrl) return envUrl
+  const host = request.headers.get('host')
+  if (host) return `${fwdProto}://${host}`
+  return request.url
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ token: string }> },
 ): Promise<NextResponse> {
   const { token } = await params
-  const target = new URL(`/api/auth/qr/${token}`, request.url)
+  const baseUrl = getPublicBaseUrl(request)
+  const target = new URL(`/api/auth/qr/${token}`, baseUrl)
   return NextResponse.redirect(target, { status: 307 })
 }

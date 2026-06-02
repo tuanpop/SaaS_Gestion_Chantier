@@ -25,12 +25,32 @@ import type { OuvrierSession } from '@/types/database'
 // GET /api/auth/qr/[token]
 // ============================================================
 
+/**
+ * Construit la base URL publique en preservant le domaine reverse-proxy.
+ * Next.js ne trust pas X-Forwarded-Host par defaut → _request.url retournerait
+ * `http://0.0.0.0:3000/...` (interne Docker) au lieu du domaine public.
+ * Priorite : x-forwarded-host (Traefik) → NEXT_PUBLIC_APP_URL → host header → _request.url
+ */
+function getPublicBaseUrl(request: NextRequest): string {
+  const fwdHost = request.headers.get('x-forwarded-host')
+  const fwdProto = request.headers.get('x-forwarded-proto') ?? 'https'
+  if (fwdHost) return `${fwdProto}://${fwdHost}`
+  const envUrl = process.env['NEXT_PUBLIC_APP_URL']
+  if (envUrl) return envUrl
+  const host = request.headers.get('host')
+  if (host) return `${fwdProto}://${host}`
+  return request.url
+}
+
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ token: string }> },
 ) {
   // Cache-Control obligatoire — jamais cacher une reponse d'auth (K3-I-04)
   const responseHeaders = { 'Cache-Control': 'no-store, no-cache, must-revalidate' }
+
+  // Base URL publique pour tous les redirects (fix bug 0.0.0.0:3000 reverse proxy)
+  const baseUrl = getPublicBaseUrl(_request)
 
   const { token } = await params
 
@@ -52,7 +72,7 @@ export async function GET(
       )
     }
     return NextResponse.redirect(
-      new URL('/ouvrier/scan?error=invalid_token', _request.url),
+      new URL('/ouvrier/scan?error=invalid_token', baseUrl),
       { headers: responseHeaders },
     )
   }
@@ -76,7 +96,7 @@ export async function GET(
       'QR scan : utilisateur non trouve ou supprime',
     )
     return NextResponse.redirect(
-      new URL('/ouvrier/scan?error=user_not_found', _request.url),
+      new URL('/ouvrier/scan?error=user_not_found', baseUrl),
       { headers: responseHeaders },
     )
   }
@@ -88,7 +108,7 @@ export async function GET(
       'QR scan : utilisateur non ouvrier',
     )
     return NextResponse.redirect(
-      new URL('/ouvrier/scan?error=user_not_found', _request.url),
+      new URL('/ouvrier/scan?error=user_not_found', baseUrl),
       { headers: responseHeaders },
     )
   }
@@ -100,7 +120,7 @@ export async function GET(
       'QR scan : incoherence organisation_id token vs base (K3-CR-01)',
     )
     return NextResponse.redirect(
-      new URL('/ouvrier/scan?error=user_not_found', _request.url),
+      new URL('/ouvrier/scan?error=user_not_found', baseUrl),
       { headers: responseHeaders },
     )
   }
@@ -123,7 +143,7 @@ export async function GET(
       'QR scan : erreur requete affectations',
     )
     return NextResponse.redirect(
-      new URL('/ouvrier/scan?error=server_error', _request.url),
+      new URL('/ouvrier/scan?error=server_error', baseUrl),
       { headers: responseHeaders },
     )
   }
@@ -143,7 +163,7 @@ export async function GET(
   if (affectations.length === 0) {
     // Cas 0 affectation — RG-NO-AFFECTATION-002
     // Ne pas creer de session Redis. Recuperer le conducteur pour affichage.
-    return handleNoAffectation(_request, adminClient, user_id, organisation_id, responseHeaders)
+    return handleNoAffectation(baseUrl, adminClient, user_id, organisation_id, responseHeaders)
   }
 
   // 6. Creer la session Redis pour les cas 1 ou ≥2 affectations
@@ -176,7 +196,7 @@ export async function GET(
       'QR scan : erreur creation session Redis',
     )
     return NextResponse.redirect(
-      new URL('/ouvrier/scan?error=server_error', _request.url),
+      new URL('/ouvrier/scan?error=server_error', baseUrl),
       { headers: responseHeaders },
     )
   }
@@ -197,7 +217,7 @@ export async function GET(
   // SameSite=Lax : autorise les GET top-level cross-origin (scan QR iOS Safari)
   // Commentaire intentionnel K3-LOW-05 : ne PAS changer en Strict
   const redirectResponse = NextResponse.redirect(
-    new URL(redirectPath, _request.url),
+    new URL(redirectPath, baseUrl),
   )
 
   // Ajouter Cache-Control sur la reponse de redirect
@@ -233,7 +253,7 @@ export async function GET(
 // pour la page /ouvrier/no-affectation
 
 async function handleNoAffectation(
-  request: NextRequest,
+  baseUrl: string,
   adminClient: ReturnType<typeof createAdminClient>,
   userId: string,
   organisationId: string,
@@ -327,7 +347,7 @@ async function handleNoAffectation(
   )
 
   const redirectResp = NextResponse.redirect(
-    new URL(`/ouvrier/no-affectation?data=${dataBase64}`, request.url),
+    new URL(`/ouvrier/no-affectation?data=${dataBase64}`, baseUrl),
   )
   redirectResp.headers.set('Cache-Control', responseHeaders['Cache-Control'] ?? 'no-store')
   return redirectResp
