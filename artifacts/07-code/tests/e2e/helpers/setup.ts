@@ -1,11 +1,10 @@
 /**
  * tests/e2e/helpers/setup.ts — Helpers communs Playwright E2E
  *
- * Prérequis :
- *   - Supabase local running (`supabase start`)
- *   - Next.js dev server running (`npm run dev`)
- *   - Variables d'env définies dans .env.local (ou process.env) :
- *       NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_APP_URL
+ * Prérequis local : Supabase local running + Next.js dev server running
+ * Prérequis CI    : Variables depuis .env.test (chargé par global-setup.ts, D-2.5-026)
+ *   Variables nécessaires : NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_APP_URL
+ *   En CI : ces variables proviennent de GitHub Secrets (Tanjiro étape 11)
  *
  * IMPORTANT : chaque test doit appeler cleanup() dans afterEach/afterAll
  * pour garantir l'idempotence (suppression des données créées).

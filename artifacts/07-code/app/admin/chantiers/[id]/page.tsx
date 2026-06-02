@@ -14,6 +14,7 @@
 
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import { ArrowLeft, Pencil } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { calculerCouleur } from '@/lib/coloration'
@@ -134,9 +135,7 @@ export default async function ChantierDetailAdminPage({ params }: PageProps) {
             href="/admin/chantiers"
             className="text-xs text-muted flex items-center gap-1 mb-2 hover:text-primary transition-colors"
           >
-            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M19 12H5M12 19l-7-7 7-7"/>
-            </svg>
+            <ArrowLeft className="w-3.5 h-3.5" />
             Retour aux chantiers
           </Link>
           <div className="flex items-center gap-4">
@@ -155,10 +154,7 @@ export default async function ChantierDetailAdminPage({ params }: PageProps) {
               href={`/admin/chantiers/${chantierId}/modifier`}
               className="btn-brutal bg-white text-primary text-sm py-2 px-4"
             >
-              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
-                <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
-              </svg>
+              <Pencil className="w-4 h-4" />
               Modifier
             </Link>
             <ArchiveButton chantierId={chantierId} />

@@ -1,12 +1,43 @@
 'use client'
-// app/(admin)/chantiers/[id]/modifier/client.tsx
-// Client Component du formulaire de modification chantier (Sprint 2 dette 2026-05-20).
-// Miroir de /nouveau/page.tsx mais avec valeurs initiales pré-remplies et PATCH au lieu de POST.
+// app/admin/chantiers/[id]/modifier/client.tsx
+// Client Component du formulaire de modification chantier — migré react-hook-form (étape 5)
+//
+// D-2.5-016 — react-hook-form + zodResolver
+// K2.5-D-06 — Button disabled={isSubmitting}
+// RG-MIGR-003 — form aria-busy={isSubmitting}
+// K2.5-T-10 — schema depuis lib/validation/chantiers.ts (jamais inline)
+// K2.5-T-08 — toast description = JSX uniquement
 
-import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { ArrowLeft } from 'lucide-react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form'
+import { useToast } from '@/lib/hooks/use-toast'
 import type { Chantier } from '@/types/database'
+// K2.5-T-10 — schema unique depuis lib/validation/
+import { CreateChantierBaseSchema, dateOrderRefinement } from '@/lib/validation/chantiers'
+
+// ModifierChantier étend CreateChantier en ajoutant budget_depense
+const ModifierChantierSchema = CreateChantierBaseSchema.extend({
+  budget_depense: z.number().min(0).optional(),
+}).refine(dateOrderRefinement.check, {
+  message: dateOrderRefinement.message,
+  path: [...dateOrderRefinement.path],
+})
+
+type ModifierChantierInput = z.infer<typeof ModifierChantierSchema>
 
 interface Props {
   chantier: Chantier
@@ -14,150 +45,101 @@ interface Props {
 
 export function ModifierChantierClient({ chantier }: Props) {
   const router = useRouter()
+  const { toast } = useToast()
 
-  const [form, setForm] = useState({
-    nom: chantier.nom,
-    client_nom: chantier.client_nom,
-    adresse: chantier.adresse,
-    code_postal: chantier.code_postal,
-    budget_alloue: chantier.budget_alloue !== null ? String(chantier.budget_alloue) : '',
-    budget_depense: String(chantier.budget_depense),
-    date_debut: chantier.date_debut,
-    date_fin_prevue: chantier.date_fin_prevue,
+  const form = useForm<ModifierChantierInput>({
+    resolver: zodResolver(ModifierChantierSchema),
+    defaultValues: {
+      nom: chantier.nom,
+      client_nom: chantier.client_nom,
+      adresse: chantier.adresse,
+      code_postal: chantier.code_postal,
+      budget_alloue: chantier.budget_alloue ?? undefined,
+      budget_depense: chantier.budget_depense,
+      date_debut: chantier.date_debut,
+      date_fin_prevue: chantier.date_fin_prevue,
+    },
   })
 
-  const [errors, setErrors] = useState<Record<string, string>>({})
-  const [isLoading, setIsLoading] = useState(false)
-  const [globalError, setGlobalError] = useState<string | null>(null)
-  const [successMessage, setSuccessMessage] = useState<string | null>(null)
+  const { formState: { isSubmitting } } = form
 
-  function validate(): boolean {
-    const newErrors: Record<string, string> = {}
-
-    if (!form.nom.trim()) newErrors['nom'] = 'Le nom du chantier est requis.'
-    if (form.nom.length > 100) newErrors['nom'] = 'Max 100 caractères.'
-
-    if (!form.client_nom.trim()) newErrors['client_nom'] = 'Le nom du client est requis.'
-    if (!form.adresse.trim()) newErrors['adresse'] = "L'adresse est requise."
-
-    if (!form.code_postal.trim()) {
-      newErrors['code_postal'] = 'Le code postal est requis.'
-    } else if (!/^\d{5}$/.test(form.code_postal)) {
-      newErrors['code_postal'] = 'Code postal : 5 chiffres requis'
-    }
-
-    const budgetAlloueNum = form.budget_alloue ? Number(form.budget_alloue.replace(/\s/g, '')) : null
-    if (form.budget_alloue && Number.isNaN(budgetAlloueNum)) {
-      newErrors['budget_alloue'] = 'Budget invalide.'
-    } else if (budgetAlloueNum !== null && budgetAlloueNum <= 0) {
-      newErrors['budget_alloue'] = 'Le budget doit être positif.'
-    }
-
-    const budgetDepenseNum = form.budget_depense ? Number(form.budget_depense.replace(/\s/g, '')) : 0
-    if (form.budget_depense && Number.isNaN(budgetDepenseNum)) {
-      newErrors['budget_depense'] = 'Montant invalide.'
-    } else if (budgetDepenseNum < 0) {
-      newErrors['budget_depense'] = 'Le montant dépensé ne peut pas être négatif.'
-    }
-
-    if (!form.date_debut) newErrors['date_debut'] = 'La date de début est requise.'
-    if (!form.date_fin_prevue) newErrors['date_fin_prevue'] = 'La date de fin prévue est requise.'
-    if (form.date_debut && form.date_fin_prevue && form.date_fin_prevue < form.date_debut) {
-      newErrors['date_fin_prevue'] = 'La date de fin prévue doit être >= à la date de début.'
-    }
-
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setGlobalError(null)
-    setSuccessMessage(null)
-
-    if (!validate()) return
-    setIsLoading(true)
-
-    const budgetAlloueNum = form.budget_alloue ? Number(form.budget_alloue.replace(/\s/g, '')) : null
-    const budgetDepenseNum = form.budget_depense ? Number(form.budget_depense.replace(/\s/g, '')) : 0
-
-    // PATCH n'envoie que les champs effectivement modifiés (le schéma serveur les a tous optional).
-    // Comparer chaque champ à la valeur initiale du chantier — payload minimal = log clairer côté serveur.
+  async function onSubmit(values: ModifierChantierInput) {
+    // PATCH payload minimal — seulement les champs modifiés
     const payload: Record<string, string | number | null> = {}
-    if (form.nom !== chantier.nom) payload['nom'] = form.nom
-    if (form.client_nom !== chantier.client_nom) payload['client_nom'] = form.client_nom
-    if (form.adresse !== chantier.adresse) payload['adresse'] = form.adresse
-    if (form.code_postal !== chantier.code_postal) payload['code_postal'] = form.code_postal
-    if (budgetAlloueNum !== chantier.budget_alloue) {
-      // budget_alloue peut être null — UpdateChantierSchema l'accepte comme nombre positif.
-      // Si on veut le clear (passer de valeur à null), le schéma actuel ne le permet pas.
-      // Pour Sprint 2, on autorise uniquement set/update sur valeur positive.
-      if (budgetAlloueNum !== null && budgetAlloueNum > 0) {
-        payload['budget_alloue'] = budgetAlloueNum
+    if (values.nom !== chantier.nom) payload['nom'] = values.nom
+    if (values.client_nom !== chantier.client_nom) payload['client_nom'] = values.client_nom
+    if (values.adresse !== chantier.adresse) payload['adresse'] = values.adresse
+    if (values.code_postal !== chantier.code_postal) payload['code_postal'] = values.code_postal
+    if (values.budget_alloue !== chantier.budget_alloue) {
+      if (values.budget_alloue !== undefined && values.budget_alloue > 0) {
+        payload['budget_alloue'] = values.budget_alloue
       }
     }
-    if (budgetDepenseNum !== chantier.budget_depense) payload['budget_depense'] = budgetDepenseNum
-    if (form.date_debut !== chantier.date_debut) payload['date_debut'] = form.date_debut
-    if (form.date_fin_prevue !== chantier.date_fin_prevue) payload['date_fin_prevue'] = form.date_fin_prevue
+    if (values.budget_depense !== undefined && values.budget_depense !== chantier.budget_depense) {
+      payload['budget_depense'] = values.budget_depense
+    }
+    if (values.date_debut !== chantier.date_debut) payload['date_debut'] = values.date_debut
+    if (values.date_fin_prevue !== chantier.date_fin_prevue) payload['date_fin_prevue'] = values.date_fin_prevue
 
     if (Object.keys(payload).length === 0) {
-      setGlobalError('Aucune modification à enregistrer.')
-      setIsLoading(false)
+      toast({
+        variant: 'default',
+        title: 'Information',
+        description: <span>Aucune modification à enregistrer.</span>,
+      })
       return
     }
 
-    try {
-      const response = await fetch(`/api/chantiers/${chantier.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+    const response = await fetch(`/api/chantiers/${chantier.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+
+    if (response.status === 402) {
+      toast({
+        variant: 'destructive',
+        title: 'Essai expiré',
+        description: <span>Votre essai a expiré — passez en payant pour modifier ce chantier.</span>,
       })
+      return
+    }
 
-      if (response.status === 402) {
-        setGlobalError("Votre essai a expiré — passez en payant pour modifier ce chantier.")
-        return
-      }
-
-      if (response.status === 400) {
-        const data = (await response.json()) as { error?: string; fields?: Record<string, string[]> }
-        if (data.fields) {
-          const fieldErrors: Record<string, string> = {}
-          for (const [field, messages] of Object.entries(data.fields)) {
-            fieldErrors[field] = messages[0] ?? 'Champ invalide.'
-          }
-          setErrors(fieldErrors)
-        } else {
-          setGlobalError(data.error ?? 'Requête invalide.')
+    if (response.status === 400) {
+      const data = (await response.json()) as { error?: string; fields?: Record<string, string[]> }
+      if (data.fields) {
+        for (const [field, messages] of Object.entries(data.fields)) {
+          form.setError(field as keyof ModifierChantierInput, {
+            type: 'server',
+            message: messages[0] ?? 'Champ invalide.',
+          })
         }
-        return
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Erreur',
+          description: <span>{data.error ?? 'Requête invalide.'}</span>,
+        })
       }
-
-      if (!response.ok) {
-        setGlobalError('Une erreur est survenue. Réessayez.')
-        return
-      }
-
-      setSuccessMessage('Chantier mis à jour avec succès.')
-      setTimeout(() => {
-        router.push(`/admin/chantiers/${chantier.id}`)
-        router.refresh()
-      }, 600)
-    } catch {
-      setGlobalError('Erreur réseau. Vérifiez votre connexion.')
-    } finally {
-      setIsLoading(false)
+      return
     }
-  }
 
-  function handleChange(field: keyof typeof form, value: string) {
-    setForm((prev) => ({ ...prev, [field]: value }))
-    if (errors[field]) {
-      setErrors((prev) => {
-        const next = { ...prev }
-        delete next[field]
-        return next
+    if (!response.ok) {
+      toast({
+        variant: 'destructive',
+        title: 'Erreur',
+        description: <span>Une erreur est survenue. Réessayez.</span>,
       })
+      return
     }
+
+    toast({
+      variant: 'success',
+      title: 'Chantier mis à jour',
+      description: <span>Les modifications ont été enregistrées.</span>,
+    })
+    router.push(`/admin/chantiers/${chantier.id}`)
+    router.refresh()
   }
 
   return (
@@ -167,186 +149,188 @@ export function ModifierChantierClient({ chantier }: Props) {
           href={`/admin/chantiers/${chantier.id}`}
           className="text-xs text-muted flex items-center gap-1 mb-3 hover:text-primary transition-colors"
         >
-          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M19 12H5M12 19l-7-7 7-7"/>
-          </svg>
+          <ArrowLeft className="w-3.5 h-3.5" />
           Retour au chantier
         </Link>
         <h1 className="font-heading font-bold text-[28px]">Modifier le chantier</h1>
         <p className="text-muted mt-1">{chantier.nom}</p>
       </div>
 
-      {successMessage && (
-        <div className="card-brutal p-4 border-l-4 border-l-success bg-success-bg mb-6">
-          <p className="text-success font-semibold">{successMessage}</p>
-        </div>
-      )}
-
-      {globalError && (
-        <div className="card-brutal p-4 border-l-4 border-l-danger bg-danger-bg mb-6">
-          <p className="text-danger font-semibold">{globalError}</p>
-        </div>
-      )}
-
       <div className="card-brutal p-8 max-w-3xl">
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div>
-            <label htmlFor="nom" className="block font-heading font-semibold text-xs uppercase text-muted mb-2 tracking-wide">
-              Nom du chantier <span className="text-danger">*</span>
-            </label>
-            <input
-              id="nom"
-              type="text"
-              value={form.nom}
-              onChange={(e) => handleChange('nom', e.target.value)}
-              className={`input-brutal ${errors['nom'] ? 'error' : ''}`}
-              maxLength={100}
-              required
-            />
-            {errors['nom'] && <p className="text-danger text-sm font-medium mt-1">{errors['nom']}</p>}
-          </div>
+        {/* RG-MIGR-003 : form aria-busy={isSubmitting} */}
+        <Form {...form}>
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="space-y-5"
+            aria-busy={isSubmitting}
+          >
 
-          <div>
-            <label htmlFor="client_nom" className="block font-heading font-semibold text-xs uppercase text-muted mb-2 tracking-wide">
-              Client <span className="text-danger">*</span>
-            </label>
-            <input
-              id="client_nom"
-              type="text"
-              value={form.client_nom}
-              onChange={(e) => handleChange('client_nom', e.target.value)}
-              className={`input-brutal ${errors['client_nom'] ? 'error' : ''}`}
-              maxLength={200}
-              required
-            />
-            {errors['client_nom'] && <p className="text-danger text-sm font-medium mt-1">{errors['client_nom']}</p>}
-          </div>
-
-          <div>
-            <label htmlFor="adresse" className="block font-heading font-semibold text-xs uppercase text-muted mb-2 tracking-wide">
-              Adresse <span className="text-danger">*</span>
-            </label>
-            <input
-              id="adresse"
-              type="text"
-              value={form.adresse}
-              onChange={(e) => handleChange('adresse', e.target.value)}
-              className={`input-brutal ${errors['adresse'] ? 'error' : ''}`}
-              required
-            />
-            {errors['adresse'] && <p className="text-danger text-sm font-medium mt-1">{errors['adresse']}</p>}
-          </div>
-
-          <div>
-            <label htmlFor="code_postal" className="block font-heading font-semibold text-xs uppercase text-muted mb-2 tracking-wide">
-              Code postal <span className="text-danger">*</span>
-            </label>
-            <input
-              id="code_postal"
-              type="text"
-              value={form.code_postal}
-              onChange={(e) => handleChange('code_postal', e.target.value)}
-              className={`input-brutal ${errors['code_postal'] ? 'error' : ''}`}
-              maxLength={5}
-              pattern="\d{5}"
-              required
-            />
-            {errors['code_postal'] && <p className="text-danger text-sm font-medium mt-1">{errors['code_postal']}</p>}
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="budget_alloue" className="block font-heading font-semibold text-xs uppercase text-muted mb-2 tracking-wide">
-                Budget alloué (€) <span className="text-muted font-normal normal-case">(optionnel)</span>
-              </label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted font-bold text-lg">€</span>
-                <input
-                  id="budget_alloue"
-                  type="text"
-                  inputMode="numeric"
-                  value={form.budget_alloue}
-                  onChange={(e) => handleChange('budget_alloue', e.target.value)}
-                  placeholder="65 000"
-                  className={`input-brutal pl-8 ${errors['budget_alloue'] ? 'error' : ''}`}
-                />
-              </div>
-              {errors['budget_alloue'] && <p className="text-danger text-sm font-medium mt-1">{errors['budget_alloue']}</p>}
-            </div>
-
-            <div>
-              <label htmlFor="budget_depense" className="block font-heading font-semibold text-xs uppercase text-muted mb-2 tracking-wide">
-                Budget dépensé (€)
-              </label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted font-bold text-lg">€</span>
-                <input
-                  id="budget_depense"
-                  type="text"
-                  inputMode="numeric"
-                  value={form.budget_depense}
-                  onChange={(e) => handleChange('budget_depense', e.target.value)}
-                  placeholder="0"
-                  className={`input-brutal pl-8 ${errors['budget_depense'] ? 'error' : ''}`}
-                />
-              </div>
-              {errors['budget_depense'] && <p className="text-danger text-sm font-medium mt-1">{errors['budget_depense']}</p>}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="date_debut" className="block font-heading font-semibold text-xs uppercase text-muted mb-2 tracking-wide">
-                Date début <span className="text-danger">*</span>
-              </label>
-              <input
-                id="date_debut"
-                type="date"
-                value={form.date_debut}
-                onChange={(e) => handleChange('date_debut', e.target.value)}
-                className={`input-brutal ${errors['date_debut'] ? 'error' : ''}`}
-                required
-              />
-              {errors['date_debut'] && <p className="text-danger text-sm font-medium mt-1">{errors['date_debut']}</p>}
-            </div>
-            <div>
-              <label htmlFor="date_fin_prevue" className="block font-heading font-semibold text-xs uppercase text-muted mb-2 tracking-wide">
-                Date fin prévue <span className="text-danger">*</span>
-              </label>
-              <input
-                id="date_fin_prevue"
-                type="date"
-                value={form.date_fin_prevue}
-                onChange={(e) => handleChange('date_fin_prevue', e.target.value)}
-                min={form.date_debut || undefined}
-                className={`input-brutal ${errors['date_fin_prevue'] ? 'error' : ''}`}
-                required
-              />
-              {errors['date_fin_prevue'] && <p className="text-danger text-sm font-medium mt-1">{errors['date_fin_prevue']}</p>}
-            </div>
-          </div>
-
-          <div className="flex gap-4 pt-4">
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="btn-brutal bg-accent text-white"
-              data-testid="modifier-chantier-submit"
-            >
-              {isLoading ? (
-                <span className="flex items-center gap-2">
-                  <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Enregistrement...
-                </span>
-              ) : (
-                'Enregistrer les modifications'
+            <FormField
+              control={form.control}
+              name="nom"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Nom du chantier <span className="text-danger normal-case font-normal">*</span></FormLabel>
+                  <FormControl>
+                    <Input {...field} maxLength={100} data-testid="modifier-chantier-nom" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
               )}
-            </button>
-            <Link href={`/admin/chantiers/${chantier.id}`} className="btn-brutal bg-white text-primary">
-              Annuler
-            </Link>
-          </div>
-        </form>
+            />
+
+            <FormField
+              control={form.control}
+              name="client_nom"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Client <span className="text-danger normal-case font-normal">*</span></FormLabel>
+                  <FormControl>
+                    <Input {...field} maxLength={200} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="adresse"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Adresse <span className="text-danger normal-case font-normal">*</span></FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="code_postal"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Code postal <span className="text-danger normal-case font-normal">*</span></FormLabel>
+                  <FormControl>
+                    <Input {...field} maxLength={5} inputMode="numeric" pattern="\d{5}" data-testid="modifier-chantier-code-postal" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="budget_alloue"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Budget alloué (€) <span className="text-muted font-normal normal-case text-xs">(optionnel)</span></FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted font-bold text-lg">€</span>
+                        <Input
+                          type="text"
+                          inputMode="numeric"
+                          className="pl-8"
+                          value={field.value ?? ''}
+                          onChange={(e) => {
+                            const val = e.target.value.replace(/\s/g, '')
+                            field.onChange(val === '' ? undefined : Number(val))
+                          }}
+                        />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="budget_depense"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Budget dépensé (€)</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted font-bold text-lg">€</span>
+                        <Input
+                          type="text"
+                          inputMode="numeric"
+                          className="pl-8"
+                          value={field.value ?? ''}
+                          onChange={(e) => {
+                            const val = e.target.value.replace(/\s/g, '')
+                            field.onChange(val === '' ? 0 : Number(val))
+                          }}
+                        />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="date_debut"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Date début <span className="text-danger normal-case font-normal">*</span></FormLabel>
+                    <FormControl>
+                      <Input {...field} type="date" data-testid="modifier-chantier-date-debut" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="date_fin_prevue"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Date fin prévue <span className="text-danger normal-case font-normal">*</span></FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type="date"
+                        min={form.watch('date_debut') || undefined}
+                        data-testid="modifier-chantier-date-fin"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="flex gap-4 pt-4">
+              {/* K2.5-D-06 : Button disabled={isSubmitting} obligatoire */}
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                data-testid="modifier-chantier-submit"
+              >
+                {isSubmitting ? (
+                  <span className="flex items-center gap-2">
+                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Enregistrement...
+                  </span>
+                ) : (
+                  'Enregistrer les modifications'
+                )}
+              </Button>
+              <Button asChild variant="outline">
+                <Link href={`/admin/chantiers/${chantier.id}`}>Annuler</Link>
+              </Button>
+            </div>
+          </form>
+        </Form>
       </div>
     </div>
   )

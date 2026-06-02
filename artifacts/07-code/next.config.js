@@ -63,6 +63,9 @@ const nextConfig = {
   // fetch() = no-store par défaut (Next.js 15 breaking change)
   // Opt-in cache explicite si nécessaire via { next: { revalidate: N } }
 
+  // SECURITY: K2.5-I-05 — ne pas exposer les source maps en production
+  productionBrowserSourceMaps: false,
+
   // Output standalone : génère .next/standalone/ pour Docker (Tanjiro Dockerfile multi-stage)
   output: 'standalone',
 

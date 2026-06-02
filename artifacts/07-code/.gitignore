@@ -21,6 +21,13 @@ coverage/
 playwright-report/
 test-results/
 
+# E2E auth state — SECURITY: K2.5-S-04 (tokens, ne jamais commiter)
+tests/e2e/.auth/
+
+# E2E env secrets — D-2.5-026, K2.5-S-04
+.env.test
+.env.test.local
+
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts

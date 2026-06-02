@@ -1,26 +1,32 @@
 'use client'
-// app/admin/chantiers/[id]/tabs-client.tsx
-// Système de tabs admin — Informations / Tâches / Photos / Comptes-rendus
+// app/admin/chantiers/[id]/tabs-client.tsx — migré Tabs shadcn (étape 8, E-07)
 //
-// T04 — système de tabs absent (P1)
-// T05 — table-brutal appliqué directement sur <table> (P1)
-// T19/T23 — tâches affichées en table-brutal (colonnes Tâche/Assigné/Statut/Échéance) (P2)
-//
-// Client Component — nécessaire pour useState (tab actif)
-// Props : toutes sérialisables (primitives, strings, null) — pas de Dates, pas de fonctions
-//
-// Proto référencé : mockups/16-admin-chantier-detail.html l.151-156 (tabs) l.206-255 (tableau tâches)
-// Design system Hana : .tab-brutal (globals.css T03), .table-brutal §4.13
+// Piège 6 component-mapping : Tabs shadcn est contrôlé (value + onValueChange)
+//   Le sync searchParams est préservé via useRouter.push (pattern existant)
+// data-testid sur TabsTrigger : préservés (annexe B)
+// RG-MIGR-002 : commentaires RBAC: préservés
 
-import { Fragment, useState } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { Chantier, TacheWithUser, AffectationWithUser } from '@/types/database'
 import { AffectationForm } from '@/components/AffectationForm'
 import { TacheCreateModal } from '@/components/TacheCreateModal'
 import { RemoveAffectationButton } from '@/components/RemoveAffectationButton'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { Fragment } from 'react'
 
 // ============================================================
-// Types de props — uniquement des types sérialisables
+// Types
 // ============================================================
 
 interface AssignableMember {
@@ -58,25 +64,23 @@ function formatMontant(amount: number | null): string {
   return new Intl.NumberFormat('fr-FR').format(amount) + '€'
 }
 
-// Mapping statut tâche → classe badge (T19/T23)
-function statutBadgeClass(statut: string): string {
+function statutBadgeVariant(statut: string): 'muted' | 'primary' | 'success' | 'danger' {
   switch (statut) {
-    case 'a_faire':   return 'badge badge-muted'
-    case 'en_cours':  return 'badge badge-primary'
-    case 'termine':   return 'badge badge-success'
-    case 'bloque':    return 'badge badge-danger'
-    default:          return 'badge badge-muted'
+    case 'a_faire':  return 'muted'
+    case 'en_cours': return 'primary'
+    case 'termine':  return 'success'
+    case 'bloque':   return 'danger'
+    default:         return 'muted'
   }
 }
 
-// Mapping statut tâche → label affiché (T19/T23)
 function statutLabel(statut: string): string {
   switch (statut) {
-    case 'a_faire':   return 'À faire'
-    case 'en_cours':  return 'En cours'
-    case 'termine':   return 'Terminé'
-    case 'bloque':    return 'Bloqué'
-    default:          return statut
+    case 'a_faire':  return 'À faire'
+    case 'en_cours': return 'En cours'
+    case 'termine':  return 'Terminé'
+    case 'bloque':   return 'Bloqué'
+    default:         return statut
   }
 }
 
@@ -93,12 +97,11 @@ export function ChantierDetailAdminTabs({
   couleurStyles,
 }: TabsClientProps) {
   const router = useRouter()
-  const [activeTab, setActiveTab] = useState<'infos' | 'taches'>('infos')
+  const [activeTab, setActiveTab] = useState<string>('infos')
   const [showAffectationForm, setShowAffectationForm] = useState(false)
   const [showTacheModal, setShowTacheModal] = useState(false)
   const isArchive = chantier.statut === 'archive'
 
-  // Budget progress
   const budgetProgress = chantier.budget_alloue
     ? Math.min(Math.round((chantier.budget_depense / chantier.budget_alloue) * 100), 100)
     : 0
@@ -106,59 +109,33 @@ export function ChantierDetailAdminTabs({
   const isEstDepasse = chantier.budget_alloue !== null
     && chantier.budget_depense > chantier.budget_alloue
 
-  // Couleur de la barre de progression budget
   const progressBg = isEstDepasse ? 'bg-danger'
     : couleurStyles.label === 'Dérive' ? 'bg-warning'
     : 'bg-success'
 
   return (
     <div className="mt-6">
-      {/* Tab bar — proto 16-admin-chantier-detail.html l.151-156 */}
-      <div className="flex mb-6">
-        {/* Tab Informations */}
-        <button
-          type="button"
-          onClick={() => setActiveTab('infos')}
-          className={`tab-brutal rounded-l-md border-r-0 ${activeTab === 'infos' ? 'active' : ''}`}
-        >
-          Informations
-        </button>
+      {/* Tabs shadcn — piège 6 : valeur contrôlée (pas de sync searchParams ici, tabs locaux) */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
+        <TabsList>
+          {/* data-testid sur TabsTrigger (annexe B) */}
+          <TabsTrigger value="infos" data-testid="tab-infos">
+            Informations
+          </TabsTrigger>
+          <TabsTrigger value="taches" data-testid="tab-taches">
+            Tâches ({taches.length})
+          </TabsTrigger>
+          <TabsTrigger value="photos" disabled className="opacity-50 cursor-not-allowed" title="Disponible Sprint 3">
+            Photos
+          </TabsTrigger>
+          <TabsTrigger value="cr" disabled className="opacity-50 cursor-not-allowed" title="Disponible Sprint 3">
+            Comptes-rendus
+          </TabsTrigger>
+        </TabsList>
 
-        {/* Tab Tâches */}
-        <button
-          type="button"
-          onClick={() => setActiveTab('taches')}
-          className={`tab-brutal border-r-0 ${activeTab === 'taches' ? 'active' : ''}`}
-        >
-          Tâches ({taches.length})
-        </button>
-
-        {/* Tab Photos — Sprint 3, disabled */}
-        <button
-          type="button"
-          disabled
-          className="tab-brutal border-r-0 opacity-50 cursor-not-allowed"
-          title="Disponible Sprint 3"
-        >
-          Photos
-        </button>
-
-        {/* Tab Comptes-rendus — Sprint 3, disabled */}
-        <button
-          type="button"
-          disabled
-          className="tab-brutal rounded-r-md opacity-50 cursor-not-allowed"
-          title="Disponible Sprint 3"
-        >
-          Comptes-rendus
-        </button>
-      </div>
-
-      {/* ============ Contenu tab Informations ============ */}
-      {activeTab === 'infos' && (
-        <div className="space-y-6">
-          {/* Grille infos + budget — déplacée depuis page.tsx (T04) */}
-          <div className="grid grid-cols-2 gap-6">
+        {/* ============ Tab Informations ============ */}
+        <TabsContent value="infos" className="space-y-6 pt-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Informations */}
             <div className={`card-brutal p-6 border-l-[4px] ${couleurStyles.border}`}>
               <h3 className="font-heading font-semibold text-lg mb-4">Informations</h3>
@@ -210,29 +187,28 @@ export function ChantierDetailAdminTabs({
               ) : (
                 <div className="text-center py-8">
                   <p className="text-muted font-medium">Budget non défini</p>
-                  <p className="text-xs text-muted mt-1">Ajoutez un budget lors de la modification.</p>
                 </div>
               )}
             </div>
           </div>
 
-          {/* Affectations — dans le tab Informations (proto 16-admin-chantier-detail.html) */}
+          {/* Affectations */}
           <div>
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-heading font-bold text-[22px]">
                 Équipe affectée
                 <span className="ml-2 text-base font-normal text-muted">({affectations.length})</span>
               </h2>
-              {/* Bug 2 fix (Sprint 2 dette) — admin peut affecter (auparavant lecture seule) */}
+              {/* RBAC: visible admin only */}
               {!isArchive && (
-                <button
+                <Button
                   type="button"
                   data-testid="admin-affecter-membre"
                   onClick={() => setShowAffectationForm(true)}
-                  className="btn-brutal bg-accent text-white text-sm py-2 px-4"
+                  size="sm"
                 >
                   + Affecter un membre
-                </button>
+                </Button>
               )}
             </div>
 
@@ -246,62 +222,59 @@ export function ChantierDetailAdminTabs({
                 </p>
               </div>
             ) : (
-              /* T05 — table-brutal directement sur <table> (plus de <div> wrapper) */
-              <table className="table-brutal">
-                <thead>
-                  <tr>
-                    <th>Membre</th>
-                    <th>Rôle</th>
-                    <th>Début</th>
-                    <th>Fin</th>
-                    {!isArchive && <th className="text-right">Actions</th>}
-                  </tr>
-                </thead>
-                <tbody>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Membre</TableHead>
+                    <TableHead>Rôle</TableHead>
+                    <TableHead>Début</TableHead>
+                    <TableHead>Fin</TableHead>
+                    {!isArchive && <TableHead className="text-right">Actions</TableHead>}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {affectations.map((aff) => (
-                    <tr key={aff.id}>
-                      <td className="font-semibold">
+                    <TableRow key={aff.id}>
+                      <TableCell className="font-semibold">
                         {aff.user?.prenom} {aff.user?.nom}
-                      </td>
-                      <td>
-                        <span className={`badge text-xs ${aff.user?.role === 'conducteur' ? 'badge-primary' : 'badge-muted'}`}>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={aff.user?.role === 'conducteur' ? 'primary' : 'muted'}>
                           {aff.user?.role === 'conducteur' ? 'Conducteur' : 'Ouvrier'}
-                        </span>
-                      </td>
-                      <td>{formatDate(aff.date_debut)}</td>
-                      <td>{aff.date_fin ? formatDate(aff.date_fin) : '—'}</td>
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{formatDate(aff.date_debut)}</TableCell>
+                      <TableCell>{aff.date_fin ? formatDate(aff.date_fin) : '—'}</TableCell>
                       {!isArchive && (
-                        <td className="text-right">
+                        <TableCell className="text-right">
                           <RemoveAffectationButton
                             affectationId={aff.id}
                             memberName={`${aff.user?.prenom ?? ''} ${aff.user?.nom ?? ''}`.trim()}
                             variant="compact"
                           />
-                        </td>
+                        </TableCell>
                       )}
-                    </tr>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             )}
           </div>
-        </div>
-      )}
+        </TabsContent>
 
-      {/* ============ Contenu tab Tâches ============ */}
-      {activeTab === 'taches' && (
-        <div>
-          {/* Bug 2 extension (Sprint 2 dette) — admin peut créer des tâches */}
+        {/* ============ Tab Tâches ============ */}
+        <TabsContent value="taches" className="pt-4">
+          {/* RBAC: visible admin only */}
           {!isArchive && (
             <div className="flex justify-end mb-4">
-              <button
+              <Button
                 type="button"
                 data-testid="admin-nouvelle-tache"
                 onClick={() => setShowTacheModal(true)}
-                className="btn-brutal bg-accent text-white text-sm py-2 px-4"
+                size="sm"
               >
                 + Nouvelle tâche
-              </button>
+              </Button>
             </div>
           )}
 
@@ -315,54 +288,50 @@ export function ChantierDetailAdminTabs({
               </p>
             </div>
           ) : (
-            /* T19/T23 — tableau tâches en table-brutal (proto 16-admin-chantier-detail.html l.206-255) */
-            /* T05 — table-brutal directement sur <table> */
-            <table className="table-brutal">
-              <thead>
-                <tr>
-                  <th>Tâche</th>
-                  <th>Assigné</th>
-                  <th>Statut</th>
-                  <th>Échéance</th>
-                </tr>
-              </thead>
-              <tbody>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Tâche</TableHead>
+                  <TableHead>Assigné</TableHead>
+                  <TableHead>Statut</TableHead>
+                  <TableHead>Échéance</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {taches.map((t) => (
                   <Fragment key={t.id}>
-                    <tr>
-                      <td className="font-semibold">{t.titre}</td>
-                      <td>
+                    <TableRow>
+                      <TableCell className="font-semibold">{t.titre}</TableCell>
+                      <TableCell>
                         {t.assigned_user
                           ? `${t.assigned_user.prenom} ${t.assigned_user.nom}`
                           : '—'}
-                      </td>
-                      <td>
-                        <span className={statutBadgeClass(t.statut)}>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={statutBadgeVariant(t.statut)}>
                           {statutLabel(t.statut)}
-                        </span>
-                      </td>
-                      <td>{t.date_echeance ? formatDate(t.date_echeance) : '—'}</td>
-                    </tr>
-                    {/* Sprint 2 dette (2026-05-20) — afficher le motif de blocage sous la tâche.
-                        Avant : l'admin ne voyait que le badge "Bloqué" sans raison —
-                        info critique pour superviser. */}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{t.date_echeance ? formatDate(t.date_echeance) : '—'}</TableCell>
+                    </TableRow>
+                    {/* RG-REACH-004 : motif blocage visible côté admin (Sprint 2 dette) */}
                     {t.statut === 'bloque' && t.bloque_raison && (
-                      <tr key={`${t.id}-raison`} className="bg-danger-bg/30">
-                        <td colSpan={4} className="text-sm text-danger">
+                      <TableRow key={`${t.id}-raison`} className="bg-danger-bg/30">
+                        <TableCell colSpan={4} className="text-sm text-danger">
                           <span className="font-semibold">Motif du blocage :</span>{' '}
                           {t.bloque_raison}
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     )}
                   </Fragment>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           )}
-        </div>
-      )}
+        </TabsContent>
+      </Tabs>
 
-      {/* Bug 2 fix (Sprint 2 dette) — modal AffectationForm pour admin */}
+      {/* Modals */}
       {showAffectationForm && (
         <AffectationForm
           chantierId={chantierId}
@@ -375,7 +344,6 @@ export function ChantierDetailAdminTabs({
         />
       )}
 
-      {/* Bug 2 extension — modal création tâche pour admin */}
       {showTacheModal && (
         <TacheCreateModal
           chantierId={chantierId}

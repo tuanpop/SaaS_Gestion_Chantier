@@ -1,20 +1,41 @@
 'use client'
-// app/(conducteur)/chantiers/[id]/taches/nouvelle/client.tsx
-// Client Component du formulaire création tâche
+// app/conducteur/chantiers/[id]/taches/nouvelle/client.tsx
+// Formulaire création tâche conducteur — migré react-hook-form (étape 5, formulaire 8)
 //
-// Bug 3 (fix dette Sprint 2 — 2026-05-20) :
-//   Ajout du champ assigned_to (select) — auparavant absent (reporté Sprint 3 à tort).
-//   Le handler POST /api/chantiers/[id]/taches accepte assigned_to depuis Sprint 2,
-//   seule l'UI le bloquait. Fix GAP-011-A documenté par Levi.
-//
-// Liste assignable = ouvriers + conducteurs de l'org (chargée server-side, passée en props).
+// D-2.5-016 — react-hook-form + zodResolver
+// K2.5-D-06 — Button disabled={isSubmitting}
+// RG-MIGR-003 — form aria-busy={isSubmitting}
+// K2.5-T-10 — schema depuis lib/validation/taches.ts
+// D-2.5-019 : SVG bottom-nav conservés (5 onglets conducteur)
 
-import { useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { useToast } from '@/lib/hooks/use-toast'
+// K2.5-T-10 — schema unique depuis lib/validation/
+import { CreateTacheSchema, type CreateTacheInput } from '@/lib/validation/taches'
 import type { TacheStatut } from '@/types/database'
 
-const STATUTS: { value: TacheStatut; label: string }[] = [
+const STATUTS: { value: Exclude<TacheStatut, 'termine'>; label: string }[] = [
   { value: 'a_faire', label: 'À faire' },
   { value: 'en_cours', label: 'En cours' },
   { value: 'bloque', label: 'Bloqué' },
@@ -34,109 +55,68 @@ interface NouvelleTacheClientProps {
 export function NouvelleTacheClient({ membres }: NouvelleTacheClientProps) {
   const router = useRouter()
   const { id: chantierId } = useParams() as { id: string }
+  const { toast } = useToast()
 
-  const [form, setForm] = useState({
-    titre: '',
-    description: '',
-    date_echeance: '',
-    statut: 'a_faire' as TacheStatut,
-    bloque_raison: '',
-    assigned_to: '' as string,
+  const form = useForm<CreateTacheInput>({
+    resolver: zodResolver(CreateTacheSchema),
+    defaultValues: {
+      titre: '',
+      description: '',
+      date_echeance: null,
+      statut: 'a_faire',
+      assigned_to: null,
+      bloque_raison: null,
+    },
   })
 
-  const [errors, setErrors] = useState<Record<string, string>>({})
-  const [isLoading, setIsLoading] = useState(false)
-  const [globalError, setGlobalError] = useState<string | null>(null)
+  const { formState: { isSubmitting }, watch } = form
+  const currentStatut = watch('statut')
 
-  function validate(): boolean {
-    const newErrors: Record<string, string> = {}
+  async function onSubmit(values: CreateTacheInput) {
+    const response = await fetch(`/api/chantiers/${chantierId}/taches`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        titre: values.titre,
+        ...(values.description ? { description: values.description } : {}),
+        ...(values.date_echeance ? { date_echeance: values.date_echeance } : {}),
+        statut: values.statut,
+        ...(values.statut === 'bloque' && values.bloque_raison ? { bloque_raison: values.bloque_raison } : {}),
+        ...(values.assigned_to ? { assigned_to: values.assigned_to } : {}),
+      }),
+    })
 
-    if (!form.titre.trim()) {
-      newErrors['titre'] = 'Le titre est requis.'
-    } else if (form.titre.length > 200) {
-      newErrors['titre'] = 'Max 200 caractères.'
-    }
-
-    if (form.description.length > 2000) {
-      newErrors['description'] = 'Max 2000 caractères.'
-    }
-
-    if (form.statut === 'bloque') {
-      if (!form.bloque_raison.trim()) {
-        newErrors['bloque_raison'] = 'La raison est obligatoire si la tâche est bloquée.'
-      } else if (form.bloque_raison.length < 10) {
-        newErrors['bloque_raison'] = 'Raison obligatoire si tâche bloquée (min 10 caractères)'
-      }
-    }
-
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setGlobalError(null)
-
-    if (!validate()) return
-
-    setIsLoading(true)
-
-    try {
-      const response = await fetch(`/api/chantiers/${chantierId}/taches`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          titre: form.titre,
-          ...(form.description ? { description: form.description } : {}),
-          ...(form.date_echeance ? { date_echeance: form.date_echeance } : {}),
-          statut: form.statut,
-          ...(form.statut === 'bloque' ? { bloque_raison: form.bloque_raison } : {}),
-          ...(form.assigned_to ? { assigned_to: form.assigned_to } : {}),
-        }),
+    if (response.status === 402) {
+      // K2.5-T-08 : description = JSX
+      toast({
+        variant: 'destructive',
+        title: 'Essai expiré',
+        description: <span>Votre essai a expiré — passez en payant pour créer des tâches.</span>,
       })
+      return
+    }
 
-      if (response.status === 402) {
-        setGlobalError("Votre essai a expiré — passez en payant pour créer des tâches.")
-        return
-      }
-
-      if (response.status === 400) {
-        const data = await response.json() as { error?: string; fields?: Record<string, string[]> }
-        if (data.fields) {
-          const fieldErrors: Record<string, string> = {}
-          for (const [field, messages] of Object.entries(data.fields)) {
-            fieldErrors[field] = messages[0] ?? 'Champ invalide.'
-          }
-          setErrors(fieldErrors)
-        } else {
-          setGlobalError(data.error ?? 'Requête invalide.')
+    if (response.status === 400) {
+      const data = await response.json() as { error?: string; fields?: Record<string, string[]> }
+      if (data.fields) {
+        for (const [field, messages] of Object.entries(data.fields)) {
+          form.setError(field as keyof CreateTacheInput, {
+            type: 'server',
+            message: messages[0] ?? 'Champ invalide.',
+          })
         }
-        return
+      } else {
+        form.setError('root', { type: 'server', message: data.error ?? 'Requête invalide.' })
       }
-
-      if (!response.ok) {
-        setGlobalError("Une erreur est survenue. Réessayez.")
-        return
-      }
-
-      // Succès — retour au détail chantier
-      router.push(`/conducteur/chantiers/${chantierId}`)
-    } catch {
-      setGlobalError('Erreur réseau. Vérifiez votre connexion.')
-    } finally {
-      setIsLoading(false)
+      return
     }
-  }
 
-  function handleChange(field: string, value: string) {
-    setForm((prev) => ({ ...prev, [field]: value }))
-    if (errors[field]) {
-      setErrors((prev) => {
-        const next = { ...prev }
-        delete next[field]
-        return next
-      })
+    if (!response.ok) {
+      form.setError('root', { type: 'server', message: 'Une erreur est survenue. Réessayez.' })
+      return
     }
+
+    router.push(`/conducteur/chantiers/${chantierId}`)
   }
 
   return (
@@ -156,185 +136,180 @@ export function NouvelleTacheClient({ membres }: NouvelleTacheClientProps) {
       </header>
 
       <main className="px-4 pt-4 pb-40">
-        {/* Erreur globale */}
-        {globalError && (
-          <div className="card-brutal-mobile p-4 border-l-4 border-l-danger bg-danger-bg mb-4">
-            <p className="text-danger font-semibold text-sm">{globalError}</p>
+        {/* Erreur serveur */}
+        {form.formState.errors.root && (
+          <div role="alert" className="card-brutal-mobile p-4 border-l-4 border-l-danger bg-danger-bg mb-4">
+            <p className="text-danger font-semibold text-sm">
+              {form.formState.errors.root.message}
+            </p>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Titre */}
-          <div>
-            <label
-              htmlFor="titre"
-              className="block font-heading font-semibold text-xs uppercase text-muted mb-2 tracking-wide"
-            >
-              Titre <span className="text-danger">*</span>
-            </label>
-            <input
-              id="titre"
-              type="text"
-              value={form.titre}
-              onChange={(e) => handleChange('titre', e.target.value)}
-              placeholder="Ex : Pose carrelage RDC"
-              className={`input-brutal ${errors['titre'] ? 'error' : ''}`}
-              maxLength={200}
-              required
+        {/* RG-MIGR-003 : form aria-busy={isSubmitting} */}
+        <Form {...form}>
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="space-y-4"
+            aria-busy={isSubmitting}
+          >
+
+            <FormField
+              control={form.control}
+              name="titre"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Titre <span className="text-danger normal-case font-normal">*</span></FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="Ex : Pose carrelage RDC" maxLength={200} data-testid="tache-titre" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-            {errors['titre'] && (
-              <p className="text-danger text-sm font-medium mt-1">{errors['titre']}</p>
-            )}
-          </div>
 
-          {/* Description */}
-          <div>
-            <label
-              htmlFor="description"
-              className="block font-heading font-semibold text-xs uppercase text-muted mb-2 tracking-wide"
-            >
-              Description <span className="text-muted font-normal normal-case">(optionnel)</span>
-            </label>
-            <textarea
-              id="description"
-              value={form.description}
-              onChange={(e) => handleChange('description', e.target.value)}
-              placeholder="Détails de la tâche..."
-              className={`input-brutal resize-none h-24 ${errors['description'] ? 'error' : ''}`}
-              maxLength={2000}
+            <FormField
+              control={form.control}
+              name="description"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Description <span className="text-muted font-normal normal-case text-xs">(optionnel)</span></FormLabel>
+                  <FormControl>
+                    <Textarea
+                      {...field}
+                      value={field.value ?? ''}
+                      placeholder="Détails de la tâche..."
+                      className="resize-none h-24"
+                      maxLength={2000}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-            {errors['description'] && (
-              <p className="text-danger text-sm font-medium mt-1">{errors['description']}</p>
-            )}
-          </div>
 
-          {/* Date échéance */}
-          <div>
-            <label
-              htmlFor="date_echeance"
-              className="block font-heading font-semibold text-xs uppercase text-muted mb-2 tracking-wide"
-            >
-              Date d&apos;échéance <span className="text-muted font-normal normal-case">(optionnel)</span>
-            </label>
-            <input
-              id="date_echeance"
-              type="date"
-              value={form.date_echeance}
-              onChange={(e) => handleChange('date_echeance', e.target.value)}
-              className="input-brutal"
+            <FormField
+              control={form.control}
+              name="date_echeance"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Date d&apos;échéance <span className="text-muted font-normal normal-case text-xs">(optionnel)</span></FormLabel>
+                  <FormControl>
+                    <Input
+                      type="date"
+                      value={field.value ?? ''}
+                      onChange={(e) => field.onChange(e.target.value || null)}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
 
-          {/* Assigner à — Bug 3 fix Sprint 2 dette */}
-          <div>
-            <label
-              htmlFor="assigned_to"
-              className="block font-heading font-semibold text-xs uppercase text-muted mb-2 tracking-wide"
-            >
-              Assigner à <span className="text-muted font-normal normal-case">(optionnel)</span>
-            </label>
-            <select
-              id="assigned_to"
-              data-testid="assigned-to-select"
-              value={form.assigned_to}
-              onChange={(e) => handleChange('assigned_to', e.target.value)}
-              className={`input-brutal ${errors['assigned_to'] ? 'error' : ''}`}
-            >
-              <option value="">— Non assignée —</option>
-              {membres.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.prenom} {m.nom} ({m.role === 'ouvrier' ? 'Ouvrier' : 'Conducteur'})
-                </option>
-              ))}
-            </select>
-            {errors['assigned_to'] && (
-              <p className="text-danger text-sm font-medium mt-1">{errors['assigned_to']}</p>
-            )}
-          </div>
+            {/* Assigner à — piège 7 : data-testid sur SelectTrigger */}
+            <FormField
+              control={form.control}
+              name="assigned_to"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Assigner à <span className="text-muted font-normal normal-case text-xs">(optionnel)</span></FormLabel>
+                  <Select onValueChange={(val) => field.onChange(val === '__none__' ? null : val)} defaultValue="__none__">
+                    <FormControl>
+                      {/* data-testid sur SelectTrigger (piège 7) */}
+                      <SelectTrigger data-testid="assigned-to-select">
+                        <SelectValue placeholder="— Non assignée —" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="__none__">— Non assignée —</SelectItem>
+                      {membres.map((m) => (
+                        <SelectItem key={m.id} value={m.id}>
+                          {m.prenom} {m.nom} ({m.role === 'ouvrier' ? 'Ouvrier' : 'Conducteur'})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-          {/* Statut initial */}
-          <div>
-            <label className="block font-heading font-semibold text-xs uppercase text-muted mb-2 tracking-wide">
-              Statut initial
-            </label>
-            <div className="flex gap-2 flex-wrap">
-              {STATUTS.map(({ value, label }) => (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => {
-                    handleChange('statut', value)
-                    if (value !== 'bloque') {
-                      handleChange('bloque_raison', '')
-                    }
-                  }}
-                  className={`btn-brutal text-sm py-2 px-4 ${
-                    form.statut === value
-                      ? 'bg-accent text-white'
-                      : 'bg-white text-primary'
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          </div>
+            {/* Statut initial */}
+            <FormField
+              control={form.control}
+              name="statut"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Statut initial</FormLabel>
+                  <FormControl>
+                    <div className="flex gap-2 flex-wrap">
+                      {STATUTS.map(({ value, label }) => (
+                        <Button
+                          key={value}
+                          type="button"
+                          onClick={() => {
+                            field.onChange(value)
+                            if (value !== 'bloque') {
+                              form.setValue('bloque_raison', null)
+                            }
+                          }}
+                          variant={field.value === value ? 'default' : 'outline'}
+                          size="sm"
+                        >
+                          {label}
+                        </Button>
+                      ))}
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-          {/* Raison blocage — conditionnel */}
-          {form.statut === 'bloque' && (
-            <div>
-              <label
-                htmlFor="bloque_raison"
-                className="block font-heading font-semibold text-xs uppercase text-muted mb-2 tracking-wide"
-              >
-                Raison du blocage <span className="text-danger">*</span>
-              </label>
-              <textarea
-                id="bloque_raison"
-                value={form.bloque_raison}
-                onChange={(e) => handleChange('bloque_raison', e.target.value)}
-                placeholder="Décrivez la raison du blocage (min. 10 caractères)"
-                className={`input-brutal resize-none h-24 ${errors['bloque_raison'] ? 'error' : ''}`}
-                minLength={10}
+            {/* Raison blocage */}
+            {currentStatut === 'bloque' && (
+              <FormField
+                control={form.control}
+                name="bloque_raison"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Raison du blocage <span className="text-danger normal-case font-normal">*</span></FormLabel>
+                    <FormControl>
+                      <Textarea
+                        {...field}
+                        value={field.value ?? ''}
+                        placeholder="Décrivez la raison du blocage (min. 10 caractères)"
+                        className="resize-none h-24"
+                        minLength={10}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-              {form.bloque_raison.length > 0 && form.bloque_raison.length < 10 && (
-                <p className="text-danger text-xs mt-1 font-medium">
-                  Raison obligatoire si tâche bloquée (min 10 caractères) — {form.bloque_raison.length}/10
-                </p>
-              )}
-              {errors['bloque_raison'] && (
-                <p className="text-danger text-sm font-medium mt-1">{errors['bloque_raison']}</p>
-              )}
-            </div>
-          )}
+            )}
 
-          {/* Actions */}
-          <div className="flex flex-col gap-3 pt-4">
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="btn-brutal btn-brutal-mobile bg-accent text-white w-full justify-center"
-            >
-              {isLoading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Création...
-                </span>
-              ) : (
-                'Créer la tâche'
-              )}
-            </button>
-            <Link
-              href={`/conducteur/chantiers/${chantierId}`}
-              className="btn-brutal btn-brutal-mobile bg-white text-primary w-full justify-center"
-            >
-              Annuler
-            </Link>
-          </div>
-        </form>
+            {/* Actions */}
+            <div className="flex flex-col gap-3 pt-4">
+              {/* K2.5-D-06 : Button disabled={isSubmitting} obligatoire */}
+              <Button type="submit" disabled={isSubmitting} size="lg" className="w-full" data-testid="tache-submit">
+                {isSubmitting ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Création...
+                  </span>
+                ) : (
+                  'Créer la tâche'
+                )}
+              </Button>
+              <Button asChild variant="outline" size="lg" className="w-full">
+                <Link href={`/conducteur/chantiers/${chantierId}`}>Annuler</Link>
+              </Button>
+            </div>
+          </form>
+        </Form>
       </main>
 
-      {/* Bottom Navigation conducteur */}
+      {/* Bottom Navigation conducteur — D-2.5-019 : SVG conservés */}
       <nav className="bottom-nav">
         <Link href="/conducteur/chantiers">
           <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

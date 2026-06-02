@@ -14,11 +14,14 @@
 
 import Link from 'next/link'
 import { headers } from 'next/headers'
+import { ArrowDownUp, Plus, Building2 } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { calculerCouleur, trierParCouleur } from '@/lib/coloration'
 import { ChantierCard } from '@/components/ChantierCard'
 import { logger } from '@/lib/logger'
 import type { Chantier, ChantierWithColoration } from '@/types/database'
+import { Button } from '@/components/ui/button'
+import { ChantiersTabsNav } from './_components/ChantiersTabsNav'
 
 export const metadata = {
   title: 'Chantiers',
@@ -175,19 +178,13 @@ export default async function ChantiersAdminPage({ searchParams }: PageProps) {
   return (
     <div>
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 mb-6">
         <div>
           <h1 className="font-heading font-bold text-[28px]">Chantiers</h1>
           <p className="text-xs text-muted mt-0.5 flex items-center gap-1.5">
             {activeTab === 'actifs' ? (
               <>
-                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="m3 16 4 4 4-4"/>
-                  <path d="M7 20V4"/>
-                  <path d="M11 4h10"/>
-                  <path d="M11 8h7"/>
-                  <path d="M11 12h4"/>
-                </svg>
+                <ArrowDownUp className="w-3.5 h-3.5" />
                 Trié par priorité : Dépassé → Dérive → Dans les temps
               </>
             ) : (
@@ -196,42 +193,27 @@ export default async function ChantiersAdminPage({ searchParams }: PageProps) {
             {error && <span className="text-danger ml-2">Erreur de chargement</span>}
           </p>
         </div>
-        <Link
-          href="/admin/chantiers/nouveau"
-          className="btn-brutal bg-accent text-white text-sm py-2 px-4"
-        >
-          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M12 5v14M5 12h14"/>
-          </svg>
-          Nouveau chantier
-        </Link>
+        <Button asChild size="sm" data-testid="nouveau-chantier-btn">
+          <Link href="/admin/chantiers/nouveau">
+            <Plus className="w-4 h-4" />
+            Nouveau chantier
+          </Link>
+        </Button>
       </div>
 
-      {/* Tabs Actifs / Archivés (Sprint 2 dette 2026-05-20) */}
-      <div className="flex mb-6">
-        <Link
-          href="/admin/chantiers"
-          data-testid="tab-chantiers-actifs"
-          className={`tab-brutal rounded-l-md border-r-0 ${activeTab === 'actifs' ? 'active' : ''}`}
-        >
-          Actifs ({countActifs})
-        </Link>
-        <Link
-          href="/admin/chantiers?tab=archives"
-          data-testid="tab-chantiers-archives"
-          className={`tab-brutal rounded-r-md ${activeTab === 'archives' ? 'active' : ''}`}
-        >
-          Archivés ({countArchives})
-        </Link>
-      </div>
+      {/* Tabs Actifs / Archivés — ChantiersTabsNav (Client Component wrappant <Tabs> shadcn)
+          Radix Tabs : ARIA role=tablist, keyboard navigation, data-[state=active]
+          URL sync via useRouter.push dans ChantiersTabsNav */}
+      <ChantiersTabsNav
+        activeTab={activeTab}
+        countActifs={countActifs}
+        countArchives={countArchives}
+      />
 
       {/* État vide */}
       {chantiersAffichés.length === 0 && !error && (
         <div className="card-brutal p-12 text-center">
-          <svg className="w-16 h-16 text-muted mx-auto mb-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
-            <polyline points="9 22 9 12 15 12 15 22"/>
-          </svg>
+          <Building2 className="w-16 h-16 text-muted mx-auto mb-4" />
           <p className="font-heading text-xl font-bold mb-2">
             {activeTab === 'archives' ? 'Aucun chantier archivé' : 'Aucun chantier actif'}
           </p>
@@ -241,9 +223,9 @@ export default async function ChantiersAdminPage({ searchParams }: PageProps) {
               : 'Créez votre premier chantier pour commencer le suivi.'}
           </p>
           {activeTab === 'actifs' && (
-            <Link href="/admin/chantiers/nouveau" className="btn-brutal bg-accent text-white">
-              Créer un chantier
-            </Link>
+            <Button asChild>
+              <Link href="/admin/chantiers/nouveau">Créer un chantier</Link>
+            </Button>
           )}
         </div>
       )}
@@ -257,7 +239,7 @@ export default async function ChantiersAdminPage({ searchParams }: PageProps) {
 
       {/* Grille des chantiers — 3 colonnes desktop */}
       {chantiersAffichés.length > 0 && (
-        <div className="grid grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {chantiersAffichés.map((chantier) => (
             <ChantierCard
               key={chantier.id}

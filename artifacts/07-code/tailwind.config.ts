@@ -7,7 +7,8 @@
 import type { Config } from 'tailwindcss'
 
 const config: Config = {
-  darkMode: ['class'],
+  // D-2.5-020 — supprimer darkMode: ['class'] (light-only, PO-UX-003 tranchée)
+  // darkMode supprimé intentionnellement — ne pas réintroduire sans validation PO
   content: [
     './pages/**/*.{ts,tsx}',
     './components/**/*.{ts,tsx}',
@@ -85,6 +86,10 @@ const config: Config = {
         md: '6px',    // shadcn/ui "md" -> 6px
         sm: '4px',    // badges uniquement (§4.4)
         full: '9999px', // Gardé uniquement pour les pastilles de statut (rond 12px)
+      },
+      borderWidth: {
+        // D-2.5-018 — border brutal 2px pour tous les composants Neubrutalism
+        brutal: '2px',
       },
       minHeight: {
         touch: '56px', // WCAG + gants BTP

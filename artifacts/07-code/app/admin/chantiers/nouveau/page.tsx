@@ -1,164 +1,108 @@
 'use client'
-// app/(admin)/chantiers/nouveau/page.tsx
-// Formulaire création chantier (admin)
-// Client Component — 'use client' pour react-hook-form + useRouter
+// app/admin/chantiers/nouveau/page.tsx
+// Formulaire création chantier (admin) — migré react-hook-form (étape 5, D-2.5-016)
 //
 // Proto référencé : mockups/17-admin-chantier-nouveau.html
-// Design system Hana : card-brutal, input-brutal, btn-brutal
-//   - Validation inline code_postal (US-010 S2)
-//   - Toast succès + redirect vers /admin/chantiers/[id]
-//   - Toast erreur 402 : "Votre essai a expiré"
-//   - Bouton loading state (disabled + texte "Création...")
+// Design system Hana : Card shadcn, Input brutal, Button brutal
+// K2.5-D-06 : Button disabled={isSubmitting}
+// RG-MIGR-003 : form aria-busy={isSubmitting}
+// K2.5-T-10 : schema depuis lib/validation/chantiers.ts (jamais inline)
+// K2.5-T-08 : toast description = JSX uniquement
 
-import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { ArrowLeft } from 'lucide-react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form'
+import { useToast } from '@/lib/hooks/use-toast'
+// K2.5-T-10 — schema unique depuis lib/validation/
+import { CreateChantierSchema, type CreateChantierInput } from '@/lib/validation/chantiers'
 
 export default function NouveauChantierPage() {
   const router = useRouter()
+  const { toast } = useToast()
 
-  const [form, setForm] = useState({
-    nom: '',
-    client_nom: '',
-    adresse: '',
-    code_postal: '',
-    budget_alloue: '',
-    date_debut: '',
-    date_fin_prevue: '',
+  const form = useForm<CreateChantierInput>({
+    resolver: zodResolver(CreateChantierSchema),
+    defaultValues: {
+      nom: '',
+      client_nom: '',
+      adresse: '',
+      code_postal: '',
+      budget_alloue: undefined,
+      date_debut: '',
+      date_fin_prevue: '',
+    },
   })
 
-  const [errors, setErrors] = useState<Record<string, string>>({})
-  const [isLoading, setIsLoading] = useState(false)
-  const [globalError, setGlobalError] = useState<string | null>(null)
-  const [successMessage, setSuccessMessage] = useState<string | null>(null)
+  const { formState: { isSubmitting } } = form
 
-  // ============================================================
-  // Validation client-side (miroir Zod serveur)
-  // ============================================================
+  async function onSubmit(values: CreateChantierInput) {
+    const response = await fetch('/api/chantiers', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(values),
+    })
 
-  function validate(): boolean {
-    const newErrors: Record<string, string> = {}
-
-    if (!form.nom.trim()) newErrors['nom'] = 'Le nom du chantier est requis.'
-    if (form.nom.length > 100) newErrors['nom'] = 'Max 100 caractères.'
-
-    if (!form.client_nom.trim()) newErrors['client_nom'] = 'Le nom du client est requis.'
-
-    if (!form.adresse.trim()) newErrors['adresse'] = "L'adresse est requise."
-
-    // US-010 S2 : validation regex code postal 5 chiffres
-    if (!form.code_postal.trim()) {
-      newErrors['code_postal'] = 'Le code postal est requis.'
-    } else if (!/^\d{5}$/.test(form.code_postal)) {
-      newErrors['code_postal'] = 'Code postal : 5 chiffres requis'
-    }
-
-    if (form.budget_alloue && isNaN(Number(form.budget_alloue.replace(/\s/g, '')))) {
-      newErrors['budget_alloue'] = 'Budget invalide.'
-    }
-    if (form.budget_alloue && Number(form.budget_alloue.replace(/\s/g, '')) <= 0) {
-      newErrors['budget_alloue'] = 'Le budget doit être positif.'
-    }
-
-    if (!form.date_debut) newErrors['date_debut'] = 'La date de début est requise.'
-    if (!form.date_fin_prevue) newErrors['date_fin_prevue'] = 'La date de fin prévue est requise.'
-
-    if (form.date_debut && form.date_fin_prevue && form.date_fin_prevue < form.date_debut) {
-      newErrors['date_fin_prevue'] = 'La date de fin prévue doit être >= à la date de début.'
-    }
-
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
-
-  // ============================================================
-  // Soumission
-  // ============================================================
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setGlobalError(null)
-    setSuccessMessage(null)
-
-    if (!validate()) return
-
-    setIsLoading(true)
-
-    const budgetNum = form.budget_alloue
-      ? Number(form.budget_alloue.replace(/\s/g, ''))
-      : undefined
-
-    try {
-      const response = await fetch('/api/chantiers', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          nom: form.nom,
-          client_nom: form.client_nom,
-          adresse: form.adresse,
-          code_postal: form.code_postal,
-          ...(budgetNum ? { budget_alloue: budgetNum } : {}),
-          date_debut: form.date_debut,
-          date_fin_prevue: form.date_fin_prevue,
-        }),
+    if (response.status === 402) {
+      // K2.5-T-08 : description = JSX
+      toast({
+        variant: 'destructive',
+        title: 'Essai expiré',
+        description: <span>Votre essai a expiré — passez en payant pour créer un chantier.</span>,
       })
-
-      if (response.status === 402) {
-        setGlobalError("Votre essai a expiré — passez en payant pour créer un chantier.")
-        return
-      }
-
-      if (response.status === 400) {
-        const data = await response.json() as {
-          error?: string
-          fields?: Record<string, string[]>
-        }
-        if (data.fields) {
-          const fieldErrors: Record<string, string> = {}
-          for (const [field, messages] of Object.entries(data.fields)) {
-            fieldErrors[field] = messages[0] ?? 'Champ invalide.'
-          }
-          setErrors(fieldErrors)
-        } else {
-          setGlobalError(data.error ?? 'Requête invalide.')
-        }
-        return
-      }
-
-      if (!response.ok) {
-        setGlobalError("Une erreur est survenue. Réessayez.")
-        return
-      }
-
-      const chantier = await response.json() as { id: string }
-      setSuccessMessage('Chantier créé avec succès !')
-
-      // Redirect vers le détail du chantier créé
-      setTimeout(() => {
-        router.push(`/admin/chantiers/${chantier.id}`)
-      }, 800)
-    } catch {
-      setGlobalError('Erreur réseau. Vérifiez votre connexion.')
-    } finally {
-      setIsLoading(false)
+      return
     }
-  }
 
-  function handleChange(field: string, value: string) {
-    setForm((prev) => ({ ...prev, [field]: value }))
-    // Effacer l'erreur du champ quand l'utilisateur tape
-    if (errors[field]) {
-      setErrors((prev) => {
-        const next = { ...prev }
-        delete next[field]
-        return next
+    if (response.status === 400) {
+      const data = await response.json() as {
+        error?: string
+        fields?: Record<string, string[]>
+      }
+      if (data.fields) {
+        for (const [field, messages] of Object.entries(data.fields)) {
+          form.setError(field as keyof CreateChantierInput, {
+            type: 'server',
+            message: messages[0] ?? 'Champ invalide.',
+          })
+        }
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Erreur',
+          description: <span>{data.error ?? 'Requête invalide.'}</span>,
+        })
+      }
+      return
+    }
+
+    if (!response.ok) {
+      toast({
+        variant: 'destructive',
+        title: 'Erreur',
+        description: <span>Une erreur est survenue. Réessayez.</span>,
       })
+      return
     }
-  }
 
-  // ============================================================
-  // Rendu
-  // ============================================================
+    const chantier = await response.json() as { id: string }
+    toast({
+      variant: 'success',
+      title: 'Chantier créé',
+      description: <span>Le chantier a été créé avec succès.</span>,
+    })
+    router.push(`/admin/chantiers/${chantier.id}`)
+  }
 
   return (
     <div>
@@ -168,218 +112,207 @@ export default function NouveauChantierPage() {
           href="/admin/chantiers"
           className="text-xs text-muted flex items-center gap-1 mb-3 hover:text-primary transition-colors"
         >
-          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M19 12H5M12 19l-7-7 7-7"/>
-          </svg>
+          <ArrowLeft className="w-3.5 h-3.5" />
           Retour aux chantiers
         </Link>
         <h1 className="font-heading font-bold text-[28px]">Nouveau chantier</h1>
       </div>
 
-      {/* Succès */}
-      {successMessage && (
-        <div className="card-brutal p-4 border-l-4 border-l-success bg-success-bg mb-6">
-          <p className="text-success font-semibold">{successMessage}</p>
-        </div>
-      )}
-
-      {/* Erreur globale */}
-      {globalError && (
-        <div className="card-brutal p-4 border-l-4 border-l-danger bg-danger-bg mb-6">
-          <p className="text-danger font-semibold">{globalError}</p>
-        </div>
-      )}
-
       {/* Formulaire */}
       <div className="card-brutal p-8 max-w-3xl">
-        <form onSubmit={handleSubmit} className="space-y-5">
+        {/* RG-MIGR-003 : form aria-busy={isSubmitting} */}
+        <Form {...form}>
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="space-y-5"
+            aria-busy={isSubmitting}
+          >
 
-          {/* Nom du chantier */}
-          <div>
-            <label
-              htmlFor="nom"
-              className="block font-heading font-semibold text-xs uppercase text-muted mb-2 tracking-wide"
-            >
-              Nom du chantier <span className="text-danger">*</span>
-            </label>
-            <input
-              id="nom"
-              type="text"
-              value={form.nom}
-              onChange={(e) => handleChange('nom', e.target.value)}
-              placeholder="Ex : Résidence Les Pins"
-              className={`input-brutal ${errors['nom'] ? 'error' : ''}`}
-              maxLength={100}
-              required
+            {/* Nom du chantier */}
+            <FormField
+              control={form.control}
+              name="nom"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    Nom du chantier <span className="text-danger normal-case font-normal">*</span>
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      placeholder="Ex : Résidence Les Pins"
+                      maxLength={100}
+                      data-testid="chantier-nom"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-            {errors['nom'] && (
-              <p className="text-danger text-sm font-medium mt-1">{errors['nom']}</p>
-            )}
-          </div>
 
-          {/* Client */}
-          <div>
-            <label
-              htmlFor="client_nom"
-              className="block font-heading font-semibold text-xs uppercase text-muted mb-2 tracking-wide"
-            >
-              Client <span className="text-danger">*</span>
-            </label>
-            <input
-              id="client_nom"
-              type="text"
-              value={form.client_nom}
-              onChange={(e) => handleChange('client_nom', e.target.value)}
-              placeholder="Nom du client ou de la société"
-              className={`input-brutal ${errors['client_nom'] ? 'error' : ''}`}
-              maxLength={200}
-              required
+            {/* Client */}
+            <FormField
+              control={form.control}
+              name="client_nom"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    Client <span className="text-danger normal-case font-normal">*</span>
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      placeholder="Nom du client ou de la société"
+                      maxLength={200}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-            {errors['client_nom'] && (
-              <p className="text-danger text-sm font-medium mt-1">{errors['client_nom']}</p>
-            )}
-          </div>
 
-          {/* Adresse */}
-          <div>
-            <label
-              htmlFor="adresse"
-              className="block font-heading font-semibold text-xs uppercase text-muted mb-2 tracking-wide"
-            >
-              Adresse <span className="text-danger">*</span>
-            </label>
-            <input
-              id="adresse"
-              type="text"
-              value={form.adresse}
-              onChange={(e) => handleChange('adresse', e.target.value)}
-              placeholder="14 rue des Lilas"
-              className={`input-brutal ${errors['adresse'] ? 'error' : ''}`}
-              required
+            {/* Adresse */}
+            <FormField
+              control={form.control}
+              name="adresse"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    Adresse <span className="text-danger normal-case font-normal">*</span>
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      placeholder="14 rue des Lilas"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-            {errors['adresse'] && (
-              <p className="text-danger text-sm font-medium mt-1">{errors['adresse']}</p>
-            )}
-          </div>
 
-          {/* Code postal — US-010 S2 validation inline */}
-          <div>
-            <label
-              htmlFor="code_postal"
-              className="block font-heading font-semibold text-xs uppercase text-muted mb-2 tracking-wide"
-            >
-              Code postal <span className="text-danger">*</span>
-            </label>
-            <input
-              id="code_postal"
-              type="text"
-              value={form.code_postal}
-              onChange={(e) => handleChange('code_postal', e.target.value)}
-              placeholder="75001"
-              className={`input-brutal ${errors['code_postal'] ? 'error' : ''}`}
-              maxLength={5}
-              pattern="\d{5}"
-              required
+            {/* Code postal — US-010 S2 validation inline */}
+            <FormField
+              control={form.control}
+              name="code_postal"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    Code postal <span className="text-danger normal-case font-normal">*</span>
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      placeholder="75001"
+                      maxLength={5}
+                      inputMode="numeric"
+                      pattern="\d{5}"
+                      data-testid="chantier-code-postal"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-            {errors['code_postal'] && (
-              <p className="text-danger text-sm font-medium mt-1">{errors['code_postal']}</p>
-            )}
-          </div>
 
-          {/* Budget alloué (optionnel — Q5) */}
-          <div>
-            <label
-              htmlFor="budget_alloue"
-              className="block font-heading font-semibold text-xs uppercase text-muted mb-2 tracking-wide"
-            >
-              Budget alloué (€){' '}
-              <span className="text-muted font-normal normal-case">(optionnel)</span>
-            </label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted font-bold text-lg">€</span>
-              <input
-                id="budget_alloue"
-                type="text"
-                inputMode="numeric"
-                value={form.budget_alloue}
-                onChange={(e) => handleChange('budget_alloue', e.target.value)}
-                placeholder="65 000"
-                className={`input-brutal pl-8 ${errors['budget_alloue'] ? 'error' : ''}`}
+            {/* Budget alloué (optionnel) */}
+            <FormField
+              control={form.control}
+              name="budget_alloue"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    Budget alloué (€){' '}
+                    <span className="text-muted font-normal normal-case text-xs">(optionnel)</span>
+                  </FormLabel>
+                  <FormControl>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted font-bold text-lg">€</span>
+                      <Input
+                        {...field}
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="65 000"
+                        className="pl-8"
+                        value={field.value ?? ''}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/\s/g, '')
+                          field.onChange(val === '' ? undefined : Number(val))
+                        }}
+                      />
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Dates */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="date_debut"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      Date début <span className="text-danger normal-case font-normal">*</span>
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type="date"
+                        data-testid="chantier-date-debut"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="date_fin_prevue"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      Date fin prévue <span className="text-danger normal-case font-normal">*</span>
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type="date"
+                        min={form.watch('date_debut') || undefined}
+                        data-testid="chantier-date-fin"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
             </div>
-            {errors['budget_alloue'] && (
-              <p className="text-danger text-sm font-medium mt-1">{errors['budget_alloue']}</p>
-            )}
-          </div>
 
-          {/* Dates */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label
-                htmlFor="date_debut"
-                className="block font-heading font-semibold text-xs uppercase text-muted mb-2 tracking-wide"
+            {/* Actions */}
+            <div className="flex gap-4 pt-4">
+              {/* K2.5-D-06 : Button disabled={isSubmitting} obligatoire */}
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                data-testid="chantier-submit"
               >
-                Date début <span className="text-danger">*</span>
-              </label>
-              <input
-                id="date_debut"
-                type="date"
-                value={form.date_debut}
-                onChange={(e) => handleChange('date_debut', e.target.value)}
-                className={`input-brutal ${errors['date_debut'] ? 'error' : ''}`}
-                required
-              />
-              {errors['date_debut'] && (
-                <p className="text-danger text-sm font-medium mt-1">{errors['date_debut']}</p>
-              )}
+                {isSubmitting ? (
+                  <span className="flex items-center gap-2">
+                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Création...
+                  </span>
+                ) : (
+                  'Créer le chantier'
+                )}
+              </Button>
+              <Button asChild variant="outline">
+                <Link href="/admin/chantiers">Annuler</Link>
+              </Button>
             </div>
-            <div>
-              <label
-                htmlFor="date_fin_prevue"
-                className="block font-heading font-semibold text-xs uppercase text-muted mb-2 tracking-wide"
-              >
-                Date fin prévue <span className="text-danger">*</span>
-              </label>
-              <input
-                id="date_fin_prevue"
-                type="date"
-                value={form.date_fin_prevue}
-                onChange={(e) => handleChange('date_fin_prevue', e.target.value)}
-                min={form.date_debut || undefined}
-                className={`input-brutal ${errors['date_fin_prevue'] ? 'error' : ''}`}
-                required
-              />
-              {errors['date_fin_prevue'] && (
-                <p className="text-danger text-sm font-medium mt-1">{errors['date_fin_prevue']}</p>
-              )}
-            </div>
-          </div>
-
-          {/* Actions */}
-          <div className="flex gap-4 pt-4">
-            {/* T10 — disabled:opacity-50 supprimé : .btn-brutal:disabled dans globals.css gère l'état (fond gris #F2F2F2, bordure #999, opacity 0.7) */}
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="btn-brutal bg-accent text-white"
-            >
-              {isLoading ? (
-                <span className="flex items-center gap-2">
-                  <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Création...
-                </span>
-              ) : (
-                'Créer le chantier'
-              )}
-            </button>
-            <Link
-              href="/admin/chantiers"
-              className="btn-brutal bg-white text-primary"
-            >
-              Annuler
-            </Link>
-          </div>
-        </form>
+          </form>
+        </Form>
       </div>
     </div>
   )

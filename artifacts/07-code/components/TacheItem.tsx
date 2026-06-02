@@ -1,21 +1,14 @@
 'use client'
-// components/TacheItem.tsx
-// Item tâche — statut badge, assigné, raison blocage
-// Réutilisé dans : app/(admin)/chantiers/[id]/page.tsx + app/(conducteur)/chantiers/[id]/page.tsx
+// components/TacheItem.tsx — migré Badge + Button + Textarea shadcn (étape 7, C-02)
 //
-// Proto référencé :
-//   Admin desktop : mockups/16-admin-chantier-detail.html (tableau tâches lignes 206-255)
-//   Conducteur mobile : mockups/09-conducteur-chantier-detail.html
-//   Tâche bloquée : badge-danger + texte bloque_raison en rouge
-//
-// Design system Hana :
-//   Badge statut : a_faire (gris), en_cours (bleu), termine (vert), bloque (rouge)
-//   Si bloque : bloque_raison visible en rouge (--color-danger)
-//   onUpdate=undefined -> lecture seule (admin)
-//   onUpdate={fn} -> conducteur peut modifier le statut
+// RG-REACH-004 : motif blocage visible côté conducteur
+// Mode édition inline conducteur préservé (onUpdate = conducteur uniquement)
 
 import { useState } from 'react'
 import type { Tache, TacheStatut } from '@/types/database'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Textarea } from '@/components/ui/textarea'
 
 // ============================================================
 // Types
@@ -35,11 +28,14 @@ interface TacheItemProps {
 // Helpers
 // ============================================================
 
-const STATUT_STYLES: Record<TacheStatut, { badgeClass: string; label: string }> = {
-  a_faire: { badgeClass: 'badge badge-muted', label: 'À faire' },
-  en_cours: { badgeClass: 'badge badge-primary', label: 'En cours' },
-  termine:  { badgeClass: 'badge badge-success', label: 'Terminée' },
-  bloque:   { badgeClass: 'badge badge-danger', label: 'Bloquée' },
+const STATUT_STYLES: Record<TacheStatut, {
+  variant: 'muted' | 'primary' | 'success' | 'danger'
+  label: string
+}> = {
+  a_faire: { variant: 'muted', label: 'À faire' },
+  en_cours: { variant: 'primary', label: 'En cours' },
+  termine:  { variant: 'success', label: 'Terminée' },
+  bloque:   { variant: 'danger', label: 'Bloquée' },
 }
 
 function formatDate(dateStr: string | null): string | null {
@@ -89,15 +85,13 @@ export function TacheItem({ tache, onUpdate }: TacheItemProps) {
   }
 
   return (
-    <div
-      className={`card-brutal p-4 ${isBloque ? 'bg-danger-bg' : 'bg-white'}`}
-    >
+    <div className={`card-brutal p-4 ${isBloque ? 'bg-danger-bg' : 'bg-white'}`}>
       {/* Header : titre + badge statut */}
       <div className="flex items-start justify-between gap-3 mb-2">
         <p className="font-semibold text-sm flex-1">{tache.titre}</p>
-        <span className={`${statutStyle.badgeClass} shrink-0 text-xs`}>
+        <Badge variant={statutStyle.variant} className="shrink-0 text-xs">
           {statutStyle.label}
-        </span>
+        </Badge>
       </div>
 
       {/* Assigné + date échéance */}
@@ -115,9 +109,9 @@ export function TacheItem({ tache, onUpdate }: TacheItemProps) {
         <p className="text-xs text-muted mb-2">{tache.description}</p>
       )}
 
-      {/* Raison de blocage */}
+      {/* RG-REACH-004 : Raison de blocage — visible côté conducteur */}
       {isBloque && tache.bloque_raison && (
-        <div className="bg-danger-bg border border-danger rounded p-2 mb-2">
+        <div className="bg-danger-bg border-2 border-danger rounded-[6px] p-2 mb-2">
           <p className="text-danger text-xs font-semibold">
             Raison du blocage : {tache.bloque_raison}
           </p>
@@ -133,42 +127,39 @@ export function TacheItem({ tache, onUpdate }: TacheItemProps) {
               Nouveau statut
             </label>
             <div className="flex flex-wrap gap-2">
-              {(Object.entries(STATUT_STYLES) as [TacheStatut, { badgeClass: string; label: string }][]).map(
+              {(Object.entries(STATUT_STYLES) as [TacheStatut, typeof STATUT_STYLES[TacheStatut]][]).map(
                 ([statut, style]) => (
-                  <button
+                  <Button
                     key={statut}
                     type="button"
                     onClick={() => setSelectedStatut(statut)}
-                    className={`px-3 py-1 border-2 rounded text-xs font-semibold transition-all ${
-                      selectedStatut === statut
-                        ? 'border-black bg-black text-white'
-                        : 'border-black bg-white text-black'
-                    }`}
+                    variant={selectedStatut === statut ? 'default' : 'outline'}
+                    size="sm"
+                    className="text-xs"
                   >
                     {style.label}
-                  </button>
+                  </Button>
                 ),
               )}
             </div>
           </div>
 
-          {/* Raison blocage — apparaît conditionnellement */}
+          {/* Raison blocage */}
           {selectedStatut === 'bloque' && (
             <div>
               <label className="block font-heading font-semibold text-xs uppercase text-muted mb-1 tracking-wide">
                 Raison du blocage <span className="text-danger">*</span>
               </label>
-              <textarea
+              <Textarea
                 value={bloqueRaison}
                 onChange={(e) => setBloqueRaison(e.target.value)}
-                className={`input-brutal resize-none h-20 ${
-                  bloqueRaison.length > 0 && bloqueRaison.length < 10 ? 'error' : ''
-                }`}
+                className="resize-none h-20"
                 placeholder="Décrivez la raison du blocage (min. 10 caractères)"
                 minLength={10}
+                aria-invalid={bloqueRaison.length > 0 && bloqueRaison.length < 10}
               />
               {bloqueRaison.length > 0 && bloqueRaison.length < 10 && (
-                <p className="text-danger text-xs mt-1 font-medium">
+                <p role="alert" className="text-danger text-xs mt-1 font-medium">
                   Raison obligatoire si tâche bloquée (min 10 caractères) — {bloqueRaison.length}/10
                 </p>
               )}
@@ -177,44 +168,48 @@ export function TacheItem({ tache, onUpdate }: TacheItemProps) {
 
           {/* Erreur */}
           {error && (
-            <p className="text-danger text-xs font-medium">{error}</p>
+            <p role="alert" className="text-danger text-xs font-medium">{error}</p>
           )}
 
           {/* Actions */}
           <div className="flex gap-2">
-            <button
+            {/* K2.5-D-06 : Button disabled={isLoading} */}
+            <Button
               type="button"
               onClick={handleSave}
               disabled={isLoading || (selectedStatut === 'bloque' && bloqueRaison.length < 10)}
-              className="btn-brutal bg-accent text-white text-sm py-2 px-4 disabled:opacity-50"
+              size="sm"
             >
               {isLoading ? 'Enregistrement...' : 'Enregistrer'}
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              variant="outline"
+              size="sm"
               onClick={() => {
                 setIsEditing(false)
                 setError(null)
                 setSelectedStatut(tache.statut)
                 setBloqueRaison(tache.bloque_raison ?? '')
               }}
-              className="btn-brutal bg-white text-primary text-sm py-2 px-4"
             >
               Annuler
-            </button>
+            </Button>
           </div>
         </div>
       )}
 
       {/* Bouton modifier (conducteur, hors mode édition) */}
       {!isReadOnly && !isEditing && (
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="sm"
           onClick={() => setIsEditing(true)}
-          className="text-xs text-primary font-semibold hover:underline mt-1 flex items-center gap-1"
+          className="text-xs text-primary font-semibold mt-1 border-transparent"
         >
           Modifier le statut
-        </button>
+        </Button>
       )}
     </div>
   )

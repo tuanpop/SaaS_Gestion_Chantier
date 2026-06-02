@@ -272,41 +272,6 @@
     border-radius: 4px;
   }
 
-  /* sidebar admin — source : §4.7 */
-  .sidebar {
-    position: fixed;
-    left: 0; top: 0; bottom: 0;
-    width: 240px;
-    background: #163958;
-    color: #fff;
-    padding: 24px 0;
-    z-index: 40;
-    border-right: 2px solid #000;
-  }
-  .sidebar a {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 12px 24px;
-    color: #94A3B8;
-    text-decoration: none;
-    font-weight: 500;
-    font-size: 15px;
-    transition: background 150ms, color 150ms;
-  }
-  .sidebar a:hover { background: #1F4E79; color: #fff; }
-  .sidebar a.active {
-    background: #F97316;
-    color: #fff;
-    font-weight: 700;
-    border-left: 4px solid #fff;
-  }
-  .main-content {
-    margin-left: 240px;
-    padding: 32px;
-    min-height: 100vh;
-  }
-
   /* table-brutal — source : §4.13 */
   .table-brutal {
     width: 100%;

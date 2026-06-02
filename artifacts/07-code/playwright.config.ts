@@ -1,12 +1,18 @@
+// playwright.config.ts — Sprint 2.5 (étape 9)
+// Ajouts : globalSetup + projets admin/conducteur storageState + workers CI
+// D-2.5-025, D-2.5-026
+
 import { defineConfig, devices } from '@playwright/test'
-import { readFileSync } from 'node:fs'
+import { readFileSync, existsSync } from 'node:fs'
 import { resolve } from 'node:path'
 
-// Playwright tourne dans un process séparé de Next.js — charger .env.local manuellement.
-// Parse minimal sans dépendance dotenv. Format: KEY=VALUE par ligne.
-const envPath = resolve(process.cwd(), '.env.local')
+// Charger .env.test si présent (CI) sinon .env.local (dev local) — D-2.5-026
+const envTestPath = resolve(process.cwd(), '.env.test')
+const envLocalPath = resolve(process.cwd(), '.env.local')
+const envPathToLoad = existsSync(envTestPath) ? envTestPath : envLocalPath
+
 try {
-  const raw = readFileSync(envPath, 'utf-8')
+  const raw = readFileSync(envPathToLoad, 'utf-8')
   let loaded = 0
   for (const line of raw.split(/\r?\n/)) {
     const trimmed = line.trim()
@@ -23,21 +29,25 @@ try {
       loaded++
     }
   }
-  // Log uniquement sur le process principal (pas chaque worker), via stderr pour ne pas polluer stdout
   if (!process.env['TEST_WORKER_INDEX']) {
-    process.stderr.write(`[playwright.config] .env.local chargé (${loaded} variables) depuis ${envPath}\n`)
+    process.stderr.write(`[playwright.config] ${envPathToLoad} chargé (${loaded} variables)\n`)
   }
 } catch (err) {
-  process.stderr.write(`[playwright.config] échec lecture ${envPath}: ${err instanceof Error ? err.message : String(err)}\n`)
+  process.stderr.write(`[playwright.config] échec lecture ${envPathToLoad}: ${err instanceof Error ? err.message : String(err)}\n`)
 }
 
 export default defineConfig({
   testDir: './tests/e2e',
-  fullyParallel: false, // séquentiel pour éviter les conflits DB en test
+  fullyParallel: false,
   forbidOnly: !!process.env['CI'],
   retries: process.env['CI'] ? 2 : 0,
-  ...(process.env['CI'] ? { workers: 1 } : {}),
+  // D-2.5-026 : workers CI=1 (mutex DB), local=2
+  workers: process.env.CI ? 1 : 2,
   reporter: process.env['CI'] ? 'github' : 'html',
+
+  // D-2.5-026 : globalSetup — reset + seed + login storageState
+  // Note: ne sera exécutable qu'après Tanjiro étape 2 (F003 levée — SUPABASE_TEST_URL)
+  globalSetup: './tests/e2e/global-setup.ts',
 
   use: {
     baseURL: process.env['NEXT_PUBLIC_APP_URL'] || 'http://localhost:3000',
@@ -45,18 +55,32 @@ export default defineConfig({
   },
 
   projects: [
+    // Projet admin — storageState injecté (D-2.5-026)
+    {
+      name: 'admin',
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: 'tests/e2e/.auth/admin.json',
+      },
+      testMatch: /.*admin.*\.spec\.ts/,
+    },
+    // Projet conducteur — storageState injecté
+    {
+      name: 'conducteur',
+      use: {
+        ...devices['Pixel 5'],
+        storageState: 'tests/e2e/.auth/conducteur.json',
+      },
+      testMatch: /.*conducteur.*\.spec\.ts/,
+    },
+    // Projet chromium générique — tests auth (pas de storageState)
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
-    },
-    // Mobile ouvrier (PWA)
-    {
-      name: 'Mobile Chrome',
-      use: { ...devices['Pixel 5'] },
+      testIgnore: [/.*admin.*\.spec\.ts/, /.*conducteur.*\.spec\.ts/],
     },
   ],
 
-  // Démarrer le serveur Next.js avant les tests si pas déjà démarré
   webServer: {
     command: 'npm run dev',
     url: process.env['NEXT_PUBLIC_APP_URL'] || 'http://localhost:3000',

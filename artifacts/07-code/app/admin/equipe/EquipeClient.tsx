@@ -1,29 +1,54 @@
 'use client'
 
 // ============================================================
-// EquipeClient — Client Component page Équipe admin
+// EquipeClient — migré étape 6 (Dialog + react-hook-form + ConfirmDialog + useToast)
 //
-// Chantier 3 (Sprint UX-2) — Source : proto 18-admin-equipe.html
-//
-// Responsabilités :
-//   1. Afficher la table des membres avec badges rôle et statut
-//   2. Modal invitation conducteur/ouvrier (POST /api/users)
-//   3. Modal QR (placeholder Sprint 3)
-//   4. Handler "Renvoyer invitation" (POST /api/users/[id]/reinvite)
-//   5. Toast inline auto-dismiss 4s
-//
-// R-02 : telephone accepté dans le payload conducteur (InviteUserSchema étendu Sprint UX-2)
-//
-// Sécurité :
-//   - Pas de console.log — états React pour les erreurs/succès
-//   - Validation client avant POST (email format, champs requis)
-//   - Le payload envoyé correspond exactement au schéma serveur
+// D-2.5-016 — modals Inviter/Modifier → Dialog + Form react-hook-form
+// D-2.5-017 — handleDelete → ConfirmDialog destructive
+// RG-MIGR-006 — window.confirm supprimé
+// Piège 8 — état toast local supprimé → useToast() global
+// K2.5-D-06 — Button disabled={isSubmitting}
+// K2.5-T-10 — schemas depuis lib/validation/users.ts
+// RG-MIGR-002 — commentaires RBAC préservés
+// data-testid préservés : invite-role-admin, edit-member-{id}, edit-member-submit
 // ============================================================
 
-import { useState, useEffect, useCallback, useId } from 'react'
+import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { X } from 'lucide-react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 import type { Tables } from '@/types/database'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { Badge } from '@/components/ui/badge'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { useToast } from '@/lib/hooks/use-toast'
+// K2.5-T-10 — schemas uniques depuis lib/validation/
+import { InviteUserSchema, PatchUserSchema, type InviteUserInput, type PatchUserInput } from '@/lib/validation/users'
 
 // ============================================================
 // Types
@@ -45,34 +70,6 @@ type UserRow = Pick<
   | 'created_at'
 >
 
-interface ToastMsg {
-  type: 'success' | 'error'
-  message: string
-}
-
-interface InviteFormState {
-  nom: string
-  prenom: string
-  email: string
-  telephone: string
-}
-
-// Sprint 2 dette (2026-05-20) — état modal modification membre.
-// userId vide = modal fermée. email/role en lecture seule (scope PATCH = nom/prenom/telephone).
-interface EditFormState {
-  userId: string
-  nom: string
-  prenom: string
-  telephone: string
-  // Champs read-only affichés pour contexte :
-  email: string | null
-  role: UserRole
-}
-
-// ============================================================
-// Props
-// ============================================================
-
 interface EquipeClientProps {
   initialUsers: UserRow[]
   /** ID de l'admin connecté — le bouton Supprimer est masqué sur sa propre ligne */
@@ -84,22 +81,18 @@ interface EquipeClientProps {
 // ============================================================
 
 function RoleBadge({ role }: { role: UserRole }) {
-  const styles: Record<UserRole, string> = {
-    admin: 'badge badge-primary',
-    conducteur: 'badge badge-accent',
-    ouvrier: 'badge badge-muted',
+  const variants: Record<UserRole, 'primary' | 'accent' | 'muted'> = {
+    admin: 'primary',
+    conducteur: 'accent',
+    ouvrier: 'muted',
   }
   const labels: Record<UserRole, string> = {
     admin: 'Admin',
     conducteur: 'Conducteur',
     ouvrier: 'Ouvrier',
   }
-  return <span className={styles[role]}>{labels[role]}</span>
+  return <Badge variant={variants[role]}>{labels[role]}</Badge>
 }
-
-// ============================================================
-// Helper — badge statut invitation
-// ============================================================
 
 function StatutBadge({
   invitationStatus,
@@ -108,27 +101,23 @@ function StatutBadge({
   invitationStatus: InvitationStatus | null
   role: UserRole
 }) {
-  // Ouvriers : pas d'invitation — afficher "Actif" directement
   if (role === 'ouvrier') {
-    return <span className="badge badge-success">Actif</span>
+    return <Badge variant="success">Actif</Badge>
   }
-
-  // Admin sans invitation_status = actif
   if (!invitationStatus) {
-    return <span className="badge badge-success">Actif</span>
+    return <Badge variant="success">Actif</Badge>
   }
-
-  const styles: Record<InvitationStatus, string> = {
-    pending: 'badge badge-warning',
-    active: 'badge badge-success',
-    expired: 'badge badge-danger',
+  const variants: Record<InvitationStatus, 'warning' | 'success' | 'danger'> = {
+    pending: 'warning',
+    active: 'success',
+    expired: 'danger',
   }
   const labels: Record<InvitationStatus, string> = {
     pending: 'En attente',
     active: 'Actif',
     expired: 'Expiré',
   }
-  return <span className={styles[invitationStatus]}>{labels[invitationStatus]}</span>
+  return <Badge variant={variants[invitationStatus]}>{labels[invitationStatus]}</Badge>
 }
 
 // ============================================================
@@ -137,9 +126,10 @@ function StatutBadge({
 
 export function EquipeClient({ initialUsers, currentUserId }: EquipeClientProps) {
   const router = useRouter()
+  const { toast } = useToast()
 
   // ============================================================
-  // État
+  // État modals
   // ============================================================
 
   const [modalInvite, setModalInvite] = useState(false)
@@ -148,202 +138,155 @@ export function EquipeClient({ initialUsers, currentUserId }: EquipeClientProps)
     userId: '',
     userName: '',
   })
-  const [inviteRole, setInviteRole] = useState<'admin' | 'conducteur' | 'ouvrier'>('conducteur')
-  const [inviteForm, setInviteForm] = useState<InviteFormState>({
-    nom: '',
-    prenom: '',
-    email: '',
-    telephone: '',
+  const [inviteRole, setInviteRole] = useState<UserRole>('conducteur')
+
+  // Modal Modifier
+  const [editUserId, setEditUserId] = useState<string | null>(null)
+  const [editUserContext, setEditUserContext] = useState<{
+    email: string | null
+    role: UserRole
+    initialValues: { prenom: string; nom: string; telephone: string }
+  } | null>(null)
+
+  // Confirm delete
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null)
+
+  const [reinviteLoading, setReinviteLoading] = useState<string | null>(null)
+  const [deleteLoading, setDeleteLoading] = useState<string | null>(null)
+
+  // ============================================================
+  // Form Inviter — react-hook-form
+  // ============================================================
+
+  const inviteForm = useForm<InviteUserInput>({
+    resolver: zodResolver(InviteUserSchema),
+    defaultValues: {
+      prenom: '',
+      nom: '',
+      email: '',
+      telephone: '',
+      role: 'conducteur',
+    },
   })
-  const [inviteLoading, setInviteLoading] = useState(false)
-  const [inviteError, setInviteError] = useState<string | null>(null)
-  const [reinviteLoading, setReinviteLoading] = useState<string | null>(null) // user id en cours
-  const [deleteLoading, setDeleteLoading] = useState<string | null>(null) // user id en cours
-  const [toast, setToast] = useState<ToastMsg | null>(null)
-
-  // Sprint 2 dette — modal modification membre
-  const [editForm, setEditForm] = useState<EditFormState | null>(null)
-  const [editLoading, setEditLoading] = useState(false)
-  const [editError, setEditError] = useState<string | null>(null)
-
-  // IDs accessibilité
-  const inviteErrorId = useId()
-  const editErrorId = useId()
-
-  // ============================================================
-  // Toast auto-dismiss
-  // ============================================================
-
-  useEffect(() => {
-    if (!toast) return
-    const timer = setTimeout(() => setToast(null), 4000)
-    return () => clearTimeout(timer)
-  }, [toast])
-
-  // ============================================================
-  // Réinitialiser le formulaire à l'ouverture de la modal
-  // ============================================================
 
   function openModalInvite() {
-    setInviteForm({ nom: '', prenom: '', email: '', telephone: '' })
-    setInviteError(null)
+    inviteForm.reset({ prenom: '', nom: '', email: '', telephone: '', role: 'conducteur' })
     setInviteRole('conducteur')
     setModalInvite(true)
   }
 
-  // Sprint 2 dette — pré-remplir et ouvrir la modal d'édition
+  async function onInviteSubmit(values: InviteUserInput) {
+    const telephone = values.telephone?.trim() ? { telephone: values.telephone.trim() } : {}
+    const payload =
+      inviteRole === 'admin'
+        ? { role: 'admin' as const, email: values.email, nom: values.nom, prenom: values.prenom, ...telephone }
+        : inviteRole === 'conducteur'
+          ? { role: 'conducteur' as const, email: values.email, nom: values.nom, prenom: values.prenom, ...telephone }
+          : { role: 'ouvrier' as const, nom: values.nom, prenom: values.prenom, ...telephone }
+
+    const res = await fetch('/api/users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+
+    if (res.ok) {
+      setModalInvite(false)
+      // K2.5-T-08 : description = JSX
+      toast({
+        variant: 'success',
+        title: 'Membre ajouté',
+        description: inviteRole === 'admin'
+          ? <span>Invitation administrateur envoyée par email.</span>
+          : inviteRole === 'conducteur'
+            ? <span>Invitation conducteur envoyée par email.</span>
+            : <span>Ouvrier créé avec succès.</span>,
+      })
+      router.refresh()
+      return
+    }
+
+    const data = await res.json() as { error?: string }
+    inviteForm.setError('root', {
+      type: 'server',
+      message: data.error ?? 'Une erreur est survenue. Veuillez réessayer.',
+    })
+  }
+
+  // ============================================================
+  // Form Modifier — react-hook-form
+  // ============================================================
+
+  const editForm = useForm<PatchUserInput>({
+    resolver: zodResolver(PatchUserSchema),
+    defaultValues: { prenom: '', nom: '', telephone: '' },
+  })
+
   function openModalEdit(user: UserRow) {
-    setEditForm({
-      userId: user.id,
-      nom: user.nom,
-      prenom: user.prenom,
-      telephone: user.telephone ?? '',
+    setEditUserId(user.id)
+    setEditUserContext({
       email: user.email,
       role: user.role as UserRole,
+      initialValues: {
+        prenom: user.prenom,
+        nom: user.nom,
+        telephone: user.telephone ?? '',
+      },
     })
-    setEditError(null)
+    editForm.reset({
+      prenom: user.prenom,
+      nom: user.nom,
+      telephone: user.telephone ?? '',
+    })
   }
 
   function closeModalEdit() {
-    setEditForm(null)
-    setEditError(null)
+    setEditUserId(null)
+    setEditUserContext(null)
+    editForm.reset()
   }
 
-  async function handleEditSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault()
-    if (!editForm) return
+  async function onEditSubmit(values: PatchUserInput) {
+    if (!editUserId || !editUserContext) return
 
-    const nom = editForm.nom.trim()
-    const prenom = editForm.prenom.trim()
-    const telephoneRaw = editForm.telephone.trim()
-
-    if (!nom || !prenom) {
-      setEditError('Prénom et nom sont requis.')
-      return
-    }
-
-    if (telephoneRaw && !/^\+?[0-9]{10,15}$/.test(telephoneRaw)) {
-      setEditError('Format de téléphone invalide (10 à 15 chiffres, + optionnel).')
-      return
-    }
-
-    // PATCH payload minimal — seulement les champs modifiés
+    // Payload minimal — seulement les champs modifiés
     const payload: Record<string, string | null> = {}
-    const initial = initialUsers.find((u) => u.id === editForm.userId)
-    if (initial) {
-      if (nom !== initial.nom) payload['nom'] = nom
-      if (prenom !== initial.prenom) payload['prenom'] = prenom
-      const initialTel = initial.telephone ?? ''
-      if (telephoneRaw !== initialTel) {
-        payload['telephone'] = telephoneRaw === '' ? null : telephoneRaw
-      }
+    const { initialValues } = editUserContext
+    if (values.nom !== undefined && values.nom !== initialValues.nom) payload['nom'] = values.nom
+    if (values.prenom !== undefined && values.prenom !== initialValues.prenom) payload['prenom'] = values.prenom
+    const telephone = values.telephone ?? ''
+    if (telephone !== initialValues.telephone) {
+      payload['telephone'] = telephone === '' ? null : telephone
     }
 
     if (Object.keys(payload).length === 0) {
-      setEditError('Aucune modification à enregistrer.')
+      editForm.setError('root', { type: 'manual', message: 'Aucune modification à enregistrer.' })
       return
     }
 
-    setEditLoading(true)
-    try {
-      const res = await fetch(`/api/users/${editForm.userId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+    const res = await fetch(`/api/users/${editUserId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+
+    if (res.ok) {
+      closeModalEdit()
+      // K2.5-T-08 : description = JSX
+      toast({
+        variant: 'success',
+        title: 'Membre mis à jour',
+        description: <span>Les modifications ont été enregistrées.</span>,
       })
-
-      if (res.ok) {
-        closeModalEdit()
-        setToast({ type: 'success', message: 'Membre mis à jour.' })
-        router.refresh()
-        return
-      }
-
-      const data = (await res.json().catch(() => ({ error: null }))) as { error?: string }
-      setEditError(data.error ?? 'Une erreur est survenue. Veuillez réessayer.')
-    } catch {
-      setEditError('Impossible de traiter la demande. Vérifiez votre connexion.')
-    } finally {
-      setEditLoading(false)
-    }
-  }
-
-  // ============================================================
-  // Handler — Inviter un membre
-  // ============================================================
-
-  async function handleInvite(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault()
-    setInviteError(null)
-
-    // Validation client minimale
-    const nom = inviteForm.nom.trim()
-    const prenom = inviteForm.prenom.trim()
-    const email = inviteForm.email.trim()
-
-    if (!nom || !prenom) {
-      setInviteError('Prénom et nom sont requis.')
+      router.refresh()
       return
     }
 
-    // admin et conducteur : email obligatoire (Supabase Auth + magic link).
-    if ((inviteRole === 'admin' || inviteRole === 'conducteur') && !email) {
-      setInviteError(
-        inviteRole === 'admin'
-          ? "L'email est requis pour un administrateur."
-          : "L'email est requis pour un conducteur.",
-      )
-      return
-    }
-
-    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setInviteError("Format d'email invalide.")
-      return
-    }
-
-    setInviteLoading(true)
-
-    try {
-      // Construction du payload selon le rôle
-      // R-02 : telephone inclus pour les 3 rôles (optionnel)
-      const telephone = inviteForm.telephone.trim()
-        ? { telephone: inviteForm.telephone.trim() }
-        : {}
-      const payload =
-        inviteRole === 'admin'
-          ? { role: 'admin' as const, email, nom, prenom, ...telephone }
-          : inviteRole === 'conducteur'
-            ? { role: 'conducteur' as const, email, nom, prenom, ...telephone }
-            : { role: 'ouvrier' as const, nom, prenom, ...telephone }
-
-      const res = await fetch('/api/users', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
-
-      if (res.ok) {
-        setModalInvite(false)
-        setToast({
-          type: 'success',
-          message:
-            inviteRole === 'admin'
-              ? 'Invitation administrateur envoyée par email.'
-              : inviteRole === 'conducteur'
-                ? 'Invitation conducteur envoyée par email.'
-                : 'Ouvrier créé avec succès.',
-        })
-        router.refresh()
-        return
-      }
-
-      const data = await res.json() as { error?: string }
-      setInviteError(data.error ?? 'Une erreur est survenue. Veuillez réessayer.')
-    } catch {
-      setInviteError('Impossible de traiter la demande. Vérifiez votre connexion.')
-    } finally {
-      setInviteLoading(false)
-    }
+    const data = (await res.json().catch(() => ({ error: null }))) as { error?: string }
+    editForm.setError('root', {
+      type: 'server',
+      message: data.error ?? 'Une erreur est survenue. Veuillez réessayer.',
+    })
   }
 
   // ============================================================
@@ -352,54 +295,60 @@ export function EquipeClient({ initialUsers, currentUserId }: EquipeClientProps)
 
   const handleReinvite = useCallback(async (userId: string, userName: string) => {
     setReinviteLoading(userId)
-
     try {
       const res = await fetch(`/api/users/${userId}/reinvite`, { method: 'POST' })
-
       if (res.ok) {
-        setToast({ type: 'success', message: `Invitation renvoyée à ${userName}.` })
+        // K2.5-T-08 : description = JSX
+        toast({
+          variant: 'success',
+          description: <span>Invitation renvoyée à {userName}.</span>,
+        })
         router.refresh()
         return
       }
-
       const data = await res.json() as { error?: string }
-      setToast({ type: 'error', message: data.error ?? "Impossible de renvoyer l'invitation." })
+      toast({
+        variant: 'destructive',
+        description: <span>{data.error ?? "Impossible de renvoyer l'invitation."}</span>,
+      })
     } catch {
-      setToast({ type: 'error', message: "Erreur réseau. Veuillez réessayer." })
+      toast({ variant: 'destructive', description: <span>Erreur réseau. Veuillez réessayer.</span> })
     } finally {
       setReinviteLoading(null)
     }
-  }, [router])
+  }, [router, toast])
 
   // ============================================================
   // Handler — Supprimer un membre (soft delete)
+  // D-2.5-017 : window.confirm → ConfirmDialog
   // ============================================================
 
-  const handleDelete = useCallback(async (userId: string, userName: string) => {
-    const confirmed = window.confirm(
-      `Supprimer définitivement ${userName} ? Cette action est irréversible. L'utilisateur ne pourra plus se connecter. Les chantiers et tâches existants restent intacts.`,
-    )
-    if (!confirmed) return
-
-    setDeleteLoading(userId)
-
+  async function handleDeleteConfirm() {
+    if (!deleteTarget) return
+    setDeleteLoading(deleteTarget.id)
     try {
-      const res = await fetch(`/api/users/${userId}`, { method: 'DELETE' })
-
+      const res = await fetch(`/api/users/${deleteTarget.id}`, { method: 'DELETE' })
       if (res.status === 204) {
-        setToast({ type: 'success', message: `${userName} a été supprimé.` })
+        // K2.5-T-08 : description = JSX
+        toast({
+          variant: 'success',
+          description: <span>{deleteTarget.name} a été supprimé.</span>,
+        })
         router.refresh()
         return
       }
-
       const data = await res.json() as { error?: string }
-      setToast({ type: 'error', message: data.error ?? 'Impossible de supprimer ce membre.' })
+      toast({
+        variant: 'destructive',
+        description: <span>{data.error ?? 'Impossible de supprimer ce membre.'}</span>,
+      })
     } catch {
-      setToast({ type: 'error', message: 'Erreur réseau. Veuillez réessayer.' })
+      toast({ variant: 'destructive', description: <span>Erreur réseau. Veuillez réessayer.</span> })
     } finally {
       setDeleteLoading(null)
+      setDeleteTarget(null)
     }
-  }, [router])
+  }
 
   // ============================================================
   // Rendu
@@ -408,31 +357,6 @@ export function EquipeClient({ initialUsers, currentUserId }: EquipeClientProps)
   return (
     <>
       {/* ======================================================
-          Toast notification (top-right)
-          ====================================================== */}
-      {toast && (
-        <div
-          role="status"
-          aria-live="polite"
-          className={`fixed top-6 right-6 z-50 px-4 py-3 border-2 rounded-md text-sm font-medium flex items-center gap-2 max-w-sm ${
-            toast.type === 'success'
-              ? 'bg-[#E2EFDA] border-[#1E6B3C] text-[#1E6B3C]'
-              : 'bg-[#FFCCCC] border-[#C00000] text-[#C00000]'
-          }`}
-        >
-          {toast.message}
-          <button
-            type="button"
-            onClick={() => setToast(null)}
-            aria-label="Fermer"
-            className="ml-auto"
-          >
-            <X className="w-4 h-4" aria-hidden="true" />
-          </button>
-        </div>
-      )}
-
-      {/* ======================================================
           Header page
           ====================================================== */}
       <div className="flex items-center justify-between mb-8">
@@ -440,563 +364,431 @@ export function EquipeClient({ initialUsers, currentUserId }: EquipeClientProps)
           <h1 className="font-heading font-bold text-[28px] text-[#222]">Équipe</h1>
           <p className="text-[#555] text-sm mt-1">Gérez les membres de votre organisation</p>
         </div>
-        <button
-          type="button"
-          onClick={openModalInvite}
-          className="btn-brutal bg-[#F97316] text-white"
-        >
+        {/* RBAC: visible admin only */}
+        <Button onClick={openModalInvite} data-testid="invite-member-btn">
           + Inviter un membre
-        </button>
+        </Button>
       </div>
 
       {/* ======================================================
-          Table membres
+          Table membres — shadcn Table
           ====================================================== */}
       <div className="card-brutal overflow-hidden">
-        <table className="table-brutal">
-          <thead>
-            <tr>
-              <th>Nom</th>
-              <th>Rôle</th>
-              <th>Email</th>
-              <th>Téléphone</th>
-              <th>Statut</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Nom</TableHead>
+              <TableHead>Rôle</TableHead>
+              <TableHead>Email</TableHead>
+              <TableHead>Téléphone</TableHead>
+              <TableHead>Statut</TableHead>
+              <TableHead>Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {initialUsers.length === 0 && (
-              <tr>
-                <td colSpan={6} className="text-center text-[#555] py-8">
+              <TableRow>
+                <TableCell colSpan={6} className="text-center text-[#555] py-8">
                   Aucun membre dans votre organisation.
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             )}
             {initialUsers.map((user) => (
-              <tr key={user.id}>
-                <td className="font-semibold">
+              <TableRow key={user.id}>
+                <TableCell className="font-semibold">
                   {user.prenom} {user.nom}
-                </td>
-                <td>
+                </TableCell>
+                <TableCell>
                   <RoleBadge role={user.role as UserRole} />
-                </td>
-                <td className={!user.email ? 'text-[#555]' : ''}>
+                </TableCell>
+                <TableCell className={!user.email ? 'text-[#555]' : ''}>
                   {user.email ?? '—'}
-                </td>
-                <td className={!user.telephone ? 'text-[#555]' : ''}>
+                </TableCell>
+                <TableCell className={!user.telephone ? 'text-[#555]' : ''}>
                   {user.telephone ?? '—'}
-                </td>
-                <td>
+                </TableCell>
+                <TableCell>
                   <StatutBadge
                     invitationStatus={user.invitation_status as InvitationStatus | null}
                     role={user.role as UserRole}
                   />
-                </td>
-                <td>
+                </TableCell>
+                <TableCell>
                   <div className="flex items-center gap-2">
                     {/* Sprint 2 dette — bouton Modifier (nom/prenom/telephone) */}
-                    <button
+                    <Button
                       type="button"
                       data-testid={`edit-member-${user.id}`}
                       onClick={() => openModalEdit(user)}
-                      disabled={
-                        editLoading || reinviteLoading === user.id || deleteLoading === user.id
-                      }
-                      className="btn-brutal bg-white text-[#1F4E79] text-xs px-3 py-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                      disabled={deleteLoading === user.id || reinviteLoading === user.id}
+                      variant="outline"
+                      size="sm"
                     >
                       Modifier
-                    </button>
+                    </Button>
 
                     {/* Conducteur en attente ou expiré → Renvoyer invitation */}
                     {user.role === 'conducteur' &&
                       (user.invitation_status === 'pending' || user.invitation_status === 'expired') && (
-                        <button
+                        <Button
                           type="button"
-                          onClick={() =>
-                            void handleReinvite(user.id, `${user.prenom} ${user.nom}`)
-                          }
+                          onClick={() => void handleReinvite(user.id, `${user.prenom} ${user.nom}`)}
                           disabled={reinviteLoading === user.id || deleteLoading === user.id}
-                          className="btn-brutal bg-white text-[#1F4E79] text-xs px-3 py-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                          variant="outline"
+                          size="sm"
                         >
                           {reinviteLoading === user.id ? 'Envoi...' : 'Renvoyer'}
-                        </button>
+                        </Button>
                       )}
 
                     {/* Ouvrier → bouton QR */}
                     {user.role === 'ouvrier' && (
-                      <button
+                      <Button
                         type="button"
-                        onClick={() =>
-                          setModalQr({
-                            open: true,
-                            userId: user.id,
-                            userName: `${user.prenom} ${user.nom}`,
-                          })
-                        }
-                        className="btn-brutal bg-white text-[#1F4E79] text-xs px-3 py-1.5"
+                        onClick={() => setModalQr({ open: true, userId: user.id, userName: `${user.prenom} ${user.nom}` })}
+                        variant="outline"
+                        size="sm"
                       >
                         QR
-                      </button>
+                      </Button>
                     )}
 
-                    {/* Bouton Supprimer — masqué sur la ligne du user courant */}
+                    {/* RBAC: Bouton Supprimer — masqué sur la ligne du user courant */}
                     {user.id !== currentUserId && (
-                      <button
+                      <Button
                         type="button"
-                        onClick={() =>
-                          void handleDelete(user.id, `${user.prenom} ${user.nom}`)
-                        }
+                        onClick={() => setDeleteTarget({ id: user.id, name: `${user.prenom} ${user.nom}` })}
                         disabled={deleteLoading === user.id || reinviteLoading === user.id}
-                        className="btn-brutal bg-white text-[#C00000] border-[#C00000] shadow-[3px_3px_0_#C00000] hover:bg-[#FFCCCC] text-xs px-3 py-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                        variant="destructive"
+                        size="sm"
                       >
                         {deleteLoading === user.id ? 'Suppression...' : 'Supprimer'}
-                      </button>
+                      </Button>
                     )}
-
-                    {/* Sprint 2 dette : fallback "—" supprimé — le bouton "Modifier"
-                        est toujours présent, donc il n'y a plus de ligne sans action. */}
                   </div>
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
 
       {/* ======================================================
-          Modal — Inviter un collaborateur
+          Modal — Inviter un collaborateur — Dialog + Form RHF
           ====================================================== */}
-      {modalInvite && (
-        <div
-          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setModalInvite(false)
-          }}
-        >
-          <div className="card-brutal p-8 max-w-lg w-full bg-white">
-            {/* Titre */}
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="font-heading font-bold text-[22px]">Inviter un collaborateur</h2>
-              <button
-                type="button"
-                onClick={() => setModalInvite(false)}
-                aria-label="Fermer la modal"
-                className="text-[#555] hover:text-[#222] transition-colors"
-              >
-                <X className="w-5 h-5" aria-hidden="true" />
-              </button>
+      <Dialog open={modalInvite} onOpenChange={(open) => { if (!open) setModalInvite(false) }}>
+        <DialogContent className="max-w-lg bg-white">
+          <DialogHeader>
+            <DialogTitle>Inviter un collaborateur</DialogTitle>
+          </DialogHeader>
+
+          {/* Tabs Admin / Conducteur / Ouvrier */}
+          <Tabs
+            value={inviteRole}
+            onValueChange={(v) => {
+              setInviteRole(v as UserRole)
+              inviteForm.clearErrors()
+            }}
+          >
+            <TabsList>
+              {/* data-testid préservé : invite-role-admin */}
+              <TabsTrigger value="admin" data-testid="invite-role-admin">Admin</TabsTrigger>
+              <TabsTrigger value="conducteur">Conducteur</TabsTrigger>
+              <TabsTrigger value="ouvrier">Ouvrier</TabsTrigger>
+            </TabsList>
+          </Tabs>
+
+          {/* Erreur serveur */}
+          {inviteForm.formState.errors.root && (
+            <div role="alert" className="px-4 py-3 bg-danger-bg border-2 border-danger text-danger text-sm rounded-[6px]">
+              {inviteForm.formState.errors.root.message}
             </div>
+          )}
 
-            {/* Role switcher */}
-            <div
-              role="tablist"
-              aria-label="Rôle du collaborateur"
-              className="flex mb-6"
-            >
-              {/* Sprint 2 dette (2026-05-20) — 3 tabs : Admin / Conducteur / Ouvrier */}
-              <button
-                role="tab"
-                aria-selected={inviteRole === 'admin'}
-                type="button"
-                data-testid="invite-role-admin"
-                onClick={() => {
-                  setInviteRole('admin')
-                  setInviteError(null)
-                }}
-                className={`tab-brutal flex-1 rounded-l-md border-r-0 ${
-                  inviteRole === 'admin' ? 'active' : ''
-                }`}
-              >
-                Admin
-              </button>
-              <button
-                role="tab"
-                aria-selected={inviteRole === 'conducteur'}
-                type="button"
-                onClick={() => {
-                  setInviteRole('conducteur')
-                  setInviteError(null)
-                }}
-                className={`tab-brutal flex-1 border-r-0 ${
-                  inviteRole === 'conducteur' ? 'active' : ''
-                }`}
-              >
-                Conducteur
-              </button>
-              <button
-                role="tab"
-                aria-selected={inviteRole === 'ouvrier'}
-                type="button"
-                onClick={() => {
-                  setInviteRole('ouvrier')
-                  setInviteError(null)
-                }}
-                className={`tab-brutal flex-1 rounded-r-md ${
-                  inviteRole === 'ouvrier' ? 'active' : ''
-                }`}
-              >
-                Ouvrier
-              </button>
-            </div>
-
-            {/* Erreur inline */}
-            {inviteError && (
-              <div
-                id={inviteErrorId}
-                role="alert"
-                className="mb-4 px-4 py-3 border-2 border-[#C00000] bg-[#FFCCCC] text-[#C00000] text-sm rounded-md"
-              >
-                {inviteError}
-              </div>
-            )}
-
-            {/* Formulaire */}
+          {/* RG-MIGR-003 : form aria-busy={isSubmitting} */}
+          <Form {...inviteForm}>
             <form
-              onSubmit={(e) => void handleInvite(e)}
-              aria-describedby={inviteError ? inviteErrorId : undefined}
-              noValidate
+              onSubmit={inviteForm.handleSubmit(onInviteSubmit)}
+              className="space-y-4"
+              aria-busy={inviteForm.formState.isSubmitting}
             >
-              {/* Prénom + Nom — 2 colonnes */}
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <div>
-                  <label className="block text-sm font-semibold text-[#222] mb-1.5">
-                    Prénom <span aria-hidden="true" className="text-[#C00000]">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="prenom"
-                    autoComplete="given-name"
-                    required
-                    value={inviteForm.prenom}
-                    onChange={(e) =>
-                      setInviteForm((prev) => ({ ...prev, prenom: e.target.value }))
-                    }
-                    disabled={inviteLoading}
-                    className="input-brutal"
-                    placeholder="Jean"
-                  />
+              {inviteRole === 'admin' && (
+                <div className="px-4 py-3 border-2 border-[#1F4E79] bg-[#E8F0FA] text-[#1F4E79] text-xs rounded-[6px]">
+                  Un administrateur a tous les droits sur l&apos;organisation (chantiers, équipe, facturation).
                 </div>
-                <div>
-                  <label className="block text-sm font-semibold text-[#222] mb-1.5">
-                    Nom <span aria-hidden="true" className="text-[#C00000]">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="nom"
-                    autoComplete="family-name"
-                    required
-                    value={inviteForm.nom}
-                    onChange={(e) =>
-                      setInviteForm((prev) => ({ ...prev, nom: e.target.value }))
-                    }
-                    disabled={inviteLoading}
-                    className="input-brutal"
-                    placeholder="Dupont"
-                  />
-                </div>
-              </div>
+              )}
 
-              {/* ADMIN + CONDUCTEUR : Email requis, Téléphone optionnel
-                  (Sprint 2 dette : variant admin partage le même flow d'invitation
-                  email + Supabase Auth que conducteur — seul le rôle final diffère). */}
-              {(inviteRole === 'admin' || inviteRole === 'conducteur') && (
-                <>
-                  {inviteRole === 'admin' && (
-                    <div className="mb-4 px-4 py-3 border-2 border-[#1F4E79] bg-[#E8F0FA] text-[#1F4E79] text-xs rounded-md">
-                      Un administrateur a tous les droits sur l&apos;organisation (chantiers, équipe, facturation).
-                    </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={inviteForm.control}
+                  name="prenom"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Prénom <span className="text-danger normal-case font-normal">*</span></FormLabel>
+                      <FormControl>
+                        <Input {...field} autoComplete="given-name" placeholder="Jean" disabled={inviteForm.formState.isSubmitting} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
                   )}
-                  <div className="mb-4">
-                    <label className="block text-sm font-semibold text-[#222] mb-1.5">
-                      Email <span aria-hidden="true" className="text-[#C00000]">*</span>
-                    </label>
-                    <input
-                      type="email"
-                      name="email"
-                      autoComplete="email"
-                      required
-                      value={inviteForm.email}
-                      onChange={(e) =>
-                        setInviteForm((prev) => ({ ...prev, email: e.target.value }))
-                      }
-                      disabled={inviteLoading}
-                      className="input-brutal"
-                      placeholder={
-                        inviteRole === 'admin' ? 'admin@entreprise.fr' : 'conducteur@chantier.fr'
-                      }
-                      inputMode="email"
-                    />
-                  </div>
-                  <div className="mb-5">
-                    <label className="block text-sm font-semibold text-[#222] mb-1.5">
-                      Téléphone{' '}
-                      <span className="text-[#555] font-normal text-xs">(optionnel)</span>
-                    </label>
-                    <input
-                      type="tel"
-                      name="telephone"
-                      autoComplete="tel"
-                      value={inviteForm.telephone}
-                      onChange={(e) =>
-                        setInviteForm((prev) => ({ ...prev, telephone: e.target.value }))
-                      }
-                      disabled={inviteLoading}
-                      className="input-brutal"
-                      placeholder="06 12 34 56 78"
-                    />
-                  </div>
-                </>
-              )}
-
-              {/* OUVRIER : Téléphone d'abord, Email optionnel */}
-              {inviteRole === 'ouvrier' && (
-                <>
-                  <div className="mb-4">
-                    <label className="block text-sm font-semibold text-[#222] mb-1.5">
-                      Téléphone
-                    </label>
-                    <input
-                      type="tel"
-                      name="telephone"
-                      autoComplete="tel"
-                      value={inviteForm.telephone}
-                      onChange={(e) =>
-                        setInviteForm((prev) => ({ ...prev, telephone: e.target.value }))
-                      }
-                      disabled={inviteLoading}
-                      className="input-brutal"
-                      placeholder="06 12 34 56 78"
-                    />
-                  </div>
-                  <div className="mb-5 opacity-60">
-                    <label className="block text-sm font-semibold text-[#222] mb-1.5">
-                      Email{' '}
-                      <span className="text-[#555] font-normal text-xs">(optionnel)</span>
-                    </label>
-                    <input
-                      type="email"
-                      name="email"
-                      autoComplete="email"
-                      value={inviteForm.email}
-                      onChange={(e) =>
-                        setInviteForm((prev) => ({ ...prev, email: e.target.value }))
-                      }
-                      disabled={inviteLoading}
-                      className="input-brutal"
-                      placeholder="ouvrier@exemple.fr"
-                      inputMode="email"
-                    />
-                  </div>
-                </>
-              )}
-
-              {/* Boutons */}
-              <div className="flex gap-3 justify-end">
-                <button
-                  type="button"
-                  onClick={() => setModalInvite(false)}
-                  disabled={inviteLoading}
-                  className="btn-brutal bg-white text-[#1F4E79]"
-                >
-                  Annuler
-                </button>
-                <button
-                  type="submit"
-                  disabled={inviteLoading}
-                  aria-busy={inviteLoading}
-                  className="btn-brutal bg-[#F97316] text-white"
-                >
-                  {inviteLoading ? 'Envoi...' : 'Inviter'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* ======================================================
-          Modal — QR Code ouvrier
-          PNG servi par GET /api/users/[id]/qr (généré côté serveur)
-          ====================================================== */}
-      {modalQr.open && (
-        <div
-          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setModalQr({ open: false, userId: '', userName: '' })
-            }
-          }}
-        >
-          <div className="card-brutal p-8 max-w-md w-full bg-white text-center">
-            <h2 className="font-heading font-bold text-[22px] mb-6">
-              QR Code — {modalQr.userName}
-            </h2>
-
-            {/* QR image */}
-            <div className="card-brutal p-4 mx-auto w-fit mb-6 bg-white">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={`/api/users/${modalQr.userId}/qr`}
-                alt={`QR code de ${modalQr.userName}`}
-                width={280}
-                height={280}
-                className="block"
-              />
-            </div>
-
-            <p className="text-[#555] text-sm mb-6">
-              À imprimer et remettre à l&apos;ouvrier. Le scan ouvre sa session terrain.
-            </p>
-
-            {/* Imprimer — ouvre le PNG dans un nouvel onglet, l'utilisateur Ctrl+P */}
-            <a
-              href={`/api/users/${modalQr.userId}/qr`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn-brutal bg-[#F97316] text-white w-full justify-center mb-3 inline-block"
-            >
-              Ouvrir pour imprimer
-            </a>
-
-            <button
-              type="button"
-              onClick={() => setModalQr({ open: false, userId: '', userName: '' })}
-              className="btn-brutal bg-white text-[#1F4E79] w-full justify-center"
-            >
-              Fermer
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* ======================================================
-          Modal — Modifier un membre (Sprint 2 dette 2026-05-20)
-          Scope : nom, prenom, telephone. email et role read-only.
-          ====================================================== */}
-      {editForm && (
-        <div
-          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) closeModalEdit()
-          }}
-        >
-          <div className="card-brutal p-8 max-w-lg w-full bg-white">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="font-heading font-bold text-[22px]">Modifier un membre</h2>
-              <button
-                type="button"
-                onClick={closeModalEdit}
-                aria-label="Fermer la modal"
-                className="text-[#555] hover:text-[#222] transition-colors"
-              >
-                <X className="w-5 h-5" aria-hidden="true" />
-              </button>
-            </div>
-
-            {editError && (
-              <div
-                id={editErrorId}
-                role="alert"
-                className="mb-4 px-4 py-3 border-2 border-[#C00000] bg-[#FFCCCC] text-[#C00000] text-sm rounded-md"
-              >
-                {editError}
-              </div>
-            )}
-
-            <form
-              onSubmit={(e) => void handleEditSubmit(e)}
-              aria-describedby={editError ? editErrorId : undefined}
-              noValidate
-            >
-              {/* Read-only : role + email pour contexte */}
-              <div className="grid grid-cols-2 gap-4 mb-4 p-3 bg-[#F8F8F8] border border-[#E5E5E5] rounded-md">
-                <div>
-                  <div className="text-xs uppercase text-[#555] font-semibold mb-1">Rôle</div>
-                  <div className="text-sm font-medium">
-                    {editForm.role === 'admin' ? 'Admin' : editForm.role === 'conducteur' ? 'Conducteur' : 'Ouvrier'}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-xs uppercase text-[#555] font-semibold mb-1">Email</div>
-                  <div className="text-sm font-medium truncate" title={editForm.email ?? '—'}>
-                    {editForm.email ?? '—'}
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <div>
-                  <label htmlFor="edit-prenom" className="block text-sm font-semibold text-[#222] mb-1.5">
-                    Prénom <span aria-hidden="true" className="text-[#C00000]">*</span>
-                  </label>
-                  <input
-                    id="edit-prenom"
-                    type="text"
-                    autoComplete="given-name"
-                    required
-                    value={editForm.prenom}
-                    onChange={(e) => setEditForm({ ...editForm, prenom: e.target.value })}
-                    disabled={editLoading}
-                    className="input-brutal"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="edit-nom" className="block text-sm font-semibold text-[#222] mb-1.5">
-                    Nom <span aria-hidden="true" className="text-[#C00000]">*</span>
-                  </label>
-                  <input
-                    id="edit-nom"
-                    type="text"
-                    autoComplete="family-name"
-                    required
-                    value={editForm.nom}
-                    onChange={(e) => setEditForm({ ...editForm, nom: e.target.value })}
-                    disabled={editLoading}
-                    className="input-brutal"
-                  />
-                </div>
-              </div>
-
-              <div className="mb-5">
-                <label htmlFor="edit-telephone" className="block text-sm font-semibold text-[#222] mb-1.5">
-                  Téléphone{' '}
-                  <span className="text-[#555] font-normal text-xs">(optionnel)</span>
-                </label>
-                <input
-                  id="edit-telephone"
-                  type="tel"
-                  autoComplete="tel"
-                  value={editForm.telephone}
-                  onChange={(e) => setEditForm({ ...editForm, telephone: e.target.value })}
-                  disabled={editLoading}
-                  className="input-brutal"
-                  placeholder="06 12 34 56 78"
+                />
+                <FormField
+                  control={inviteForm.control}
+                  name="nom"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nom <span className="text-danger normal-case font-normal">*</span></FormLabel>
+                      <FormControl>
+                        <Input {...field} autoComplete="family-name" placeholder="Dupont" disabled={inviteForm.formState.isSubmitting} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
               </div>
 
-              <div className="flex gap-3 justify-end">
-                <button
-                  type="button"
-                  onClick={closeModalEdit}
-                  disabled={editLoading}
-                  className="btn-brutal bg-white text-[#1F4E79]"
-                >
+              {/* Admin + Conducteur : email requis */}
+              {(inviteRole === 'admin' || inviteRole === 'conducteur') && (
+                <>
+                  <FormField
+                    control={inviteForm.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          Email <span className="text-danger normal-case font-normal">*</span>
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            type="email"
+                            autoComplete="email"
+                            inputMode="email"
+                            placeholder={inviteRole === 'admin' ? 'admin@entreprise.fr' : 'conducteur@chantier.fr'}
+                            disabled={inviteForm.formState.isSubmitting}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={inviteForm.control}
+                    name="telephone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Téléphone <span className="text-muted font-normal normal-case text-xs">(optionnel)</span></FormLabel>
+                        <FormControl>
+                          <Input {...field} type="tel" autoComplete="tel" placeholder="06 12 34 56 78" disabled={inviteForm.formState.isSubmitting} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </>
+              )}
+
+              {/* Ouvrier : téléphone en premier */}
+              {inviteRole === 'ouvrier' && (
+                <>
+                  <FormField
+                    control={inviteForm.control}
+                    name="telephone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Téléphone</FormLabel>
+                        <FormControl>
+                          <Input {...field} type="tel" autoComplete="tel" placeholder="06 12 34 56 78" disabled={inviteForm.formState.isSubmitting} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <div className="opacity-60">
+                    <FormField
+                      control={inviteForm.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email <span className="text-muted font-normal normal-case text-xs">(optionnel)</span></FormLabel>
+                          <FormControl>
+                            <Input {...field} type="email" autoComplete="email" inputMode="email" placeholder="ouvrier@exemple.fr" disabled={inviteForm.formState.isSubmitting} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </>
+              )}
+
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setModalInvite(false)} disabled={inviteForm.formState.isSubmitting}>
                   Annuler
-                </button>
-                <button
-                  type="submit"
-                  data-testid="edit-member-submit"
-                  disabled={editLoading}
-                  aria-busy={editLoading}
-                  className="btn-brutal bg-[#F97316] text-white"
-                >
-                  {editLoading ? 'Enregistrement...' : 'Enregistrer'}
-                </button>
-              </div>
+                </Button>
+                {/* K2.5-D-06 : Button disabled={isSubmitting} obligatoire */}
+                <Button type="submit" disabled={inviteForm.formState.isSubmitting} data-testid="invite-submit">
+                  {inviteForm.formState.isSubmitting ? 'Envoi...' : 'Inviter'}
+                </Button>
+              </DialogFooter>
             </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* ======================================================
+          Modal — QR Code ouvrier
+          ====================================================== */}
+      <Dialog open={modalQr.open} onOpenChange={(open) => { if (!open) setModalQr({ open: false, userId: '', userName: '' }) }}>
+        <DialogContent className="max-w-md bg-white text-center">
+          <DialogHeader>
+            <DialogTitle>QR Code — {modalQr.userName}</DialogTitle>
+          </DialogHeader>
+
+          <div className="card-brutal p-4 mx-auto w-fit mb-6 bg-white">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={`/api/users/${modalQr.userId}/qr`}
+              alt={`QR code de ${modalQr.userName}`}
+              width={280}
+              height={280}
+              className="block"
+            />
           </div>
-        </div>
-      )}
+
+          <p className="text-[#555] text-sm mb-6">
+            À imprimer et remettre à l&apos;ouvrier. Le scan ouvre sa session terrain.
+          </p>
+
+          <DialogFooter className="flex-col gap-2">
+            <Button asChild className="w-full">
+              <a href={`/api/users/${modalQr.userId}/qr`} target="_blank" rel="noopener noreferrer">
+                Ouvrir pour imprimer
+              </a>
+            </Button>
+            <Button variant="outline" onClick={() => setModalQr({ open: false, userId: '', userName: '' })} className="w-full">
+              Fermer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ======================================================
+          Modal — Modifier un membre — Dialog + Form RHF
+          data-testid préservé : edit-member-submit
+          ====================================================== */}
+      <Dialog open={!!editUserId} onOpenChange={(open) => { if (!open) closeModalEdit() }}>
+        <DialogContent className="max-w-lg bg-white">
+          <DialogHeader>
+            <DialogTitle>Modifier un membre</DialogTitle>
+          </DialogHeader>
+
+          {/* Contexte read-only : role + email */}
+          {editUserContext && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-3 bg-[#F8F8F8] border border-[#E5E5E5] rounded-[6px]">
+              <div>
+                <div className="text-xs uppercase text-[#555] font-semibold mb-1">Rôle</div>
+                <div className="text-sm font-medium">
+                  {editUserContext.role === 'admin' ? 'Admin' : editUserContext.role === 'conducteur' ? 'Conducteur' : 'Ouvrier'}
+                </div>
+              </div>
+              <div>
+                <div className="text-xs uppercase text-[#555] font-semibold mb-1">Email</div>
+                <div className="text-sm font-medium truncate" title={editUserContext.email ?? '—'}>
+                  {editUserContext.email ?? '—'}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Erreur serveur */}
+          {editForm.formState.errors.root && (
+            <div role="alert" className="px-4 py-3 bg-danger-bg border-2 border-danger text-danger text-sm rounded-[6px]">
+              {editForm.formState.errors.root.message}
+            </div>
+          )}
+
+          {/* RG-MIGR-003 : form aria-busy={isSubmitting} */}
+          <Form {...editForm}>
+            <form
+              onSubmit={editForm.handleSubmit(onEditSubmit)}
+              className="space-y-4"
+              aria-busy={editForm.formState.isSubmitting}
+            >
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={editForm.control}
+                  name="prenom"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Prénom <span className="text-danger normal-case font-normal">*</span></FormLabel>
+                      <FormControl>
+                        <Input {...field} autoComplete="given-name" disabled={editForm.formState.isSubmitting} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={editForm.control}
+                  name="nom"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nom <span className="text-danger normal-case font-normal">*</span></FormLabel>
+                      <FormControl>
+                        <Input {...field} autoComplete="family-name" disabled={editForm.formState.isSubmitting} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={editForm.control}
+                name="telephone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Téléphone <span className="text-muted font-normal normal-case text-xs">(optionnel)</span></FormLabel>
+                    <FormControl>
+                      <Input {...field} type="tel" autoComplete="tel" placeholder="06 12 34 56 78" disabled={editForm.formState.isSubmitting} value={field.value ?? ''} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={closeModalEdit} disabled={editForm.formState.isSubmitting}>
+                  Annuler
+                </Button>
+                {/* K2.5-D-06 : Button disabled={isSubmitting} obligatoire */}
+                {/* data-testid préservé : edit-member-submit */}
+                <Button type="submit" disabled={editForm.formState.isSubmitting} data-testid="edit-member-submit">
+                  {editForm.formState.isSubmitting ? 'Enregistrement...' : 'Enregistrer'}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* ======================================================
+          ConfirmDialog — Supprimer un membre
+          D-2.5-017 — RG-MIGR-006 — window.confirm supprimé
+          ====================================================== */}
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => { if (!open) setDeleteTarget(null) }}
+        title="Supprimer ce membre ?"
+        description={deleteTarget
+          ? `Supprimer définitivement ${deleteTarget.name} ? Cette action est irréversible. L'utilisateur ne pourra plus se connecter. Les chantiers et tâches existants restent intacts.`
+          : ''}
+        confirmLabel="Supprimer"
+        cancelLabel="Annuler"
+        variant="destructive"
+        onConfirm={handleDeleteConfirm}
+      />
     </>
   )
 }
