@@ -43,6 +43,10 @@ export const UpdateTacheSchema = z
     assigned_to: z.string().uuid().nullable().optional(),
     date_echeance: z.string().date().nullable().optional(),
     bloque_raison: z.string().min(10).nullable().optional(),
+    // Sprint 3 — note interne conducteur (D-051/PO-014, D-3-013)
+    // Acceptee seulement si role = conducteur ou admin (verifie dans le handler)
+    // JAMAIS dans PatchOuvrierTacheSchema (bloquee par .strict() D-3-022)
+    note_privee_conducteur: z.string().max(2000).nullable().optional(),
   })
   .refine(
     (data) => {

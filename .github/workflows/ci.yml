@@ -48,3 +48,25 @@ jobs:
           NEXT_PUBLIC_SUPABASE_ANON_KEY: 'placeholder-anon-key'
           NEXT_PUBLIC_APP_URL: 'https://placeholder.local'
           NEXT_PUBLIC_VAPID_KEY: 'placeholder'
+
+      # Sprint 3 — Audit securite endpoints ouvrier (K3-CR-02, D-3-004)
+      # Detecte tout SELECT * ou reference a note_privee_conducteur dans /api/ouvrier/
+      # Ces patterns sont interdits : SELECT explicite obligatoire (defense niveau 1/4)
+      - name: Audit SELECT * dans endpoints ouvrier (K3-CR-02)
+        working-directory: artifacts/07-code
+        run: |
+          echo "=== Audit SELECT * dans /app/api/ouvrier/ ==="
+          # Chercher .select('*') ou .select("*") — exclure les commentaires
+          if grep -rn "\.select(['\"]\\*['\"])" app/api/ouvrier/ 2>/dev/null | grep -v "^\s*//"; then
+            echo "FAIL: SELECT * detecte dans un endpoint ouvrier — K3-CR-02 violation"
+            exit 1
+          fi
+          echo "OK: Aucun SELECT * detecte"
+
+          echo "=== Audit note_privee_conducteur dans /app/api/ouvrier/ ==="
+          # Chercher note_privee_conducteur — exclure les commentaires
+          if grep -rn "note_privee_conducteur" app/api/ouvrier/ 2>/dev/null | grep -v "^\s*//" | grep -v "AUDIT:"; then
+            echo "FAIL: note_privee_conducteur reference dans un endpoint ouvrier — D-3-004 violation"
+            exit 1
+          fi
+          echo "OK: note_privee_conducteur absent des endpoints ouvrier"

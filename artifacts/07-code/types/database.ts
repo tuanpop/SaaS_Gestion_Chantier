@@ -199,6 +199,9 @@ export type Database = {
           assigned_to: string | null
           date_echeance: string | null
           bloque_raison: string | null
+          // Sprint 3 — migration 006 (D-051/PO-014)
+          // JAMAIS expose via /api/ouvrier/* — D-3-004 BINDING
+          note_privee_conducteur: string | null
           created_by: string
           created_at: string
           updated_at: string
@@ -213,6 +216,7 @@ export type Database = {
           assigned_to?: string | null
           date_echeance?: string | null
           bloque_raison?: string | null
+          note_privee_conducteur?: string | null
           created_by: string
           created_at?: string
           updated_at?: string
@@ -227,6 +231,7 @@ export type Database = {
           assigned_to?: string | null
           date_echeance?: string | null
           bloque_raison?: string | null
+          note_privee_conducteur?: string | null
           created_by?: string
           created_at?: string
           updated_at?: string
@@ -522,6 +527,8 @@ export interface Tache {
   assigned_to: string | null
   date_echeance: string | null
   bloque_raison: string | null   // obligatoire (min 10 car.) si statut='bloque'
+  // Sprint 3 — migration 006 (D-051/PO-014) — JAMAIS expose via /api/ouvrier/* (D-3-004)
+  note_privee_conducteur: string | null
   created_by: string
   created_at: string
   updated_at: string
@@ -550,6 +557,84 @@ export interface AffectationWithUser extends Affectation {
     prenom: string
     role: UserRole
   } | null
+}
+
+// ============================================================
+// Types dedies vue ouvrier — Sprint 3 (D-3-008 + D-3-004)
+// ============================================================
+// SECURITE : note_privee_conducteur est INTENTIONNELLEMENT ABSENTE de tous ces types.
+// Defense par compilation TypeScript (K3-CR-02 niveau 2/4).
+// Toute tentative d'inclure ce champ echoue au build.
+// ============================================================
+
+export type TacheOuvrier = {
+  id: string
+  titre: string
+  statut: 'a_faire' | 'en_cours' | 'termine' | 'bloque'
+  // AUDIT: note_privee_conducteur JAMAIS inclus — D-3-004 BINDING
+}
+
+export type PhotoOuvrier = {
+  id: string
+  url: string
+  created_at: string
+}
+
+// TacheMienne et TacheAutre sont STRICTEMENT DISJOINTES (D-3-008).
+// Le discriminant `is_mine` est un literal type, pas une prop partagee.
+// TypeScript empeche de passer une TacheAutre la ou une TacheMienne est attendue.
+
+export type TacheMienne = TacheOuvrier & {
+  is_mine: true
+  description_complete: string | null
+  description_courte: string | null
+  bloque_raison: string | null
+  date_echeance: string | null
+  photos_count: number
+  photos: PhotoOuvrier[]
+  photos_truncated?: boolean
+}
+
+export type TacheAutre = TacheOuvrier & {
+  is_mine: false
+  description_courte: string | null
+  photos_count: number
+}
+
+export type GetChantierOuvrierResponse = {
+  chantier: {
+    id: string
+    nom: string
+    client_nom: string
+    adresse: string
+    code_postal: string
+    statut: string
+    date_debut: string | null
+    date_fin_prevue: string | null
+  }
+  taches: Array<TacheMienne | TacheAutre>
+  conducteur: {
+    nom: string
+    prenom: string
+    telephone: string | null
+  }
+}
+
+// ============================================================
+// Interface session Redis ouvrier (D-3-003)
+// ============================================================
+
+export interface OuvrierSession {
+  user_id: string
+  organisation_id: string
+  role: 'ouvrier'
+  affectations: Array<{
+    affectation_id: string
+    chantier_id: string
+    // PO-3-03 : ignore en Sprint 3 — vue moyenne forcee pour tous
+    vue: 'mes_taches' | 'chantier_complet'
+  }>
+  created_at: number
 }
 
 export const Constants = {

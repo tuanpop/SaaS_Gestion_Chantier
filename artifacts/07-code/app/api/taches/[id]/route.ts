@@ -121,24 +121,42 @@ export async function PATCH(
       }
     }
 
+    // 6b. Sprint 3 — Defense double note_privee_conducteur (D-3-013, K3-MED-05)
+    // En pratique impossible : les ouvriers n'ont pas de JWT Supabase et ne passent
+    // jamais par ce handler. La garde existe pour la defense en profondeur.
+    if (parsed.data.note_privee_conducteur !== undefined && role === 'ouvrier') {
+      return NextResponse.json(
+        { error: 'Accès refusé.' },
+        { status: 403 },
+      )
+    }
+
     // 7. UPDATE tache (updated_at géré par trigger DB)
     // Filtrer les `undefined` (exactOptionalPropertyTypes attend `key?: T`, pas `T | undefined`),
     // puis caster vers le type Update officiel de la table taches.
+    // Sprint 3 : note_privee_conducteur inclus seulement si present dans parsed.data
     type TacheUpdate = TablesUpdate<'taches'>
     const updatePayload = Object.fromEntries(
       Object.entries(parsed.data).filter(([, v]) => v !== undefined),
     ) as TacheUpdate
+
+    // SELECT adapte selon le role — note_privee_conducteur visible conducteur/admin seulement
+    // D-3-013, specs §4.6
+    const selectFields = role === 'conducteur' || role === 'admin'
+      ? `id, chantier_id, organisation_id, titre, description,
+         statut, assigned_to, date_echeance, bloque_raison, note_privee_conducteur,
+         created_by, created_at, updated_at,
+         assigned_user:users!taches_assigned_to_fkey (nom, prenom)`
+      : `id, chantier_id, organisation_id, titre, description,
+         statut, assigned_to, date_echeance, bloque_raison, created_by, created_at, updated_at,
+         assigned_user:users!taches_assigned_to_fkey (nom, prenom)`
 
     const { data: updated, error: updateError } = await adminClient
       .from('taches')
       .update(updatePayload)
       .eq('id', tacheId)
       .eq('organisation_id', organisationId)
-      .select(`
-        id, chantier_id, organisation_id, titre, description,
-        statut, assigned_to, date_echeance, bloque_raison, created_by, created_at, updated_at,
-        assigned_user:users!taches_assigned_to_fkey (nom, prenom)
-      `)
+      .select(selectFields)
       .single()
 
     if (updateError || !updated) {

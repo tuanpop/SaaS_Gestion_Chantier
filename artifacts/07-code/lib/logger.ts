@@ -2,6 +2,11 @@ import pino from 'pino'
 
 // Champs redactés — jamais loggés en clair (I-03, I-04)
 // qr_token ajouté : token AES-256-GCM des ouvriers (S-01)
+// Sprint 3 extensions (K3-HI-06, K3-MED-06, K3-MED-12) :
+//   - body.note_privee_conducteur : donnee interne conducteur (K3-MED-06)
+//   - body.bloque_raison : PII potentielle (K3-HI-06)
+//   - body.description : contenu libre potentiellement sensible (K3-MED-12)
+//   - req.headers.cookie / req.headers.authorization : deja presents, confirmes Sprint 3
 const REDACTED_FIELDS = [
   'password',
   'token',
@@ -10,6 +15,10 @@ const REDACTED_FIELDS = [
   'qr_token',
   'req.headers.authorization',
   'req.headers.cookie',
+  // Sprint 3 — K3-HI-06, K3-MED-06, K3-MED-12
+  'body.note_privee_conducteur',
+  'body.bloque_raison',
+  'body.description',
 ]
 
 const baseLogger = pino({

@@ -28,7 +28,17 @@ const PUBLIC_ROUTES = new Set([
 // Préfixes publics — toute URL commençant par un de ces préfixes est publique
 // (utilisé pour les routes dynamiques type /qr/:token Sprint 3)
 const PUBLIC_PREFIXES = [
-  '/qr/',                   // landing page scan QR ouvrier (token déchiffré côté serveur)
+  '/qr/',                   // legacy — conservé pour compatibilité
+  '/api/auth/qr/',          // Sprint 3 — handler QR scan ouvrier (token = credential, pas de JWT)
+]
+
+// ============================================================
+// Routes ouvrier exemptées du check de session ouvrier
+// Ces pages sont publiques car l'ouvrier n'a pas encore de session
+// ============================================================
+const OUVRIER_PUBLIC_ROUTES = [
+  '/ouvrier/scan',
+  '/ouvrier/no-affectation',
 ]
 
 // Routes admin seulement (rôle vérifié côté middleware)
@@ -90,6 +100,47 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next({
       request: { headers: requestHeaders },
     })
+  }
+
+  // 3b. Routes ouvrier — branche orthogonale AVANT le check JWT Supabase
+  // D-3-001 : middleware Edge leger — verification cookie presence uniquement
+  // D-052/PO-3-06 : JAMAIS d'appel Redis en Edge runtime
+  // Les ouvriers n'ont pas de JWT Supabase — ils ne doivent PAS passer par le check JWT
+  const isOuvrierPage = pathname.startsWith('/ouvrier/')
+  const isOuvrierApi = pathname.startsWith('/api/ouvrier/')
+
+  if (isOuvrierPage || isOuvrierApi) {
+    // Pages exemptées (scan QR, no-affectation) — pas de session requise
+    if (OUVRIER_PUBLIC_ROUTES.some((p) => pathname.startsWith(p))) {
+      reqLogger.debug({ pathname }, 'Ouvrier public route — bypassing session check')
+      return NextResponse.next({ request: { headers: requestHeaders } })
+    }
+
+    // Vérification Edge légère : cookie ouvrier_session présent ?
+    // La validation Redis complète est faite handler-level (D-3-002)
+    const sessionId = request.cookies.get('ouvrier_session')?.value
+
+    if (!sessionId) {
+      reqLogger.warn({ pathname }, 'Ouvrier route — cookie absent')
+      if (isOuvrierApi) {
+        // Routes API ouvrier → JSON 401 (D-033)
+        return NextResponse.json(
+          { error: 'Session expirée. Reconnectez-vous.' },
+          { status: 401, headers: { 'X-Correlation-Id': correlationId } },
+        )
+      }
+      // Pages ouvrier → redirect /ouvrier/scan
+      const redirectResp = NextResponse.redirect(
+        new URL('/ouvrier/scan', request.url),
+      )
+      // Supprimer le cookie invalide s'il existe avec une valeur vide
+      redirectResp.cookies.delete('ouvrier_session')
+      return redirectResp
+    }
+
+    // Cookie présent → laisser passer vers le handler Node (validation Redis complète D-3-002)
+    reqLogger.debug({ pathname }, 'Ouvrier route — cookie présent, forwarding to handler')
+    return NextResponse.next({ request: { headers: requestHeaders } })
   }
 
   // 4. Créer le client Supabase côté serveur pour le middleware
@@ -244,10 +295,12 @@ export const config = {
     // Routes API protégées
     '/api/:path*',
     // Interfaces par persona — segments URL réels (pas route groups)
-    // Les dossiers app/admin/ et app/conducteur/ sont des segments URL, pas des
-    // route groups Next.js (qui auraient des parenthèses dans le nom de dossier).
+    // Les dossiers app/admin/, app/conducteur/ et app/ouvrier/ sont des segments URL
+    // (pas des route groups Next.js qui auraient des parenthèses dans le nom de dossier).
     '/admin/:path*',
     '/conducteur/:path*',
+    // Sprint 3 — routes ouvrier (branche Edge légère D-3-001)
+    '/ouvrier/:path*',
     // Catch-all — exclure les assets Next.js et fichiers statiques
     // Couvre /, /login, /register et toutes les autres routes publiques
     // (filtrées dans le code via PUBLIC_ROUTES / PUBLIC_PREFIXES)

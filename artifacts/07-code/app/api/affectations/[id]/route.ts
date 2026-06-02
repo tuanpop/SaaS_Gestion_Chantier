@@ -12,6 +12,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { assertTrialActive } from '@/lib/trial-gate'
 import { toApiResponse } from '@/lib/errors'
 import { logger } from '@/lib/logger'
+import { invalidateOuvrierSessionsForUser } from '@/lib/ouvrier-session'
 import type { UserRole } from '@/types/database'
 
 // ============================================================
@@ -122,6 +123,19 @@ export async function DELETE(
         'Erreur count affectations restantes — désassignation tâches non tentée',
       )
       return new NextResponse(null, { status: 204 })
+    }
+
+    // 6b. Sprint 3 — Invalidation session Redis ouvrier (D-3-011, RG-SESSION-005)
+    // Best-effort : si Redis down, le DELETE est quand meme un succes (K3-MED-08)
+    // Le RBAC base (D-3-005) a chaque hit ouvrier sauvegarde la securite (K3-S-05)
+    try {
+      await invalidateOuvrierSessionsForUser(existing.user_id, affectationId)
+    } catch (e) {
+      // Non-bloquant — le DELETE reussit meme si l'invalidation Redis echoue
+      reqLogger.warn(
+        { err: e instanceof Error ? e.message : String(e), affectationId },
+        'Invalidation session Redis ouvrier echouee — best-effort (D-3-011)',
+      )
     }
 
     if ((remainingCount ?? 0) === 0) {
