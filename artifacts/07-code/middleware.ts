@@ -113,7 +113,15 @@ export async function middleware(request: NextRequest) {
     // Pages exemptées (scan QR, no-affectation) — pas de session requise
     if (OUVRIER_PUBLIC_ROUTES.some((p) => pathname.startsWith(p))) {
       reqLogger.debug({ pathname }, 'Ouvrier public route — bypassing session check')
-      return NextResponse.next({ request: { headers: requestHeaders } })
+      const publicResp = NextResponse.next({ request: { headers: requestHeaders } })
+      // K3-OQ-01 BINDING + TNJ-K3-06 : headers anti-phishing/cache sur /ouvrier/no-affectation
+      // Le param `data` (base64 nu, ADR-3-005) peut contenir un tel de conducteur ;
+      // no-store empêche le cache CDN/navigateur, noindex empêche l'indexation moteurs
+      if (pathname.startsWith('/ouvrier/no-affectation')) {
+        publicResp.headers.set('Cache-Control', 'no-store')
+        publicResp.headers.set('X-Robots-Tag', 'noindex, nofollow')
+      }
+      return publicResp
     }
 
     // Vérification Edge légère : cookie ouvrier_session présent ?
