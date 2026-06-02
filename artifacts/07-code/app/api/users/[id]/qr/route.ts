@@ -127,9 +127,11 @@ export async function GET(
     }
 
     // 7. Générer le PNG QR via la bibliothèque qrcode
-    // URL encodée dans le QR : ${NEXT_PUBLIC_APP_URL}/api/qr/${qr_token}
+    // URL encodée dans le QR : ${NEXT_PUBLIC_APP_URL}/api/auth/qr/${qr_token}
+    // Sprint 3 (D-052/PO-3-04) : nouveau path /api/auth/qr/. Backward compat assuree
+    // par un redirect handler 307 a /api/qr/[token] (preservation QR deja imprimes).
     const appUrl = process.env['NEXT_PUBLIC_APP_URL'] ?? 'http://localhost:3000'
-    const qrUrl = `${appUrl}/api/qr/${qrToken}`
+    const qrUrl = `${appUrl}/api/auth/qr/${qrToken}`
 
     let pngBuffer: Buffer
     try {

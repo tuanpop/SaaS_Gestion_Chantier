@@ -29,6 +29,7 @@ const PUBLIC_ROUTES = new Set([
 // (utilisé pour les routes dynamiques type /qr/:token Sprint 3)
 const PUBLIC_PREFIXES = [
   '/qr/',                   // legacy — conservé pour compatibilité
+  '/api/qr/',               // backward compat Sprint 3 — redirect 307 vers /api/auth/qr/
   '/api/auth/qr/',          // Sprint 3 — handler QR scan ouvrier (token = credential, pas de JWT)
 ]
 
