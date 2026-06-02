@@ -180,10 +180,9 @@ describe('GET /api/auth/qr/[token]', () => {
         const sel3 = vi.fn().mockReturnValue({ eq: eq3 })
         return { select: sel3 }
       }
-      // affectations query : from('affectations').select(...).eq(...).eq(...).is(...).or(...)
+      // affectations query : from('affectations').select(...).eq(...).eq(...).or(...) — hard delete, no .is()
       const or4 = vi.fn().mockResolvedValue({ data: [VALID_AFFECTATION], error: null })
-      const is4 = vi.fn().mockReturnValue({ or: or4 })
-      const eq4b = vi.fn().mockReturnValue({ is: is4 })
+      const eq4b = vi.fn().mockReturnValue({ or: or4 })
       const eq4a = vi.fn().mockReturnValue({ eq: eq4b })
       const sel4 = vi.fn().mockReturnValue({ eq: eq4a })
       return { select: sel4 }

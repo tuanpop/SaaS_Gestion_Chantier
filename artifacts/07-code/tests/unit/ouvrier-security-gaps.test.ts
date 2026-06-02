@@ -152,10 +152,8 @@ describe('TST-K3-03 : IDOR cross-orga chantier (K3-CR-03 BINDING)', () => {
           eq: () => ({
             eq: () => ({
               eq: () => ({
-                is: () => ({
-                  or: () => ({
-                    limit: () => Promise.resolve({ data: [], error: null }),
-                  }),
+                or: () => ({
+                  limit: () => Promise.resolve({ data: [], error: null }),
                 }),
               }),
             }),
@@ -363,7 +361,7 @@ describe('TST-K3-17 : Cookie ouvrier_session attributs de securite D-3-003', () 
     const selUsers = vi.fn().mockReturnValue({ eq: eqUsers })
     mockAdminFrom.mockReturnValueOnce({ select: selUsers })
 
-    // Appel 2 : from('affectations').select(...).eq('user_id',...).eq('organisation_id',...).is('deleted_at',null).or(...)
+    // Appel 2 : from('affectations').select(...).eq('user_id',...).eq('organisation_id',...).or(...) — hard delete
     const orAff = vi.fn().mockResolvedValue({
       data: [{
         id: '00000000-0000-0000-0000-000000000010',
@@ -373,8 +371,7 @@ describe('TST-K3-17 : Cookie ouvrier_session attributs de securite D-3-003', () 
       }],
       error: null,
     })
-    const isAff = vi.fn().mockReturnValue({ or: orAff })
-    const eq2Aff = vi.fn().mockReturnValue({ is: isAff })
+    const eq2Aff = vi.fn().mockReturnValue({ or: orAff })
     const eq1Aff = vi.fn().mockReturnValue({ eq: eq2Aff })
     const selAff = vi.fn().mockReturnValue({ eq: eq1Aff })
     mockAdminFrom.mockReturnValueOnce({ select: selAff })
@@ -522,18 +519,17 @@ describe('TST-K3-10x : Session zombie defense (K3-S-05 BINDING D-3-005)', () => 
       },
       error: null,
     })
-    const isTache = vi.fn().mockReturnValue({ single: singleTache })
-    const eq2Tache = vi.fn().mockReturnValue({ is: isTache })
+    // taches : from('taches').select(...).eq('id',...).eq('organisation_id',...).single() — hard delete
+    const eq2Tache = vi.fn().mockReturnValue({ single: singleTache })
     const eq1Tache = vi.fn().mockReturnValue({ eq: eq2Tache })
     const selTache = vi.fn().mockReturnValue({ eq: eq1Tache })
     mockAdminFrom.mockReturnValueOnce({ select: selTache })
 
-    // Appel 2 : from('affectations').select('id').eq(...).eq(...).eq(...).is(...).or(...).limit(1)
+    // Appel 2 : from('affectations').select('id').eq(...).eq(...).eq(...).or(...).limit(1) — hard delete
     // 0 affectations = session zombie
     const limitAff = vi.fn().mockResolvedValue({ data: [], error: null })
     const orAff = vi.fn().mockReturnValue({ limit: limitAff })
-    const isAff = vi.fn().mockReturnValue({ or: orAff })
-    const eq3Aff = vi.fn().mockReturnValue({ is: isAff })
+    const eq3Aff = vi.fn().mockReturnValue({ or: orAff })
     const eq2Aff = vi.fn().mockReturnValue({ eq: eq3Aff })
     const eq1Aff = vi.fn().mockReturnValue({ eq: eq2Aff })
     const selAff = vi.fn().mockReturnValue({ eq: eq1Aff })

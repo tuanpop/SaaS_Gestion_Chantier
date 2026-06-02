@@ -107,18 +107,16 @@ function setupAdminMocks({
     callIndex++
 
     if (tableName === 'affectations' && callIndex === 1) {
-      // RBAC check affectation
+      // RBAC check affectation (hard delete pattern — no deleted_at filter)
       return {
         select: () => ({
           eq: () => ({
             eq: () => ({
               eq: () => ({
-                is: () => ({
-                  or: () => ({
-                    limit: () => Promise.resolve({
-                      data: affectationCount > 0 ? [{ id: 'aff-id' }] : [],
-                      error: null,
-                    }),
+                or: () => ({
+                  limit: () => Promise.resolve({
+                    data: affectationCount > 0 ? [{ id: 'aff-id' }] : [],
+                    error: null,
                   }),
                 }),
               }),
@@ -141,12 +139,11 @@ function setupAdminMocks({
     }
 
     if (tableName === 'taches') {
+      // hard delete pattern (CASCADE) — no deleted_at filter
       return {
         select: () => ({
           eq: () => ({
-            eq: () => ({
-              is: () => Promise.resolve({ data: taches, error: null }),
-            }),
+            eq: () => Promise.resolve({ data: taches, error: null }),
           }),
         }),
       }

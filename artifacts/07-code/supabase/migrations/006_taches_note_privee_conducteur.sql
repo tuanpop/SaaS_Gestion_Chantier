@@ -20,10 +20,10 @@ COMMENT ON COLUMN public.taches.note_privee_conducteur IS
 -- 2. Index sur affectations pour accelerer les verifications RBAC ouvrier
 -- ============================================================
 -- D-3-007 : index requis pour les queries RBAC ouvrier (affectations actives par user + chantier)
--- WHERE deleted_at IS NULL : index partiel — evite d'indexer les affectations supprimees
+-- FIX 2026-06-02 : retire WHERE deleted_at IS NULL — affectations en hard-delete (CASCADE migration 002),
+-- la colonne deleted_at n'existe pas. "Active" = "presente dans la table" (hard delete pattern).
 CREATE INDEX IF NOT EXISTS idx_affectations_user_active
-  ON public.affectations(user_id, chantier_id)
-  WHERE deleted_at IS NULL;
+  ON public.affectations(user_id, chantier_id);
 
 -- ============================================================
 -- Note : pas de RLS supplementaire (D-3-007)

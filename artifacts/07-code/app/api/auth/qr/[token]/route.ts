@@ -106,7 +106,7 @@ export async function GET(
   }
 
   // 4. Recuperer les affectations actives de l'ouvrier (RG-SCAN-004)
-  // Criteres : deleted_at IS NULL + chantier actif + date_fin non depassee
+  // Criteres : affectation presente (hard delete, pas de soft delete) + chantier actif + date_fin non depassee
   const today = new Date().toISOString().split('T')[0] // YYYY-MM-DD
 
   const { data: affectationsRaw, error: affError } = await adminClient
@@ -114,7 +114,7 @@ export async function GET(
     .select('id, chantier_id, vue, chantiers!affectations_chantier_id_fkey(statut)')
     .eq('user_id', user_id)
     .eq('organisation_id', organisation_id)
-    .is('deleted_at', null)
+    // FIX : affectations en hard delete (CASCADE migration 002), pas de deleted_at column
     .or(`date_fin.is.null,date_fin.gte.${today}`)
 
   if (affError) {

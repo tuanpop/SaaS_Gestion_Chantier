@@ -80,7 +80,7 @@ export async function GET(request: NextRequest) {
         `)
         .in('id', affectationIds)
         .eq('organisation_id', session.organisation_id)
-        .is('deleted_at', null)
+        // FIX 2026-06-02 : affectations en hard delete (CASCADE migration 002), pas de deleted_at column
 
       if (affError) {
         reqLogger.error(

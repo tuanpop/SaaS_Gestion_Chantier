@@ -86,17 +86,16 @@ function setupTacheMock({
         select: () => ({
           eq: () => ({
             eq: () => ({
-              is: () => ({
-                single: () => Promise.resolve({
-                  data: {
-                    id: TACHE_ID,
-                    assigned_to: assignedTo,
-                    statut: currentStatut,
-                    chantier_id: CHANTIER_ID,
-                    organisation_id: ORG_ID,
-                  },
-                  error: null,
-                }),
+              // hard delete pattern — no deleted_at filter
+              single: () => Promise.resolve({
+                data: {
+                  id: TACHE_ID,
+                  assigned_to: assignedTo,
+                  statut: currentStatut,
+                  chantier_id: CHANTIER_ID,
+                  organisation_id: ORG_ID,
+                },
+                error: null,
               }),
             }),
           }),
@@ -105,16 +104,14 @@ function setupTacheMock({
     }
 
     if (callIndex === 2) {
-      // affectations RBAC check
+      // affectations RBAC check (hard delete pattern — no deleted_at filter)
       return {
         select: () => ({
           eq: () => ({
             eq: () => ({
               eq: () => ({
-                is: () => ({
-                  or: () => ({
-                    limit: () => Promise.resolve({ data: [{ id: 'aff-id' }], error: null }),
-                  }),
+                or: () => ({
+                  limit: () => Promise.resolve({ data: [{ id: 'aff-id' }], error: null }),
                 }),
               }),
             }),

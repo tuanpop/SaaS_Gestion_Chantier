@@ -57,7 +57,7 @@ export async function GET(
       .eq('user_id', session.user_id)
       .eq('chantier_id', chantierId)
       .eq('organisation_id', session.organisation_id) // K3-CR-03 : filtre organisation_id CRITIQUE
-      .is('deleted_at', null)
+      // FIX 2026-06-02 : affectations en hard delete (CASCADE migration 002), pas de deleted_at column
       .or(`date_fin.is.null,date_fin.gte.${today}`)
       .limit(1)
 
@@ -102,7 +102,7 @@ export async function GET(
       )
       .eq('chantier_id', chantierId)
       .eq('organisation_id', session.organisation_id)
-      .is('deleted_at', null)
+      // FIX : taches en hard delete (CASCADE migration 002), pas de deleted_at column
 
     if (tachesError) {
       reqLogger.error(

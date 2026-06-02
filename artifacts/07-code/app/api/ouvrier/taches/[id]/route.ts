@@ -81,7 +81,7 @@ export async function PATCH(
       .select('id, assigned_to, statut, chantier_id, organisation_id')
       .eq('id', tacheId)
       .eq('organisation_id', session.organisation_id) // K3-CR-03 : filtre org CRITIQUE
-      .is('deleted_at', null)
+      // FIX : taches en hard delete (CASCADE migration 002), pas de deleted_at column
       .single()
 
     if (tacheError || !tacheRow) {
@@ -115,7 +115,7 @@ export async function PATCH(
       .eq('user_id', session.user_id)
       .eq('chantier_id', tacheRow.chantier_id)
       .eq('organisation_id', session.organisation_id)
-      .is('deleted_at', null)
+      // FIX : affectations en hard delete (CASCADE migration 002), pas de deleted_at column
       .or(`date_fin.is.null,date_fin.gte.${today}`)
       .limit(1)
 
