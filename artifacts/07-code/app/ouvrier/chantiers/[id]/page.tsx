@@ -8,10 +8,17 @@ import { cookies } from 'next/headers'
 import { OuvrierChantierClient } from './client'
 import type { GetChantierOuvrierResponse } from '@/types/database'
 
+type FetchResult =
+  | { kind: 'ok'; data: GetChantierOuvrierResponse }
+  | { kind: 'unauthenticated' } // 401 — session expiree, perdue ou invalidee D-3-011
+  | { kind: 'forbidden' }       // 403 — plus d'affectation active sur ce chantier
+  | { kind: 'not_found' }       // 404 — chantier inexistant ou hors org
+  | { kind: 'error' }           // autre
+
 async function fetchChantier(
   chantierId: string,
   sessionCookieValue: string,
-): Promise<GetChantierOuvrierResponse | null> {
+): Promise<FetchResult> {
   try {
     const baseUrl = process.env['NEXT_PUBLIC_APP_URL'] ?? 'http://localhost:3000'
     const response = await fetch(
@@ -24,15 +31,15 @@ async function fetchChantier(
       },
     )
 
-    if (response.status === 401) return null   // session expiree
-    if (response.status === 403) return null   // acces refuse (pas affecte)
-    if (response.status === 404) return null   // chantier inexistant
+    if (response.status === 401) return { kind: 'unauthenticated' }
+    if (response.status === 403) return { kind: 'forbidden' }
+    if (response.status === 404) return { kind: 'not_found' }
+    if (!response.ok) return { kind: 'error' }
 
-    if (!response.ok) return null
-
-    return response.json() as Promise<GetChantierOuvrierResponse>
+    const data = (await response.json()) as GetChantierOuvrierResponse
+    return { kind: 'ok', data }
   } catch {
-    return null
+    return { kind: 'error' }
   }
 }
 
@@ -51,15 +58,23 @@ export default async function OuvrierChantierPage({
     redirect('/ouvrier/scan')
   }
 
-  const chantierData = await fetchChantier(chantierId, sessionCookie.value)
+  const result = await fetchChantier(chantierId, sessionCookie.value)
 
-  if (!chantierData) {
-    // 401 : session expiree → redirect scan
-    // 403/404 : chantier non accessible
-    // On ne peut pas distinguer 401 vs 403/404 ici sans overhead
-    // Le middleware gerera la session expirée au prochain hit
+  // Distinguer les cas (smoke C5 2026-06-03) : le middleware Edge ne valide que la
+  // presence du cookie (D-3-001), pas la session Postgres. Si la session est invalide
+  // (expiree OU invalidee par D-3-011 sur DELETE affectation), le handler retourne 401.
+  // Si l'ouvrier n'a plus d'affectation active sur ce chantier, le handler retourne 403.
+  // Cas 404 = chantier inexistant ou hors org = on garde notFound().
+  if (result.kind === 'unauthenticated') {
+    redirect('/ouvrier/scan')
+  }
+  if (result.kind === 'forbidden') {
+    redirect('/ouvrier/no-affectation')
+  }
+  if (result.kind !== 'ok') {
     notFound()
   }
+  const chantierData = result.data
 
   return (
     <div>
