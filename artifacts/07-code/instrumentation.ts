@@ -28,10 +28,10 @@ export async function register(): Promise<void> {
   /**
    * Filet de sécurité : erreur synchrone non catchée hors d'une Promise.
    *
-   * Cas connu qui déclenche ce handler dans ce projet :
-   * - ioredis interne : Socket.<anonymous> callback qui throw TypeError quand
-   *   le socket est en état transitoire pendant un retry de connexion
-   *   (socket.auth undefined à l'intérieur de ioredis@5.x reconnect logic).
+   * Note D-054 : la raison initiale (ioredis TypeError sur socket.auth) est
+   * devenue sans objet (lib/redis.ts supprimée). Le handler reste en place
+   * comme defense en profondeur générique — tous les modules tiers peuvent
+   * potentiellement lever des uncaughtException.
    *
    * Comportement : on logue, on NE crash PAS le process.
    * Justification production : un crash worker = toutes les requêtes en vol

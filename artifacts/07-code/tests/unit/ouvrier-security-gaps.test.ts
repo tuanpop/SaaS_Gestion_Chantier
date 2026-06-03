@@ -52,9 +52,12 @@ const mockLoggerChild = vi.fn()
 vi.mock('../../lib/ouvrier-session', () => ({
   getOuvrierSession: (...args: unknown[]) => mockGetOuvrierSession(...args),
   OUVRIER_SESSION_TTL: 604800,
+  SESSION_PREFIX: 'ouvrier_session:',
+  USER_SESSIONS_PREFIX: 'ouvrier_user_sessions:',
+  // Aliases backward-compat
   REDIS_SESSION_PREFIX: 'ouvrier_session:',
   REDIS_USER_SESSIONS_PREFIX: 'ouvrier_user_sessions:',
-  invalidateOuvrierSessionsForUser: vi.fn(),
+  invalidateOuvrierSessionsForUser: vi.fn().mockResolvedValue({ invalidated: 0 }),
 }))
 
 vi.mock('../../lib/supabase/admin', () => ({
@@ -63,16 +66,16 @@ vi.mock('../../lib/supabase/admin', () => ({
   }),
 }))
 
-vi.mock('../../lib/redis', () => ({
-  redis: {
-    setex: (...args: unknown[]) => mockRedisSetex(...args),
-    sadd: (...args: unknown[]) => mockRedisSadd(...args),
-    expire: (...args: unknown[]) => mockRedisExpire(...args),
-    get: (...args: unknown[]) => mockRedisGet(...args),
-    smembers: (...args: unknown[]) => mockRedisSmembers(...args),
-    del: vi.fn(),
-    srem: vi.fn(),
-  },
+// D-054 : lib/redis supprimee — mocks session-store a la place
+vi.mock('../../lib/session-store', () => ({
+  getSessionStore: () => ({
+    create: (...args: unknown[]) => mockRedisSetex(...args), // reuse mock var pour compatibilite tests TST-K3-17
+    read: (...args: unknown[]) => mockRedisGet(...args),
+    touch: (...args: unknown[]) => mockRedisExpire(...args),
+    invalidateForUser: (...args: unknown[]) => mockRedisSmembers(...args),
+    delete: vi.fn().mockResolvedValue(undefined),
+  }),
+  PostgresSessionStore: vi.fn(),
 }))
 
 vi.mock('../../lib/crypto', () => ({
@@ -107,9 +110,11 @@ vi.mock('../../lib/supabase/server', () => ({
 function setupMockDefaults() {
   // logger.child doit retourner un objet logger valide (pas undefined)
   mockLoggerChild.mockReturnValue(mockChildLogger)
-  // Redis defaults (utilises par certains handlers)
-  mockRedisGet.mockResolvedValue(null)
-  mockRedisSmembers.mockResolvedValue([])
+  // session-store defaults (D-054 : mockRedisGet = read, mockRedisSmembers = invalidateForUser)
+  mockRedisGet.mockResolvedValue(null)   // read : pas de session active
+  mockRedisSmembers.mockResolvedValue(0) // invalidateForUser : 0 sessions supprimees
+  mockRedisSetex.mockResolvedValue(undefined) // create : succes
+  mockRedisExpire.mockResolvedValue(undefined) // touch : succes
 }
 
 // ============================================================
@@ -336,7 +341,8 @@ describe('TST-K3-17 : Cookie ouvrier_session attributs de securite D-3-003', () 
   beforeEach(() => {
     vi.resetAllMocks()
     setupMockDefaults()
-    mockRedisSetex.mockResolvedValue('OK')
+    // session-store.create : resoudre sans erreur (session Postgres creee avec succes)
+    mockRedisSetex.mockResolvedValue(undefined)
     mockRedisSadd.mockResolvedValue(1)
     mockRedisExpire.mockResolvedValue(1)
   })

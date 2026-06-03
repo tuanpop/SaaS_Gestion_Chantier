@@ -1,15 +1,17 @@
 /**
  * tests/unit/ouvrier-session.test.ts
  * Tests unitaires helper getOuvrierSession (D-3-002 — 5 etapes obligatoires)
+ * Refactorise D-054 : mocks Redis remplacees par mocks ISessionStore (lib/session-store)
  *
  * Scenarios couverts :
  *   1. Cookie absent → return null (D-3-002 etape 1)
- *   2. Cookie present mais cle Redis null → return null (D-3-002 etape 2)
- *   3. Redis retourne JSON invalide (Zod parse KO) → return null + log warn (D-3-002 etape 4)
- *   4. Redis OK → EXPIRE appele + return session (sliding window D-051/PO-005) (D-3-002 etape 3)
- *   5. EXPIRE echoue → return session quand meme (best-effort D-3-002 etape 3)
+ *   2. Cookie present mais sessionStore.read() retourne null → return null (D-3-002 etape 2)
+ *   3. sessionStore.read() retourne schema invalide (Zod parse KO) → return null + log warn (D-3-002 etape 4)
+ *   4. sessionStore.read() OK → touch appele (sliding window D-051/PO-005) + return session (D-3-002 etape 3)
+ *   5. touch echoue → return session quand meme (best-effort D-3-002 etape 3)
+ *   6. sessionStore.read() throw → return null (Postgres down)
  *
- * TST-K3 couverts : DoD D9 (redis.expire appele a chaque hit authentifie)
+ * TST-K3 couverts : DoD D9 (touch appele a chaque hit authentifie)
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
@@ -19,19 +21,27 @@ import type { NextRequest } from 'next/server'
 // Mocks
 // ============================================================
 
-const mockRedisGet = vi.fn()
-const mockRedisExpire = vi.fn()
+const mockSessionStoreRead = vi.fn()
+const mockSessionStoreTouch = vi.fn()
+const mockSessionStoreCreate = vi.fn()
+const mockSessionStoreInvalidateForUser = vi.fn()
+const mockSessionStoreDelete = vi.fn()
 
-vi.mock('../../lib/redis', () => ({
-  redis: {
-    get: (...args: unknown[]) => mockRedisGet(...args),
-    expire: (...args: unknown[]) => mockRedisExpire(...args),
-    setex: vi.fn(),
-    sadd: vi.fn(),
-    smembers: vi.fn().mockResolvedValue([]),
-    del: vi.fn(),
-    srem: vi.fn(),
-  },
+const mockSessionStore = {
+  read: (...args: unknown[]) => mockSessionStoreRead(...args),
+  touch: (...args: unknown[]) => mockSessionStoreTouch(...args),
+  create: (...args: unknown[]) => mockSessionStoreCreate(...args),
+  invalidateForUser: (...args: unknown[]) => mockSessionStoreInvalidateForUser(...args),
+  delete: (...args: unknown[]) => mockSessionStoreDelete(...args),
+}
+
+vi.mock('../../lib/session-store', () => ({
+  getSessionStore: () => mockSessionStore,
+  PostgresSessionStore: vi.fn(),
+}))
+
+vi.mock('../../lib/supabase/admin', () => ({
+  createAdminClient: vi.fn(() => ({ from: vi.fn() })),
 }))
 
 vi.mock('../../lib/logger', () => ({
@@ -85,9 +95,11 @@ const VALID_SESSION = {
 // Tests
 // ============================================================
 
-describe('getOuvrierSession — 5 etapes D-3-002', () => {
+describe('getOuvrierSession — 5 etapes D-3-002 (Postgres V1 D-054)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    // Defaults safe
+    mockSessionStoreTouch.mockResolvedValue(undefined)
   })
 
   it('1. Cookie absent → return null', async () => {
@@ -97,11 +109,11 @@ describe('getOuvrierSession — 5 etapes D-3-002', () => {
     const result = await getOuvrierSession(request)
 
     expect(result).toBeNull()
-    expect(mockRedisGet).not.toHaveBeenCalled()
+    expect(mockSessionStoreRead).not.toHaveBeenCalled()
   })
 
-  it('2. Cookie present mais cle Redis null (TTL expire) → return null', async () => {
-    mockRedisGet.mockResolvedValueOnce(null) // cle absente de Redis
+  it('2. Cookie present mais sessionStore.read retourne null (TTL expire) → return null', async () => {
+    mockSessionStoreRead.mockResolvedValueOnce(null) // session absente
 
     const { getOuvrierSession } = await import('../../lib/ouvrier-session')
     const request = buildRequest('test-session-id')
@@ -109,13 +121,12 @@ describe('getOuvrierSession — 5 etapes D-3-002', () => {
     const result = await getOuvrierSession(request)
 
     expect(result).toBeNull()
-    expect(mockRedisGet).toHaveBeenCalledWith('ouvrier_session:test-session-id')
-    expect(mockRedisExpire).not.toHaveBeenCalled() // pas d'expire si cle absente
+    expect(mockSessionStoreRead).toHaveBeenCalledWith('test-session-id')
+    expect(mockSessionStoreTouch).not.toHaveBeenCalled() // pas de touch si session absente
   })
 
-  it('3. Redis retourne JSON invalide (Zod parse KO) → return null', async () => {
-    mockRedisGet.mockResolvedValueOnce('{"invalid": "schema", "missing_fields": true}')
-    mockRedisExpire.mockResolvedValueOnce(1) // expire reussit
+  it('3. sessionStore.read retourne schema invalide (Zod parse KO) → return null', async () => {
+    mockSessionStoreRead.mockResolvedValueOnce({ invalid: 'schema', missing_fields: true })
 
     const { getOuvrierSession } = await import('../../lib/ouvrier-session')
     const request = buildRequest('test-session-id')
@@ -123,13 +134,13 @@ describe('getOuvrierSession — 5 etapes D-3-002', () => {
     const result = await getOuvrierSession(request)
 
     expect(result).toBeNull()
-    // expire est appele avant la validation Zod (etape 3 avant etape 4)
-    expect(mockRedisExpire).toHaveBeenCalled()
+    // touch est appele avant la validation Zod (etape 3 avant etape 4)
+    expect(mockSessionStoreTouch).toHaveBeenCalled()
   })
 
-  it('4. Redis OK → EXPIRE appele (sliding window) + return session valide', async () => {
-    mockRedisGet.mockResolvedValueOnce(JSON.stringify(VALID_SESSION))
-    mockRedisExpire.mockResolvedValueOnce(1) // expire reussit
+  it('4. sessionStore.read OK → touch appele (sliding window) + return session valide', async () => {
+    mockSessionStoreRead.mockResolvedValueOnce(VALID_SESSION)
+    mockSessionStoreTouch.mockResolvedValueOnce(undefined)
 
     const { getOuvrierSession } = await import('../../lib/ouvrier-session')
     const request = buildRequest('valid-session-id')
@@ -140,26 +151,26 @@ describe('getOuvrierSession — 5 etapes D-3-002', () => {
     expect(result?.user_id).toBe(VALID_SESSION.user_id)
     expect(result?.organisation_id).toBe(VALID_SESSION.organisation_id)
     expect(result?.role).toBe('ouvrier')
-    // DoD D9 : EXPIRE doit etre appele a chaque hit authentifie (sliding window)
-    expect(mockRedisExpire).toHaveBeenCalledWith('ouvrier_session:valid-session-id', 604800)
+    // DoD D9 : touch doit etre appele a chaque hit authentifie (sliding window)
+    expect(mockSessionStoreTouch).toHaveBeenCalledWith('valid-session-id', 604800)
   })
 
-  it('5. EXPIRE echoue → return session quand meme (best-effort)', async () => {
-    mockRedisGet.mockResolvedValueOnce(JSON.stringify(VALID_SESSION))
-    mockRedisExpire.mockRejectedValueOnce(new Error('Redis connection lost'))
+  it('5. touch echoue → return session quand meme (best-effort)', async () => {
+    mockSessionStoreRead.mockResolvedValueOnce(VALID_SESSION)
+    mockSessionStoreTouch.mockRejectedValueOnce(new Error('Postgres connection lost'))
 
     const { getOuvrierSession } = await import('../../lib/ouvrier-session')
     const request = buildRequest('valid-session-id')
 
     const result = await getOuvrierSession(request)
 
-    // La session est retournee meme si EXPIRE echoue (best-effort D-3-002 etape 3)
+    // La session est retournee meme si touch echoue (best-effort D-3-002 etape 3)
     expect(result).not.toBeNull()
     expect(result?.user_id).toBe(VALID_SESSION.user_id)
   })
 
-  it('Redis get echoue → return null (Redis down)', async () => {
-    mockRedisGet.mockRejectedValueOnce(new Error('ECONNREFUSED'))
+  it('6. sessionStore.read throw → return null (Postgres down)', async () => {
+    mockSessionStoreRead.mockRejectedValueOnce(new Error('ECONNREFUSED'))
 
     const { getOuvrierSession } = await import('../../lib/ouvrier-session')
     const request = buildRequest('valid-session-id')

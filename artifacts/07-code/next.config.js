@@ -79,9 +79,8 @@ const nextConfig = {
   // Packages dont le bundling webpack casse le runtime — externalise (Next.js charge
   // depuis node_modules en runtime via outputFileTracingIncludes Next.js standalone).
   // - pino + pino-pretty + thread-stream : worker thread mal bundlé
-  // - ioredis : socket retry handler accède à des refs internes mangled par minification
-  //   ("Cannot read properties of undefined (reading 'auth')" en prod — bug observé 2026-05-19)
-  serverExternalPackages: ['pino', 'pino-pretty', 'thread-stream', 'ioredis'],
+  // Note D-054 : ioredis retire de serverExternalPackages (lib/redis.ts supprimee, D-054 pivot Postgres)
+  serverExternalPackages: ['pino', 'pino-pretty', 'thread-stream'],
 
   async headers() {
     return [

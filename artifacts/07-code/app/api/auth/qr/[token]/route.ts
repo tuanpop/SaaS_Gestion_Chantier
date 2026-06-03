@@ -1,24 +1,28 @@
 // app/api/auth/qr/[token]/route.ts
-// GET /api/auth/qr/[token] — Scan QR ouvrier : dechiffrement AES, creation session Redis, cookie, redirect
+// GET /api/auth/qr/[token] — Scan QR ouvrier : dechiffrement AES, creation session Postgres, cookie, redirect
 //
-// Implemente : US-3.1 (scan QR), US-3.2 (session Redis TTL 7j), US-3.5 (multi-affectations),
+// Implemente : US-3.1 (scan QR), US-3.2 (session TTL 7j), US-3.5 (multi-affectations),
 //              US-3.11 (no-affectation → telephone conducteur), RG-SCAN-001 a 006
 // Items securite : K3-I-02 (no token en log), K3-E-01 (role lu en base), K3-CR-01 (QR vol),
 //                  D-3-009, D-3-010 (nodejs runtime), D-3-003 (session schema),
-//                  D-3-021 (cookie Path=/), D-3-011 (index inverse)
+//                  D-3-021 (cookie Path=/), D-3-011 (invalidation user)
 //
 // ROUTE PUBLIQUE — pas de JWT Supabase requis (le token QR EST le credential)
 // Doit etre dans PUBLIC_PREFIXES middleware : /api/auth/qr/
+//
+// D-054 : sessions passees de Redis a Postgres (table ouvrier_sessions).
+// L'index inverse user→sessions (Redis SADD/SMEMBERS) est remplace par la colonne user_id
+// indexee dans ouvrier_sessions (idx_ouvrier_sessions_user).
 
-// D-3-010 : Node runtime obligatoire (ioredis incompatible Edge)
+// D-3-010 : Node runtime obligatoire
 export const runtime = 'nodejs'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { decryptQR, InvalidQRTokenError } from '@/lib/crypto'
-import { redis } from '@/lib/redis'
+import { getSessionStore } from '@/lib/session-store'
 import { logger } from '@/lib/logger'
-import { OUVRIER_SESSION_TTL, REDIS_SESSION_PREFIX, REDIS_USER_SESSIONS_PREFIX } from '@/lib/ouvrier-session'
+import { OUVRIER_SESSION_TTL } from '@/lib/ouvrier-session'
 import type { OuvrierSession } from '@/types/database'
 
 // ============================================================
@@ -166,9 +170,8 @@ export async function GET(
     return handleNoAffectation(baseUrl, adminClient, user_id, organisation_id, responseHeaders)
   }
 
-  // 6. Creer la session Redis pour les cas 1 ou ≥2 affectations
+  // 6. Creer la session Postgres pour les cas 1 ou ≥2 affectations (D-054)
   const sessionId = crypto.randomUUID()
-  const sessionKey = REDIS_SESSION_PREFIX + sessionId
 
   const sessionData: OuvrierSession = {
     user_id,
@@ -183,17 +186,15 @@ export async function GET(
   }
 
   try {
-    // SETEX : session avec TTL 7j (D-051/PO-005)
-    await redis.setex(sessionKey, OUVRIER_SESSION_TTL, JSON.stringify(sessionData))
-
-    // Index inverse user → sessions (D-3-011) : permet l'invalidation ciblee
-    const userSessionsKey = REDIS_USER_SESSIONS_PREFIX + user_id
-    await redis.sadd(userSessionsKey, sessionId)
-    await redis.expire(userSessionsKey, OUVRIER_SESSION_TTL)
+    // INSERT ouvrier_sessions avec TTL 7j (D-051/PO-005)
+    // L'index inverse user→sessions est remplace par la colonne user_id indexee
+    // dans ouvrier_sessions (idx_ouvrier_sessions_user) — D-054 simplification structurelle
+    const sessionStore = getSessionStore(adminClient)
+    await sessionStore.create(sessionId, sessionData, OUVRIER_SESSION_TTL)
   } catch (err) {
     logger.error(
       { err: err instanceof Error ? err.message : String(err), userId: user_id },
-      'QR scan : erreur creation session Redis',
+      'QR scan : erreur creation session Postgres',
     )
     return NextResponse.redirect(
       new URL('/ouvrier/scan?error=server_error', baseUrl),

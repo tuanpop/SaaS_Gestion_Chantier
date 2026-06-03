@@ -125,18 +125,12 @@ export async function DELETE(
       return new NextResponse(null, { status: 204 })
     }
 
-    // 6b. Sprint 3 — Invalidation session Redis ouvrier (D-3-011, RG-SESSION-005)
-    // Best-effort : si Redis down, le DELETE est quand meme un succes (K3-MED-08)
-    // Le RBAC base (D-3-005) a chaque hit ouvrier sauvegarde la securite (K3-S-05)
-    try {
-      await invalidateOuvrierSessionsForUser(existing.user_id, affectationId)
-    } catch (e) {
-      // Non-bloquant — le DELETE reussit meme si l'invalidation Redis echoue
-      reqLogger.warn(
-        { err: e instanceof Error ? e.message : String(e), affectationId },
-        'Invalidation session Redis ouvrier echouee — best-effort (D-3-011)',
-      )
-    }
+    // 6b. Sprint 3 — Invalidation session Postgres ouvrier (D-3-011, RG-SESSION-005)
+    // Best-effort : la fonction ne throw pas (voir lib/ouvrier-session.ts).
+    // Le RBAC base (D-3-005) a chaque hit ouvrier sauvegarde la securite (K3-S-05).
+    // D-054 : sessions Postgres remplacent Redis — invalidateOuvrierSessionsForUser
+    // DELETE toutes les sessions de l'ouvrier (plus simple que le patch partiel Redis V0).
+    await invalidateOuvrierSessionsForUser(existing.user_id, affectationId)
 
     if ((remainingCount ?? 0) === 0) {
       // 7. Aucune autre affectation : désassigner les tâches du chantier

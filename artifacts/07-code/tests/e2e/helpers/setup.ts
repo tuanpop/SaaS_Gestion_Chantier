@@ -12,7 +12,6 @@
 
 import { createClient } from '@supabase/supabase-js'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import Redis from 'ioredis'
 import type { Database } from '../../../types/database'
 
 // ============================================================
@@ -279,57 +278,30 @@ export function extractCookies(response: Response): string[] {
 }
 
 // ============================================================
-// Helper : reset du rate limit Redis entre les tests
+// Helper : reset du rate limit entre les tests (D-054)
 //
-// Le rate limit est sur l'IP (127.0.0.1 en local) et persiste entre tests.
-// S3 brute force (5 tentatives login échouées) épuise la clé rate:login:127.0.0.1,
-// ce qui fait que S1 (credentials incorrects) reçoit 429 au lieu de 401.
-// Ce helper DEL la clé Redis pour garantir l'isolation des tests.
+// D-054 : le rate-limit est desormais en cache memoire process Node (lib/cache.ts).
+// Il ne persiste PAS entre processus — chaque run de test demarre avec un cache vide.
+// Les fonctions ci-dessous sont conservees pour la compatibilite d'API des specs E2E
+// existantes, mais leur implementation est no-op (rien a cleaner).
 //
-// Utilisation : appeler dans beforeEach / afterEach des tests sensibles au rate limit.
+// Note : si un test E2E rencontre des 429 dus au rate-limit intra-process (ex: suite
+// qui lance beaucoup de requetes dans le meme process Next.js), un delai entre tests
+// ou un redemarrage du serveur resout le probleme (cache vide au boot).
 // ============================================================
 
-function createTestRedisClient(): Redis {
-  const redisUrl = process.env['REDIS_URL'] ?? 'redis://localhost:6379'
-  return new Redis(redisUrl, {
-    maxRetriesPerRequest: 1,
-    enableReadyCheck: false,
-    lazyConnect: false,
-  })
-}
-
 /**
- * Supprime les clés Redis de rate limiting pour une IP ou un pattern de clé.
- * Pattern accepté : ex. 'rate:login:127.0.0.1', 'rate:magic:127.0.0.1', 'rate:signup:*'
- *
- * @param keyPattern - Clé exacte ou pattern glob Redis (ex: 'rate:login:127.0.0.1')
+ * No-op en V1 Postgres (D-054).
+ * Le rate-limit memoire process se reset automatiquement entre runs de test.
  */
-export async function clearRateLimit(keyPattern: string): Promise<void> {
-  const redis = createTestRedisClient()
-  try {
-    if (keyPattern.includes('*')) {
-      // Pattern glob — utiliser SCAN pour trouver et supprimer
-      const keys = await redis.keys(keyPattern)
-      if (keys.length > 0) {
-        await redis.del(...keys)
-      }
-    } else {
-      // Clé exacte — DEL direct
-      await redis.del(keyPattern)
-    }
-  } finally {
-    await redis.quit()
-  }
+export async function clearRateLimit(_keyPattern: string): Promise<void> {
+  // No-op : cache memoire process — pas de connexion externe requise (D-054)
 }
 
 /**
- * Supprime toutes les clés de rate limiting pour l'IP loopback (127.0.0.1).
- * À appeler en beforeEach dans les tests qui vérifient les status HTTP d'auth.
+ * No-op en V1 Postgres (D-054).
+ * Conservee pour la compatibilite des specs E2E existantes.
  */
 export async function clearAllRateLimitsForLocalhost(): Promise<void> {
-  await Promise.all([
-    clearRateLimit('rate:login:127.0.0.1'),
-    clearRateLimit('rate:magic:127.0.0.1'),
-    clearRateLimit('rate:signup:127.0.0.1'),
-  ])
+  // No-op : cache memoire process — pas de connexion externe requise (D-054)
 }

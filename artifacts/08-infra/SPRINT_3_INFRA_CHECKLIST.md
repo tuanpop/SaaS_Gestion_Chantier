@@ -14,34 +14,35 @@
 - [ ] Copier-coller et executer le SQL de migration 006 complet (cf. `MIGRATION_006_APPLY.md` etape 1)
 - [ ] Executer les verifications post-migration (requetes 2a + 2b + 2c de `MIGRATION_006_APPLY.md`) — confirmer 1 ligne chacune
 - [ ] Cocher + noter la date d'application : ____________________
-- [ ] Screenshot de la requete 2a (colonne presente) joint au compte-rendu sprint (optionnel mais recommande)
 
 Ref : D-3-007, MIGRATION_006_APPLY.md
 
-### A2 — Variable DISABLE_REDIS=false confirmee en prod
+### A1b — Migration 007 Supabase Dashboard (NOUVEAU — D-054 BLOQUANT)
 
-- [ ] Connexion UI Dokploy : https://dokploy.tanren-studio.com
-- [ ] Service `clawbtp-app` > onglet **Environment**
-- [ ] Verifier que `DISABLE_REDIS` est absent OU vaut `false`
-  - Si `DISABLE_REDIS=true` : changer en `false` > Save > ne PAS redeploy maintenant (attendre le squash merge)
-  - Si absent : pas d'action (le kill switch est inactif par defaut)
-- [ ] Meme verification dans l'onglet **Build-time Arguments** (la variable ne doit pas y figurer avec `true`)
-- [ ] Resultat : `DISABLE_REDIS` = `false` ou absent sur les deux onglets
+**BLOQUANT** : sans cette migration, le scan QR redirige vers server_error (table ouvrier_sessions absente).
 
-Consequences si DISABLE_REDIS=true reste actif en prod : toutes les routes `/api/ouvrier/*` retournent 503 (RG-SESSION-003) — sprint 3 entier non fonctionnel. Ref : D-039.
+- [ ] Ouvrir Supabase Dashboard > SQL Editor > New query
+- [ ] Executer l'audit initial (requete 0a de `MIGRATION_007_APPLY.md`) — confirmer 0 lignes (table absente)
+- [ ] Copier-coller et executer le SQL de migration 007 complet (cf. `MIGRATION_007_APPLY.md` etape 1)
+- [ ] Executer les verifications post-migration (requetes 2a + 2b + 2c + 2d de `MIGRATION_007_APPLY.md`)
+- [ ] Cocher + noter la date d'application : ____________________
 
-### A3 — Variables d'environnement Redis et QR confirmes
+Ref : D-054, MIGRATION_007_APPLY.md
 
-- [ ] `REDIS_URL` presente dans Environment Dokploy (format : `redis://default:<password>@saasgestionchantierredis:6379`)
-- [ ] Service Redis `saasgestionchantierredis` en statut **running** dans Dokploy
+### A2 — Variables d'environnement QR confirmes (D-054 — REDIS_URL et DISABLE_REDIS retires)
+
+**D-054** : `REDIS_URL` et `DISABLE_REDIS` ne sont plus necessaires (Redis supprime). Les retirer de Dokploy apres deploy reussi (optionnel — ne bloquent pas le deploy).
+
 - [ ] `QR_ENCRYPTION_KEY` presente dans Environment Dokploy — valeur = 64 caracteres hexadecimaux (32 bytes)
   - La valeur NE COMMENCE PAS par `NEXT_PUBLIC_` — verifier que c'est bien une variable serveur uniquement
   - Ne JAMAIS changer cette valeur (invaliderait tous les QR ouvriers imprimes)
-- [ ] `DISABLE_REDIS` absent ou = `false` (rappel A2)
+- [ ] Optionnel post-deploy : retirer `REDIS_URL` et `DISABLE_REDIS` de Environment + Build-time Arguments Dokploy
 
-Ref : D-017, D-039, TNJ-K3-01, TNJ-K3-02.
+Ref : D-017, D-054, TNJ-K3-02.
 
-### A4 — Variables Resend, Supabase, App URL verifiees
+### A3 — Variables Supabase, App URL et QR verifiees
+
+### A4 — Variables Resend, App URL verifiees
 
 - [ ] `NEXT_PUBLIC_SUPABASE_URL` presente dans Environment ET Build-time Arguments (meme valeur)
 - [ ] `NEXT_PUBLIC_SUPABASE_ANON_KEY` presente dans Environment ET Build-time Arguments (meme valeur)

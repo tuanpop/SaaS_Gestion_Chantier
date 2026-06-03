@@ -1,14 +1,16 @@
 /**
  * tests/unit/trial-gate.test.ts — Tests unitaires Vitest pour lib/trial-gate.ts
+ * Refactorise D-054 : mocks Redis remplacees par spies sur cacheGet/cacheSet (lib/cache)
  *
- * Scénarios couverts (SPRINT_1_PLAN.md §7.1) :
+ * Scenarios couverts (SPRINT_1_PLAN.md §7.1) :
  *   1. statut='trial_active' + trial_ends_at > now() -> { blocked: false }
  *   2. statut='trial_expired' -> { blocked: true, reason: 'trial_expired' }
- *   3. trial_ends_at < now() (même si statut='trial_active') -> { blocked: true }
+ *   3. trial_ends_at < now() (meme si statut='trial_active') -> { blocked: true }
  *   4. assertTrialActive() sur org trial_expired -> throws PaymentRequiredError (statusCode 402)
+ *   5. Cache hit → DB non appelee
  *
- * Le Supabase client est mocké via vi.fn() — aucune connexion DB réelle.
- * Le module Redis est mocké pour éviter une dépendance Redis en test unitaire.
+ * Le Supabase client est mocke via vi.fn() — aucune connexion DB reelle.
+ * lib/cache est mocke pour controler le comportement du cache memoire.
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
@@ -17,15 +19,16 @@ import { checkTrialGate, assertTrialActive } from '../../lib/trial-gate'
 import { PaymentRequiredError } from '../../lib/errors'
 
 // ============================================================
-// Mock Redis — trial-gate importe Redis dynamiquement
-// On mock le module entier pour que les tests soient sans état Redis
+// Mock lib/cache — trial-gate utilise cacheGet/cacheSet (D-054)
 // ============================================================
 
-vi.mock('../../lib/redis', () => ({
-  redis: {
-    get: vi.fn().mockResolvedValue(null),          // cache toujours miss en test
-    set: vi.fn().mockResolvedValue('OK'),
-  },
+const mockCacheGet = vi.fn()
+const mockCacheSet = vi.fn()
+
+vi.mock('../../lib/cache', () => ({
+  cacheGet: (...args: unknown[]) => mockCacheGet(...args),
+  cacheSet: (...args: unknown[]) => mockCacheSet(...args),
+  cacheDel: vi.fn(),
   checkRateLimit: vi.fn(),
   RATE_LIMITS: {
     login: { limit: 5, windowMs: 15 * 60 * 1000 },
@@ -34,8 +37,15 @@ vi.mock('../../lib/redis', () => ({
   },
 }))
 
+vi.mock('../../lib/logger', () => ({
+  logger: {
+    warn: vi.fn(), error: vi.fn(), info: vi.fn(), debug: vi.fn(),
+    child: vi.fn(() => ({ warn: vi.fn(), error: vi.fn(), info: vi.fn(), debug: vi.fn() })),
+  },
+}))
+
 // ============================================================
-// Factory : créer un mock SupabaseClient avec une organisation donnée
+// Factory : creer un mock SupabaseClient avec une organisation donnee
 // ============================================================
 
 interface MockOrgData {
@@ -45,8 +55,7 @@ interface MockOrgData {
 }
 
 /**
- * Crée un mock minimal de SupabaseClient<Database> qui retourne l'organisation spécifiée.
- * Seuls les méthodes utilisées par checkTrialGate() sont mockées.
+ * Cree un mock minimal de SupabaseClient<Database> qui retourne l'organisation specifiee.
  */
 function createMockSupabaseClient(orgData: MockOrgData | null) {
   const singleFn: Mock = vi.fn().mockResolvedValue(
@@ -61,12 +70,11 @@ function createMockSupabaseClient(orgData: MockOrgData | null) {
 
   return {
     from: fromFn,
-    // Propriétés nécessaires pour satisfaire le type SupabaseClient (non utilisées ici)
     auth: {},
     rpc: vi.fn(),
     storage: {},
     realtime: {},
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- reason: mock minimal, type complet non nécessaire
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- reason: mock minimal, type complet non necessaire
   } as unknown as import('@supabase/supabase-js').SupabaseClient<import('../../types/database').Database>
 }
 
@@ -87,21 +95,20 @@ function pastDate(daysAgo: number): string {
 }
 
 // ============================================================
-// Tests
+// Tests checkTrialGate
 // ============================================================
 
 describe('checkTrialGate', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    // Par defaut : cache miss
+    mockCacheGet.mockReturnValue(null)
+    mockCacheSet.mockReturnValue(undefined)
   })
 
   afterEach(() => {
     vi.restoreAllMocks()
   })
-
-  // ----------------------------------------------------------
-  // Scénario 1 : trial actif + date future -> non bloqué
-  // ----------------------------------------------------------
 
   it('GIVEN statut=trial_active ET trial_ends_at > now() WHEN checkTrialGate() THEN { blocked: false }', async () => {
     const supabase = createMockSupabaseClient({
@@ -115,10 +122,6 @@ describe('checkTrialGate', () => {
     expect(result).toEqual({ blocked: false })
   })
 
-  // ----------------------------------------------------------
-  // Scénario 2 : statut='trial_expired' -> bloqué
-  // ----------------------------------------------------------
-
   it('GIVEN statut=trial_expired WHEN checkTrialGate() THEN { blocked: true, reason: trial_expired }', async () => {
     const supabase = createMockSupabaseClient({
       id: 'org-uuid-2',
@@ -130,11 +133,6 @@ describe('checkTrialGate', () => {
 
     expect(result).toEqual({ blocked: true, reason: 'trial_expired' })
   })
-
-  // ----------------------------------------------------------
-  // Scénario 3 : trial_ends_at < now() même si statut != 'trial_expired' -> bloqué
-  // Cas : cron de mise à jour statut pas encore passé, mais date dépassée
-  // ----------------------------------------------------------
 
   it('GIVEN trial_ends_at < now() ET statut=trial_active WHEN checkTrialGate() THEN { blocked: true, reason: trial_expired }', async () => {
     const supabase = createMockSupabaseClient({
@@ -148,10 +146,6 @@ describe('checkTrialGate', () => {
     expect(result).toEqual({ blocked: true, reason: 'trial_expired' })
   })
 
-  // ----------------------------------------------------------
-  // Cas bonus : organisation introuvable -> bloqué avec reason='not_found'
-  // ----------------------------------------------------------
-
   it('GIVEN organisation introuvable WHEN checkTrialGate() THEN { blocked: true, reason: not_found }', async () => {
     const supabase = createMockSupabaseClient(null)
 
@@ -159,10 +153,6 @@ describe('checkTrialGate', () => {
 
     expect(result).toEqual({ blocked: true, reason: 'not_found' })
   })
-
-  // ----------------------------------------------------------
-  // Cas bonus : statut='suspended' -> bloqué
-  // ----------------------------------------------------------
 
   it('GIVEN statut=suspended WHEN checkTrialGate() THEN { blocked: true }', async () => {
     const supabase = createMockSupabaseClient({
@@ -176,10 +166,6 @@ describe('checkTrialGate', () => {
     expect(result.blocked).toBe(true)
   })
 
-  // ----------------------------------------------------------
-  // Cas bonus : statut='active' (plan payant) + date future -> non bloqué
-  // ----------------------------------------------------------
-
   it('GIVEN statut=active (plan payant) ET trial_ends_at > now() WHEN checkTrialGate() THEN { blocked: false }', async () => {
     const supabase = createMockSupabaseClient({
       id: 'org-uuid-6',
@@ -191,6 +177,43 @@ describe('checkTrialGate', () => {
 
     expect(result).toEqual({ blocked: false })
   })
+
+  it('GIVEN cache hit WHEN checkTrialGate() THEN DB non appelee', async () => {
+    // Simuler un cache hit
+    mockCacheGet.mockReturnValueOnce({ blocked: false })
+
+    const supabase = createMockSupabaseClient({
+      id: 'org-cached',
+      statut: 'trial_active',
+      trial_ends_at: futureDate(5),
+    })
+
+    const result = await checkTrialGate(supabase, 'org-cached')
+
+    expect(result).toEqual({ blocked: false })
+    // DB non appelee (cache hit)
+    expect(supabase.from).not.toHaveBeenCalled()
+  })
+
+  it('GIVEN cache miss WHEN checkTrialGate() THEN cacheSet appele apres DB', async () => {
+    mockCacheGet.mockReturnValue(null) // cache miss
+
+    const supabase = createMockSupabaseClient({
+      id: 'org-uuid-set',
+      statut: 'trial_active',
+      trial_ends_at: futureDate(5),
+    })
+
+    await checkTrialGate(supabase, 'org-uuid-set')
+
+    // cacheSet doit avoir ete appele avec le store 'trial-gate', la cle org ID, le resultat, TTL 60000ms
+    expect(mockCacheSet).toHaveBeenCalledWith(
+      'trial-gate',
+      'org-uuid-set',
+      { blocked: false },
+      60_000,
+    )
+  })
 })
 
 // ============================================================
@@ -200,11 +223,9 @@ describe('checkTrialGate', () => {
 describe('assertTrialActive', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockCacheGet.mockReturnValue(null)
+    mockCacheSet.mockReturnValue(undefined)
   })
-
-  // ----------------------------------------------------------
-  // Scénario 4 : assertTrialActive sur org trial_expired -> throw PaymentRequiredError
-  // ----------------------------------------------------------
 
   it('GIVEN org trial_expired WHEN assertTrialActive() THEN throws PaymentRequiredError (statusCode 402)', async () => {
     const supabase = createMockSupabaseClient({
@@ -243,13 +264,12 @@ describe('assertTrialActive', () => {
       trial_ends_at: futureDate(7),
     })
 
-    // Ne doit pas throw
     await expect(
       assertTrialActive(supabase, 'org-uuid-active'),
     ).resolves.toBeUndefined()
   })
 
-  it('GIVEN trial_ends_at dans le passé même si statut=trial_active WHEN assertTrialActive() THEN throws PaymentRequiredError', async () => {
+  it('GIVEN trial_ends_at dans le passe meme si statut=trial_active WHEN assertTrialActive() THEN throws PaymentRequiredError', async () => {
     const supabase = createMockSupabaseClient({
       id: 'org-uuid-expired-date',
       statut: 'trial_active',

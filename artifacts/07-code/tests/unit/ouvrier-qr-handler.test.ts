@@ -1,11 +1,11 @@
 /**
  * tests/unit/ouvrier-qr-handler.test.ts
- * Tests integration handler GET /api/auth/qr/[token]
+ * Tests integration handler GET /api/auth/qr/[token] (D-054 refacto)
  *
  * Scenarios couverts (TST-K3-01 a 05) :
- *   TST-K3-01 : scan QR valide 1 affectation → session Redis creee + cookie + redirect chantier
+ *   TST-K3-01 : scan QR valide 1 affectation → session Postgres creee + cookie + redirect chantier
  *   TST-K3-02 : token altere → redirect invalid_token, pas de session
- *   TST-K3-03 : 0 affectation active → redirect no-affectation, pas de session Redis
+ *   TST-K3-03 : 0 affectation active → redirect no-affectation, pas de session Postgres
  *   TST-K3-04 : ≥2 affectations → redirect /ouvrier/chantiers, session contient 2 affectations
  *   TST-K3-05 : ouvrier deleted_at IS NOT NULL → redirect user_not_found
  *   Bonus : role != ouvrier → redirect user_not_found (K3-E-01)
@@ -21,9 +21,15 @@ import { NextRequest } from 'next/server'
 
 const mockDecryptQR = vi.fn()
 const mockAdminFrom = vi.fn()
-const mockRedisSetex = vi.fn()
-const mockRedisSadd = vi.fn()
-const mockRedisExpire = vi.fn()
+const mockSessionStoreCreate = vi.fn()
+
+const mockSessionStore = {
+  create: (...args: unknown[]) => mockSessionStoreCreate(...args),
+  read: vi.fn().mockResolvedValue(null),
+  touch: vi.fn().mockResolvedValue(undefined),
+  invalidateForUser: vi.fn().mockResolvedValue(0),
+  delete: vi.fn().mockResolvedValue(undefined),
+}
 
 vi.mock('../../lib/crypto', () => ({
   decryptQR: (...args: unknown[]) => mockDecryptQR(...args),
@@ -38,14 +44,9 @@ vi.mock('../../lib/supabase/admin', () => ({
   }),
 }))
 
-vi.mock('../../lib/redis', () => ({
-  redis: {
-    setex: (...args: unknown[]) => mockRedisSetex(...args),
-    sadd: (...args: unknown[]) => mockRedisSadd(...args),
-    expire: (...args: unknown[]) => mockRedisExpire(...args),
-    get: vi.fn(),
-    smembers: vi.fn(),
-  },
+vi.mock('../../lib/session-store', () => ({
+  getSessionStore: () => mockSessionStore,
+  PostgresSessionStore: vi.fn(),
 }))
 
 vi.mock('../../lib/logger', () => ({
@@ -91,12 +92,10 @@ const VALID_AFFECTATION_2 = {
 describe('GET /api/auth/qr/[token]', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockRedisSetex.mockResolvedValue('OK')
-    mockRedisSadd.mockResolvedValue(1)
-    mockRedisExpire.mockResolvedValue(1)
+    mockSessionStoreCreate.mockResolvedValue(undefined)
   })
 
-  it('TST-K3-02 : token altere → redirect invalid_token, pas de session Redis', async () => {
+  it('TST-K3-02 : token altere → redirect invalid_token, pas de session Postgres', async () => {
     const { InvalidQRTokenError } = await import('../../lib/crypto')
     mockDecryptQR.mockImplementationOnce(() => {
       throw new InvalidQRTokenError('Token falsifie')
@@ -109,7 +108,7 @@ describe('GET /api/auth/qr/[token]', () => {
 
     expect(response.status).toBe(307)
     expect(response.headers.get('Location')).toContain('error=invalid_token')
-    expect(mockRedisSetex).not.toHaveBeenCalled()
+    expect(mockSessionStoreCreate).not.toHaveBeenCalled()
   })
 
   it('TST-K3-05 : ouvrier deleted_at IS NOT NULL → redirect user_not_found', async () => {
@@ -119,7 +118,6 @@ describe('GET /api/auth/qr/[token]', () => {
     })
 
     // select users → null (deleted)
-    // Chaine : from().select().eq().is().single()
     const singleFn = vi.fn().mockResolvedValue({ data: null, error: { message: 'not found' } })
     const isFn = vi.fn().mockReturnValue({ single: singleFn })
     const eqFn = vi.fn().mockReturnValue({ is: isFn })
@@ -133,7 +131,7 @@ describe('GET /api/auth/qr/[token]', () => {
 
     expect(response.status).toBe(307)
     expect(response.headers.get('Location')).toContain('error=user_not_found')
-    expect(mockRedisSetex).not.toHaveBeenCalled()
+    expect(mockSessionStoreCreate).not.toHaveBeenCalled()
   })
 
   it('Bonus : role != ouvrier → redirect user_not_found (K3-E-01)', async () => {
@@ -159,28 +157,28 @@ describe('GET /api/auth/qr/[token]', () => {
 
     expect(response.status).toBe(307)
     expect(response.headers.get('Location')).toContain('error=user_not_found')
-    expect(mockRedisSetex).not.toHaveBeenCalled()
+    expect(mockSessionStoreCreate).not.toHaveBeenCalled()
   })
 
-  it('TST-K3-01 : scan QR valide 1 affectation → session Redis creee + cookie + redirect chantier', async () => {
+  it('TST-K3-01 : scan QR valide 1 affectation → session Postgres creee + cookie + redirect chantier', async () => {
     mockDecryptQR.mockReturnValueOnce({
       user_id: VALID_USER.id,
       organisation_id: VALID_USER.organisation_id,
     })
 
-    // Appels admin successifs : users (from().select().eq().is().single()) → affectations (from().select().eq().eq().is().or())
+    // Appels admin successifs : users puis affectations
     let callCount = 0
     mockAdminFrom.mockImplementation(() => {
       callCount++
       if (callCount === 1) {
-        // users query : from('users').select(...).eq('id',...).is('deleted_at',null).single()
+        // users query
         const single3 = vi.fn().mockResolvedValue({ data: VALID_USER, error: null })
         const is3 = vi.fn().mockReturnValue({ single: single3 })
         const eq3 = vi.fn().mockReturnValue({ is: is3 })
         const sel3 = vi.fn().mockReturnValue({ eq: eq3 })
         return { select: sel3 }
       }
-      // affectations query : from('affectations').select(...).eq(...).eq(...).or(...) — hard delete, no .is()
+      // affectations query
       const or4 = vi.fn().mockResolvedValue({ data: [VALID_AFFECTATION], error: null })
       const eq4b = vi.fn().mockReturnValue({ or: or4 })
       const eq4a = vi.fn().mockReturnValue({ eq: eq4b })
@@ -193,11 +191,15 @@ describe('GET /api/auth/qr/[token]', () => {
       params: Promise.resolve({ token: 'valid-token' }),
     })
 
-    // Session Redis creee
-    expect(mockRedisSetex).toHaveBeenCalledWith(
-      expect.stringContaining('ouvrier_session:'),
-      604800,
-      expect.any(String),
+    // Session Postgres creee via sessionStore.create
+    expect(mockSessionStoreCreate).toHaveBeenCalledWith(
+      expect.any(String), // sessionId (UUID)
+      expect.objectContaining({
+        user_id: VALID_USER.id,
+        organisation_id: VALID_USER.organisation_id,
+        role: 'ouvrier',
+      }),
+      604800, // TTL 7j
     )
 
     // Redirect vers le chantier (1 affectation)
@@ -205,10 +207,51 @@ describe('GET /api/auth/qr/[token]', () => {
     const location = response.headers.get('Location') ?? ''
     expect(location).toContain('/ouvrier/chantiers/')
 
-    // Cookie ouvrier_session pose
+    // Cookie ouvrier_session pose avec attributs de securite (D-3-003)
     const setCookie = response.headers.get('Set-Cookie') ?? ''
     expect(setCookie).toContain('ouvrier_session=')
     expect(setCookie).toContain('HttpOnly')
     expect(setCookie).toContain('Path=/')
+  })
+
+  it('TST-K3-04 : ≥2 affectations → redirect /ouvrier/chantiers + session contient 2 affectations', async () => {
+    mockDecryptQR.mockReturnValueOnce({
+      user_id: VALID_USER.id,
+      organisation_id: VALID_USER.organisation_id,
+    })
+
+    let callCount = 0
+    mockAdminFrom.mockImplementation(() => {
+      callCount++
+      if (callCount === 1) {
+        const single = vi.fn().mockResolvedValue({ data: VALID_USER, error: null })
+        const is = vi.fn().mockReturnValue({ single })
+        const eq = vi.fn().mockReturnValue({ is })
+        const sel = vi.fn().mockReturnValue({ eq })
+        return { select: sel }
+      }
+      // 2 affectations
+      const or = vi.fn().mockResolvedValue({ data: [VALID_AFFECTATION, VALID_AFFECTATION_2], error: null })
+      const eq2 = vi.fn().mockReturnValue({ or })
+      const eq1 = vi.fn().mockReturnValue({ eq: eq2 })
+      const sel = vi.fn().mockReturnValue({ eq: eq1 })
+      return { select: sel }
+    })
+
+    const { GET } = await import('../../app/api/auth/qr/[token]/route')
+    const response = await GET(buildRequest('valid-token'), {
+      params: Promise.resolve({ token: 'valid-token' }),
+    })
+
+    // Redirect vers selecteur multi-chantiers
+    expect(response.status).toBe(307)
+    const location = response.headers.get('Location') ?? ''
+    expect(location).toContain('/ouvrier/chantiers')
+    expect(location).not.toMatch(/\/ouvrier\/chantiers\/[a-f0-9-]+$/)
+
+    // Session contient 2 affectations
+    const createCall = mockSessionStoreCreate.mock.calls[0]
+    const sessionData = createCall?.[1] as { affectations: unknown[] }
+    expect(sessionData?.affectations).toHaveLength(2)
   })
 })

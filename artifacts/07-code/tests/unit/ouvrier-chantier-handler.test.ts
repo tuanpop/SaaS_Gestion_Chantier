@@ -25,6 +25,9 @@ const mockAdminFrom = vi.fn()
 vi.mock('../../lib/ouvrier-session', () => ({
   getOuvrierSession: (...args: unknown[]) => mockGetOuvrierSession(...args),
   OUVRIER_SESSION_TTL: 604800,
+  SESSION_PREFIX: 'ouvrier_session:',
+  USER_SESSIONS_PREFIX: 'ouvrier_user_sessions:',
+  // Aliases backward-compat
   REDIS_SESSION_PREFIX: 'ouvrier_session:',
   REDIS_USER_SESSIONS_PREFIX: 'ouvrier_user_sessions:',
 }))

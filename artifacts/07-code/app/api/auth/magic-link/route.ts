@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { headers } from 'next/headers'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
-import { checkRateLimit, RATE_LIMITS } from '@/lib/redis'
+import { checkRateLimit, RATE_LIMITS } from '@/lib/cache'
 import { toApiResponse } from '@/lib/errors'
 import { createRequestLogger } from '@/lib/logger'
 

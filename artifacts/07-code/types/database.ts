@@ -260,6 +260,48 @@ export type Database = {
           },
         ]
       }
+      ouvrier_sessions: {
+        Row: {
+          session_id: string
+          user_id: string
+          organisation_id: string
+          data: Json
+          created_at: string
+          expires_at: string
+        }
+        Insert: {
+          session_id?: string
+          user_id: string
+          organisation_id: string
+          data: Json
+          created_at?: string
+          expires_at: string
+        }
+        Update: {
+          session_id?: string
+          user_id?: string
+          organisation_id?: string
+          data?: Json
+          created_at?: string
+          expires_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ouvrier_sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ouvrier_sessions_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       users: {
         Row: {
           avatar_url: string | null
