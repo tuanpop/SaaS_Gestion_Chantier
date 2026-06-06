@@ -430,7 +430,10 @@ describe('TST-K3-19 : Cache-Control: no-store sur endpoints ouvrier (K3-I-04)', 
       created_at: Date.now(),
     })
 
-    // from('users').select(...).eq('id',...).eq('organisation_id',...).is('deleted_at',null).single()
+    // D-055 (2026-06-04) : /me fait maintenant 2 queries SQL
+    //   1. from('users').select.eq.eq.is.single (verifier user actif)
+    //   2. from('affectations').select.eq.eq.or (FRESH affectations par user_id)
+    // from('users')...
     const singleU = vi.fn().mockResolvedValue({
       data: { id: USER_ORG_A, nom: 'Test', prenom: 'Ouvrier', organisation_id: ORG_A },
       error: null,
@@ -440,6 +443,13 @@ describe('TST-K3-19 : Cache-Control: no-store sur endpoints ouvrier (K3-I-04)', 
     const eq1U = vi.fn().mockReturnValue({ eq: eq2U })
     const selU = vi.fn().mockReturnValue({ eq: eq1U })
     mockAdminFrom.mockReturnValueOnce({ select: selU })
+
+    // from('affectations').select.eq('user_id').eq('organisation_id').or(date_fin)
+    const orAff = vi.fn().mockResolvedValue({ data: [], error: null })
+    const eq2Aff = vi.fn().mockReturnValue({ or: orAff })
+    const eq1Aff = vi.fn().mockReturnValue({ eq: eq2Aff })
+    const selAff = vi.fn().mockReturnValue({ eq: eq1Aff })
+    mockAdminFrom.mockReturnValueOnce({ select: selAff })
 
     const { GET } = await import('../../app/api/ouvrier/me/route')
     const request = new NextRequest('http://localhost/api/ouvrier/me')

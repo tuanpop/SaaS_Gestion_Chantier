@@ -58,55 +58,54 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Etape 4 — Enrichir les affectations avec les noms de chantiers
+    // Etape 4 — Requete FRESH des affectations actives de l'ouvrier
+    // D-055 (2026-06-04) : modele "session = identite" — on ne lit plus session.affectations
+    // (snapshot stale au scan time), on requete directement par user_id + organisation_id
+    // avec les memes criteres que le scan QR (date_fin valide, chantier actif).
+    // Consequences : reload /ouvrier/chantiers reflete immediatement add/remove affectation
+    // sans rescan QR. Securite preservee par RBAC handler-level (D-3-005).
     // AUDIT: SELECT explicite — D-3-004 (id, chantier_id, nom chantier uniquement)
-    const affectationIds = session.affectations.map((a) => a.affectation_id)
+    const today = new Date().toISOString().split('T')[0] // YYYY-MM-DD
 
-    let enrichedAffectations: Array<{
-      affectation_id: string
+    const { data: affRows, error: affError } = await adminClient
+      .from('affectations')
+      .select(`
+        id,
+        chantier_id,
+        vue,
+        chantiers!affectations_chantier_id_fkey ( nom, statut )
+      `)
+      .eq('user_id', session.user_id)
+      .eq('organisation_id', session.organisation_id)
+      .or(`date_fin.is.null,date_fin.gte.${today}`)
+
+    if (affError) {
+      reqLogger.error(
+        { err: affError.message, userId: session.user_id },
+        'GET /me : erreur requete affectations',
+      )
+      return NextResponse.json(
+        { error: 'Erreur interne.' },
+        { status: 500, headers: noStoreHeaders },
+      )
+    }
+
+    type AffRow = {
+      id: string
       chantier_id: string
-      chantier_nom: string
       vue: string
-    }> = []
+      chantiers: { nom: string; statut: string } | null
+    }
 
-    if (affectationIds.length > 0) {
-      const { data: affRows, error: affError } = await adminClient
-        .from('affectations')
-        .select(`
-          id,
-          chantier_id,
-          vue,
-          chantiers!affectations_chantier_id_fkey ( nom )
-        `)
-        .in('id', affectationIds)
-        .eq('organisation_id', session.organisation_id)
-        // FIX 2026-06-02 : affectations en hard delete (CASCADE migration 002), pas de deleted_at column
-
-      if (affError) {
-        reqLogger.error(
-          { err: affError.message, userId: session.user_id },
-          'GET /me : erreur requete affectations',
-        )
-        return NextResponse.json(
-          { error: 'Erreur interne.' },
-          { status: 500, headers: noStoreHeaders },
-        )
-      }
-
-      type AffRow = {
-        id: string
-        chantier_id: string
-        vue: string
-        chantiers: { nom: string } | null
-      }
-
-      enrichedAffectations = ((affRows ?? []) as AffRow[]).map((a) => ({
+    // Filtrer sur les chantiers actifs uniquement (coherence avec scan QR RG-SCAN-004)
+    const enrichedAffectations = ((affRows ?? []) as AffRow[])
+      .filter((a) => a.chantiers?.statut === 'actif')
+      .map((a) => ({
         affectation_id: a.id,
         chantier_id: a.chantier_id,
         chantier_nom: a.chantiers?.nom ?? 'Chantier inconnu',
         vue: a.vue,
       }))
-    }
 
     // Etape 5 — Reponse shape specs §4.3
     const responseBody = {

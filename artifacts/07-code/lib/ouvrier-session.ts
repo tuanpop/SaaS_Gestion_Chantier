@@ -100,30 +100,21 @@ export async function getOuvrierSession(request: NextRequest): Promise<OuvrierSe
 }
 
 // ============================================================
-// invalidateOuvrierSessionsForUser — D-3-011
+// invalidateOuvrierSessionsForUser — D-3-011 (REVISEE D-055 2026-06-04)
 // ============================================================
 //
-// Appelee apres DELETE affectation pour invalider la session Postgres
-// de l'ouvrier concerne.
+// D-055 : la cascade automatique sur DELETE affectation est SUPPRIMEE.
+// Friction terrain inacceptable + aucun benefice securite (RBAC handler-level
+// D-3-005 reste l'autorite, session = identite, /me re-requete affectations
+// fraiches a chaque hit).
 //
-// V1 Postgres (D-054) : DELETE simplifie par rapport a la version Redis.
-// L'index inverse user→sessions (Redis SADD) est remplace par une colonne
-// user_id indexee dans ouvrier_sessions (idx_ouvrier_sessions_user).
-// Un seul DELETE WHERE user_id invalide toutes les sessions de l'ouvrier.
+// Cette fonction est CONSERVEE pour usage explicite (V2) :
+// - DELETE user (boss vire un ouvrier) : kill all sessions immediatement
+// - Endpoint logout explicite (V2)
+// - Tests E2E setup teardown
 //
-// Note comportement V1 vs Redis :
-//   - Redis V0 : retirait l'affectation supprimee de la session, conservait la
-//     session si d'autres affectations restaient.
-//   - Postgres V1 (D-054) : supprime TOUTES les sessions de l'ouvrier. Plus simple,
-//     force un rescan QR sur le prochain acces. Acceptable V1 (volume negligeable).
-//     Si le comportement fin Redis est necessaire V2 : recreer la session mise a jour
-//     via create() + delete() dans cette fonction.
-//
+// V1 (D-054 Postgres) : DELETE WHERE user_id (toutes sessions de l'ouvrier).
 // Best-effort : si Postgres down, log warn mais ne pas lever d'exception.
-// Le RBAC base (D-3-005) a chaque hit ouvrier sauvegarde la securite.
-//
-// RG-SESSION-005 : a chaque DELETE affectation, l'ouvrier perd l'acces
-// au chantier retire lors de sa prochaine requete.
 
 export async function invalidateOuvrierSessionsForUser(
   userId: string,

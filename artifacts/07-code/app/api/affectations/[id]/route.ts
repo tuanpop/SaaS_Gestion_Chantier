@@ -12,7 +12,9 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { assertTrialActive } from '@/lib/trial-gate'
 import { toApiResponse } from '@/lib/errors'
 import { logger } from '@/lib/logger'
-import { invalidateOuvrierSessionsForUser } from '@/lib/ouvrier-session'
+// D-055 (2026-06-04) : suppression import invalidateOuvrierSessionsForUser.
+// Le modele session = identite (droits frais a chaque hit) rend le cascade D-3-011
+// obsolete. La securite reste assuree par RBAC handler-level (D-3-005).
 import type { UserRole } from '@/types/database'
 
 // ============================================================
@@ -125,12 +127,13 @@ export async function DELETE(
       return new NextResponse(null, { status: 204 })
     }
 
-    // 6b. Sprint 3 — Invalidation session Postgres ouvrier (D-3-011, RG-SESSION-005)
-    // Best-effort : la fonction ne throw pas (voir lib/ouvrier-session.ts).
-    // Le RBAC base (D-3-005) a chaque hit ouvrier sauvegarde la securite (K3-S-05).
-    // D-054 : sessions Postgres remplacent Redis — invalidateOuvrierSessionsForUser
-    // DELETE toutes les sessions de l'ouvrier (plus simple que le patch partiel Redis V0).
-    await invalidateOuvrierSessionsForUser(existing.user_id, affectationId)
+    // 6b. D-055 (2026-06-04) : cascade session SUPPRIMEE.
+    // Ancien comportement (D-3-011 / D-054) : DELETE FROM ouvrier_sessions WHERE user_id
+    // -> forcait l'ouvrier a rescanner son QR a chaque changement d'affectation.
+    // Friction terrain BTP inacceptable et sans benefice securite (RBAC D-3-005 reste autorite).
+    // Nouveau pattern : session = identite, /api/ouvrier/me re-requete les affectations
+    // fraiches a chaque hit. Le RBAC handler-level refuse l'acces au chantier retire
+    // (403 -> redirect /ouvrier/no-affectation cote page Server Component, commit 03e42e3).
 
     if ((remainingCount ?? 0) === 0) {
       // 7. Aucune autre affectation : désassigner les tâches du chantier
