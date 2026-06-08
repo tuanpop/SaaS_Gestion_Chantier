@@ -40,6 +40,12 @@ const PUBLIC_PREFIXES = [
 const OUVRIER_PUBLIC_ROUTES = [
   '/ouvrier/scan',
   '/ouvrier/no-affectation',
+  // /api/ouvrier/logout : exempté du check de session pour garantir l'idempotence
+  // (RG-LOGOUT-003 / D-4-008). Sans exemption, le middleware renvoie 401 avant le
+  // handler quand le cookie est absent ; or le logout doit répondre 200 dans tous les
+  // cas (le handler supprime la session si cookie présent + efface le cookie).
+  // Détecté au smoke prod Sprint 4 (check C1d) — GAP intégration middleware+handler.
+  '/api/ouvrier/logout',
 ]
 
 // Routes admin seulement (rôle vérifié côté middleware)
