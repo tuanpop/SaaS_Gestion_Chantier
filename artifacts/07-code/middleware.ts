@@ -49,6 +49,29 @@ const ADMIN_ONLY_PATTERNS = [
 ]
 
 // ============================================================
+// Routes à auth résolue 100 % handler-level — D-4-014 (Sprint 4)
+// ============================================================
+//
+// Ces routes NE passent PAS par le bloc getUser() du middleware (étape 4).
+// L'auth est entièrement déléguée au handler Node (resolvePhotoActor pour DELETE double-auth,
+// getOuvrierSession pour POST/PATCH/GET signed-url).
+//
+// RAISON (ADR-4-005 / résolution F004/K4-OQ-04/K4-HI-02) :
+//   1. Le DELETE /api/photos/[id] est un endpoint double-auth (cookie ouvrier OU JWT staff).
+//      Le middleware ne peut pas router vers la branche JWT bloquante sans casser le chemin ouvrier.
+//   2. Le middleware ne strippe PAS les x-* entrants (vérification code lignes 82-92 ci-dessus) :
+//      confier l'identité staff aux x-headers serait une faille de forge.
+//   3. resolvePhotoActor re-valide le JWT via getUser() côté handler — garantie indépendante.
+//
+// Ces routes reçoivent NextResponse.next({ request: { headers: requestHeaders } }) AVANT
+// l'étape getUser() — ni 401 JWT ni claims x-* ne sont appliqués par le middleware.
+// Chaque méthode refuse 401 sans acteur valide (TST-K4-13, K4-HI-04 BINDING).
+const HANDLER_LEVEL_AUTH_PREFIXES = [
+  '/api/photos/',  // POST + PATCH + DELETE /api/photos/[id] + GET /api/photos/[id]/signed-url
+  '/api/photos',   // POST /api/photos (sans trailing slash)
+]
+
+// ============================================================
 // Helper : extraire l'IP réelle (derrière Traefik)
 // ============================================================
 
@@ -101,6 +124,18 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next({
       request: { headers: requestHeaders },
     })
+  }
+
+  // 3b-pre. Routes à auth handler-level — D-4-014 (Sprint 4)
+  // AVANT le check JWT : ces routes sont exemptées du getUser() middleware.
+  // resolvePhotoActor (handler) re-valide le JWT si nécessaire (ADR-4-005).
+  // K4-HI-04 BINDING : chaque méthode de /api/photos/* refuse 401 sans acteur valide.
+  const isHandlerLevelAuth = HANDLER_LEVEL_AUTH_PREFIXES.some((prefix) =>
+    pathname.startsWith(prefix),
+  )
+  if (isHandlerLevelAuth) {
+    reqLogger.debug({ pathname }, 'Handler-level auth route — bypassing middleware JWT check (D-4-014)')
+    return NextResponse.next({ request: { headers: requestHeaders } })
   }
 
   // 3b. Routes ouvrier — branche orthogonale AVANT le check JWT Supabase

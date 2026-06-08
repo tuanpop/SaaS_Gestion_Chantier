@@ -2,7 +2,10 @@
 // components/TacheItem.tsx — migré Badge + Button + Textarea shadcn (étape 7, C-02)
 //
 // RG-REACH-004 : motif blocage visible côté conducteur
-// Mode édition inline conducteur préservé (onUpdate = conducteur uniquement)
+// S4-F02 : note_privee_conducteur — Textarea + bouton "Enregistrer la note" SÉPARÉ du statut (RG-NPR-002)
+//           Badge "Interne — invisible pour l'ouvrier" PERMANENT (RG-NPR-003, K4-MED-14)
+//           Placeholder si null (RG-NPR-004)
+//           Sauvegarde vide -> null
 
 import { useState } from 'react'
 import type { Tache, TacheStatut } from '@/types/database'
@@ -22,6 +25,8 @@ interface AssignedUser {
 interface TacheItemProps {
   tache: Tache & { assigned_user?: AssignedUser | null }
   onUpdate?: (patch: Partial<Pick<Tache, 'statut' | 'bloque_raison'>>) => Promise<void>
+  // S4-F02 : callback séparé pour la note privée (RG-NPR-002 — PATCH séparé du statut)
+  onUpdateNotePrivee?: (note: string | null) => Promise<void>
 }
 
 // ============================================================
@@ -48,12 +53,18 @@ function formatDate(dateStr: string | null): string | null {
 // TacheItem
 // ============================================================
 
-export function TacheItem({ tache, onUpdate }: TacheItemProps) {
+export function TacheItem({ tache, onUpdate, onUpdateNotePrivee }: TacheItemProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [selectedStatut, setSelectedStatut] = useState<TacheStatut>(tache.statut)
   const [bloqueRaison, setBloqueRaison] = useState(tache.bloque_raison ?? '')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // S4-F02 : état de la note privée (séparé de l'état statut)
+  const [notePrivee, setNotePrivee] = useState(tache.note_privee_conducteur ?? '')
+  const [isNoteLoading, setIsNoteLoading] = useState(false)
+  const [noteError, setNoteError] = useState<string | null>(null)
+  const [noteSaved, setNoteSaved] = useState(false)
 
   const statutStyle = STATUT_STYLES[tache.statut]
   const assignedName = tache.assigned_user
@@ -81,6 +92,26 @@ export function TacheItem({ tache, onUpdate }: TacheItemProps) {
       setError('Une erreur est survenue. Réessayez.')
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  // S4-F02 : sauvegarde note privée — PATCH SÉPARÉ du statut (RG-NPR-002 BINDING)
+  async function handleSaveNotePrivee() {
+    if (!onUpdateNotePrivee) return
+    setIsNoteLoading(true)
+    setNoteError(null)
+    setNoteSaved(false)
+    try {
+      // Sauvegarde vide -> null (supprime la note)
+      const value = notePrivee.trim()
+      await onUpdateNotePrivee(value === '' ? null : value)
+      setNoteSaved(true)
+      // Reset indicateur après 2s
+      setTimeout(() => setNoteSaved(false), 2000)
+    } catch {
+      setNoteError('Une erreur est survenue. Réessayez.')
+    } finally {
+      setIsNoteLoading(false)
     }
   }
 
@@ -118,7 +149,7 @@ export function TacheItem({ tache, onUpdate }: TacheItemProps) {
         </div>
       )}
 
-      {/* Formulaire inline de modification (conducteur uniquement) */}
+      {/* Formulaire inline de modification statut (conducteur uniquement) */}
       {!isReadOnly && isEditing && (
         <div className="border-t border-black pt-3 mt-2 space-y-3">
           {/* Sélecteur de statut */}
@@ -166,14 +197,13 @@ export function TacheItem({ tache, onUpdate }: TacheItemProps) {
             </div>
           )}
 
-          {/* Erreur */}
+          {/* Erreur statut */}
           {error && (
             <p role="alert" className="text-danger text-xs font-medium">{error}</p>
           )}
 
-          {/* Actions */}
+          {/* Actions statut */}
           <div className="flex gap-2">
-            {/* K2.5-D-06 : Button disabled={isLoading} */}
             <Button
               type="button"
               onClick={handleSave}
@@ -199,7 +229,7 @@ export function TacheItem({ tache, onUpdate }: TacheItemProps) {
         </div>
       )}
 
-      {/* Bouton modifier (conducteur, hors mode édition) */}
+      {/* Bouton modifier statut (conducteur, hors mode édition) */}
       {!isReadOnly && !isEditing && (
         <Button
           type="button"
@@ -210,6 +240,132 @@ export function TacheItem({ tache, onUpdate }: TacheItemProps) {
         >
           Modifier le statut
         </Button>
+      )}
+
+      {/* ============================================================ */}
+      {/* S4-F02 — Section note privée conducteur (D-4-010, RG-NPR-001) */}
+      {/* Visible UNIQUEMENT si onUpdateNotePrivee est fourni (conducteur) */}
+      {/* ============================================================ */}
+      {onUpdateNotePrivee !== undefined && (
+        <div
+          style={{
+            marginTop: '12px',
+            borderTop: '2px dashed #F97316', // bordure dashed orange (design-system)
+            paddingTop: '12px',
+            backgroundColor: '#FFFDF9', // fond creme leger
+          }}
+        >
+          {/* Badge "Interne" PERMANENT — RG-NPR-003, K4-MED-14 BINDING */}
+          {/* Ce badge est TOUJOURS visible, même hors mode édition */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+            <span
+              style={{
+                fontFamily: 'Outfit, sans-serif',
+                fontWeight: 700,
+                fontSize: '11px',
+                color: '#6B4226',
+              }}
+            >
+              Note privée (interne)
+            </span>
+            <span
+              data-testid="conducteur-badge-interne"
+              style={{
+                backgroundColor: '#FEF3C7',
+                color: '#92400E',
+                fontFamily: '"Public Sans", sans-serif',
+                fontSize: '10px',
+                fontWeight: 600,
+                padding: '1px 6px',
+                borderRadius: '3px',
+                border: '1px solid #F59E0B',
+              }}
+              aria-label="Cette note est invisible pour l'ouvrier"
+            >
+              Interne — invisible pour l&apos;ouvrier
+            </span>
+          </div>
+
+          {/* Textarea note privée */}
+          <Textarea
+            data-testid="conducteur-note-privee-textarea"
+            value={notePrivee}
+            onChange={(e) => {
+              setNotePrivee(e.target.value)
+              setNoteSaved(false)
+              setNoteError(null)
+            }}
+            placeholder="Aucune note interne pour cette tâche."
+            rows={3}
+            disabled={isNoteLoading}
+            style={{
+              fontFamily: '"Public Sans", sans-serif',
+              fontSize: '15px',
+              minHeight: '80px',
+              resize: 'vertical',
+              backgroundColor: '#FFFDF9',
+              border: '1.5px solid #E5E7EB',
+            }}
+          />
+
+          {/* Placeholder si vide (RG-NPR-004) */}
+          {tache.note_privee_conducteur === null && notePrivee === '' && (
+            <p
+              data-testid="conducteur-note-privee-empty"
+              style={{
+                fontFamily: '"Public Sans", sans-serif',
+                fontSize: '12px',
+                color: '#AAAAAA',
+                fontStyle: 'italic',
+                margin: '4px 0',
+              }}
+            >
+              Aucune note interne pour cette tâche.
+            </p>
+          )}
+
+          {/* Erreur note */}
+          {noteError && (
+            <p role="alert" className="text-danger text-xs mt-1">{noteError}</p>
+          )}
+
+          {/* Indicateur sauvegardé */}
+          {noteSaved && (
+            <p
+              role="status"
+              style={{
+                fontFamily: '"Public Sans", sans-serif',
+                fontSize: '12px',
+                color: '#065F46',
+                marginTop: '4px',
+              }}
+            >
+              Note enregistrée.
+            </p>
+          )}
+
+          {/* Bouton "Enregistrer la note" — SÉPARÉ du bouton statut (RG-NPR-002 BINDING) */}
+          <Button
+            type="button"
+            data-testid="conducteur-save-note-privee"
+            onClick={handleSaveNotePrivee}
+            disabled={isNoteLoading}
+            size="sm"
+            style={{
+              marginTop: '8px',
+              backgroundColor: '#163958',
+              color: '#FAFAF8',
+              fontFamily: 'Outfit, sans-serif',
+              fontWeight: 600,
+              fontSize: '13px',
+              border: '1.5px solid #163958',
+              borderRadius: '4px',
+              boxShadow: '2px 2px 0 0 #000',
+            }}
+          >
+            {isNoteLoading ? 'Enregistrement...' : 'Enregistrer la note'}
+          </Button>
+        </div>
       )}
     </div>
   )

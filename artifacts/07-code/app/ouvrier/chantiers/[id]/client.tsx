@@ -21,6 +21,8 @@ import type { GetChantierOuvrierResponse, TacheMienne, TacheAutre } from '@/type
 interface OuvrierChantierClientProps {
   chantierId: string
   initialData: GetChantierOuvrierResponse
+  // Sprint 4 — pour GalerieModale is_mine (point d'attention 6 du plan)
+  ouvrierUserId: string
 }
 
 type PatchTacheInput = {
@@ -36,7 +38,7 @@ type PatchTacheResponse = {
   updated_at: string
 }
 
-export function OuvrierChantierClient({ chantierId, initialData }: OuvrierChantierClientProps) {
+export function OuvrierChantierClient({ chantierId, initialData, ouvrierUserId }: OuvrierChantierClientProps) {
   const { toast } = useToast()
   const queryClient = useQueryClient()
 
@@ -169,6 +171,7 @@ export function OuvrierChantierClient({ chantierId, initialData }: OuvrierChanti
               <TacheMienneCard
                 key={tache.id}
                 tache={tache}
+                ouvrierUserId={ouvrierUserId}
                 onChangerStatut={handleChangerStatut}
                 isLoading={isMutating}
               />

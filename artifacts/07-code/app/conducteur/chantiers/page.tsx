@@ -1,17 +1,20 @@
-// app/(conducteur)/chantiers/page.tsx
+// app/conducteur/chantiers/page.tsx
 // Liste chantiers conducteur — ses chantiers uniquement (filtrés côté API via Q1)
 // Server Component — data fetching direct
 //
 // Proto référencé : mockups/08-conducteur-chantiers.html
 // Design system Hana : mobile-first, max-width 390px, bottom-nav, card-brutal mobile
 // Q1 : conducteur voit uniquement ses chantiers (créateur OU affecté)
+//
+// SPRINT 4 — Chrome (logo + avatar) retiré de cette page.
+// ConducteurHeader dans app/conducteur/layout.tsx porte désormais le chrome partagé.
+// Ce fichier ne rend plus que le contenu contextuel (titre + liste chantiers + bottom-nav).
 
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { calculerCouleur, trierParCouleur } from '@/lib/coloration'
 import { ChantierCard } from '@/components/ChantierCard'
-import { ConducteurAvatarMenu } from '@/components/ConducteurAvatarMenu'
 import type { Chantier, ChantierWithColoration } from '@/types/database'
 
 export const dynamic = 'force-dynamic'
@@ -42,17 +45,7 @@ export default async function ChantiersConduPage() {
 
   const adminClient = createAdminClient()
 
-  // T15 — Initiales depuis prenom+nom (au lieu des 2 premières lettres de l'email)
-  const { data: profil } = await adminClient
-    .from('users')
-    .select('prenom, nom')
-    .eq('id', userId)
-    .single()
-
-  const initiales = profil
-    ? (`${(profil.prenom ?? '').charAt(0)}${(profil.nom ?? '').charAt(0)}`.toUpperCase() || 'SC')
-    : (user.email ?? 'SC').substring(0, 2).toUpperCase()
-
+  // SPRINT 4 : initiales supprimées ici — ConducteurHeader du layout les fournit désormais.
   // Récupérer les IDs des chantiers auxquels le conducteur est affecté
   const { data: affectationsRaw } = await adminClient
     .from('affectations')
@@ -96,14 +89,12 @@ export default async function ChantiersConduPage() {
 
   return (
     <>
-      {/* Header — R-05 (Sprint UX-2) : avatar → menu dropdown logout */}
-      <header className="bg-primary-dark px-4 py-4 flex items-center justify-between">
-        <h1 className="font-heading text-white text-xl font-bold">Mes chantiers</h1>
-        <ConducteurAvatarMenu initiales={initiales} />
-      </header>
-
-      {/* Contenu */}
+      {/* Contenu — ConducteurHeader du layout porte le chrome (logo + NotificationBell + avatar) */}
       <main className="px-4 pt-4 pb-40 flex flex-col gap-3">
+        {/* Titre contextuel (reste dans <main>, non dans le header partagé) */}
+        <h1 className="font-heading font-bold text-xl text-primary-dark px-0 pb-2 pt-1">
+          Mes chantiers
+        </h1>
         {chantiersTriés.length === 0 && (
           <div className="card-brutal-mobile p-8 text-center mt-4">
             <svg className="w-12 h-12 text-muted mx-auto mb-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">

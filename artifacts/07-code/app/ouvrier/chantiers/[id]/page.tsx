@@ -4,8 +4,10 @@
 // Render OuvrierChantierClient avec les donnees
 
 import { redirect, notFound } from 'next/navigation'
-import { cookies } from 'next/headers'
+import { cookies, headers } from 'next/headers'
+import { NextRequest } from 'next/server'
 import { OuvrierChantierClient } from './client'
+import { getOuvrierSession } from '@/lib/ouvrier-session'
 import type { GetChantierOuvrierResponse } from '@/types/database'
 
 type FetchResult =
@@ -58,6 +60,26 @@ export default async function OuvrierChantierPage({
     redirect('/ouvrier/scan')
   }
 
+  // Sprint 4 — extraire ouvrierUserId pour GalerieModale (point d'attention 6 du plan)
+  // getOuvrierSession necessie un NextRequest — on le construit depuis les headers courants
+  let ouvrierUserId: string | null = null
+  try {
+    const reqHeaders = await headers()
+    // Construire un NextRequest minimal avec le cookie pour getOuvrierSession
+    const fakeUrl = 'http://localhost'
+    const fakeReq = new NextRequest(fakeUrl, {
+      headers: {
+        cookie: `ouvrier_session=${sessionCookie.value}`,
+        ...Object.fromEntries(reqHeaders.entries()),
+      },
+    })
+    const session = await getOuvrierSession(fakeReq)
+    ouvrierUserId = session?.user_id ?? null
+  } catch {
+    // Best-effort : si getOuvrierSession echoue ici, le handler /api/ouvrier/chantiers/[id]
+    // revalidera la session de toute facon. ouvrierUserId sera null -> is_mine UX desactive.
+  }
+
   const result = await fetchChantier(chantierId, sessionCookie.value)
 
   // Distinguer les cas (smoke C5 2026-06-03) : le middleware Edge ne valide que la
@@ -103,10 +125,11 @@ export default async function OuvrierChantierPage({
         </p>
       </div>
 
-      {/* Client Component pour les interactions (mutation statut) */}
+      {/* Client Component pour les interactions (mutation statut + photos Sprint 4) */}
       <OuvrierChantierClient
         chantierId={chantierId}
         initialData={chantierData}
+        ouvrierUserId={ouvrierUserId ?? ''}
       />
     </div>
   )

@@ -1,9 +1,15 @@
 // app/ouvrier/layout.tsx
 // Layout mobile ouvrier — max 430px, pas de sidebar, header sticky
 // D-3-023 : design tokens mobile ouvrier, touch targets 56px, safe-area inset
+//
+// Sprint 4 — S4-F03 (D-4-008) : ajout <LogoutOuvrierButton> dans le header
+// Décision PO (A2) : usePathname() dans LogoutOuvrierButton pour exempter
+//   /ouvrier/scan et /ouvrier/no-affectation (RG-LOGOUT-004) sans restructuration dossiers.
+// Structure header : [logo] [flex-1 spacer] [LogoutOuvrierButton 44px min]
 
 import type { Metadata } from 'next'
 import { Toaster } from '@/components/ui/toaster'
+import { LogoutOuvrierButton } from '@/components/ouvrier/LogoutOuvrierButton'
 
 export const metadata: Metadata = {
   title: 'ClawBTP — Espace Ouvrier',
@@ -41,8 +47,10 @@ export default function OuvrierLayout({
           paddingLeft: '16px',
           paddingRight: '16px',
           boxShadow: '0 2px 0 0 #000000',
+          gap: '8px',
         }}
       >
+        {/* Logo / nom app */}
         <span
           style={{
             color: '#FAFAF8',
@@ -50,10 +58,16 @@ export default function OuvrierLayout({
             fontWeight: 700,
             fontSize: '18px',
             letterSpacing: '0.5px',
+            flex: 1, // occupe tout l'espace disponible
           }}
         >
           ClawBTP
         </span>
+
+        {/* S4-F03 (D-4-008) : bouton logout dans le header, coin droit
+            LogoutOuvrierButton retourne null sur /ouvrier/scan et /ouvrier/no-affectation
+            (RG-LOGOUT-004 — décision PO A2 : usePathname() dans le composant) */}
+        <LogoutOuvrierButton />
       </header>
 
       {/* Contenu principal */}

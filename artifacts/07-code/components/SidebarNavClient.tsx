@@ -8,6 +8,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { LogoutButton } from '@/components/LogoutButton'
+import { NotificationBell } from '@/components/notifications/NotificationBell'
 import { cn } from '@/lib/utils'
 
 // ============================================================
@@ -111,13 +112,16 @@ export function SidebarNavClient({ inSheet = false }: SidebarNavClientProps = {}
       )}
       aria-label="Navigation admin"
     >
-      <div className="px-6 mb-8">
+      <div className="px-6 mb-8 flex items-center justify-between">
         <Link href="/admin" className="block">
           {/* RG-DS-006 : logo <span class="text-accent">Claw</span>BTP préservé */}
           <h1 className="font-heading font-[800] text-[22px] text-white">
             <span className="text-accent">Claw</span>BTP
           </h1>
         </Link>
+        {/* NotificationBell desktop — visible uniquement en sidebar (hidden md:flex), pas dans le Sheet mobile */}
+        {/* MobileAdminTopbar porte déjà la cloche en mobile — évite la double cloche */}
+        {!inSheet && <NotificationBell />}
       </div>
 
       {navItems.map(({ href, label, icon, badge }) => {

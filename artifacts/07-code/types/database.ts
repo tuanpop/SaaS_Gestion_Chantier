@@ -302,6 +302,69 @@ export type Database = {
           },
         ]
       }
+      // Sprint 4 — D-019 (mise a jour manuelle requise car piege TS Windows UTF-16)
+      // Table photos (migration 008) — HEIC retire (D-056/PO-4-02 amende 2026-06-07)
+      photos: {
+        Row: {
+          id: string
+          tache_id: string
+          organisation_id: string
+          uploader_id: string
+          storage_path: string              // JAMAIS expose API (D-4-006)
+          commentaire: string | null
+          mime_type: 'image/jpeg' | 'image/png' | 'image/webp'
+          taille_octets: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          tache_id: string
+          organisation_id: string
+          uploader_id: string
+          storage_path: string
+          commentaire?: string | null
+          mime_type: 'image/jpeg' | 'image/png' | 'image/webp'
+          taille_octets: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          tache_id?: string
+          organisation_id?: string
+          uploader_id?: string
+          storage_path?: string
+          commentaire?: string | null
+          mime_type?: 'image/jpeg' | 'image/png' | 'image/webp'
+          taille_octets?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "photos_tache_id_fkey"
+            columns: ["tache_id"]
+            isOneToOne: false
+            referencedRelation: "taches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "photos_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "photos_uploader_id_fkey"
+            columns: ["uploader_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       users: {
         Row: {
           avatar_url: string | null
@@ -598,6 +661,7 @@ export interface AffectationWithUser extends Affectation {
     nom: string
     prenom: string
     role: UserRole
+    telephone?: string | null  // S4-F02 — affichage conducteur (RG-TEL-001)
   } | null
 }
 
@@ -616,11 +680,58 @@ export type TacheOuvrier = {
   // AUDIT: note_privee_conducteur JAMAIS inclus — D-3-004 BINDING
 }
 
-export type PhotoOuvrier = {
+// ============================================================
+// Sprint 4 — types photos (D-4-007 breaking change, D-4-019)
+// SECURITE : storage_path JAMAIS dans PhotoOuvrierDisplay ni PhotoConducteurDisplay (D-4-006)
+// ============================================================
+
+/** Row complete interne (jamais renvoyee brute au client — D-4-006) */
+export interface Photo {
   id: string
-  url: string
+  tache_id: string
+  organisation_id: string
+  uploader_id: string
+  storage_path: string              // JAMAIS expose API (D-4-006)
+  commentaire: string | null
+  // HEIC retire (D-056/PO-4-02 amende 2026-06-07) : whitelist stricte JPEG/PNG/WebP
+  mime_type: 'image/jpeg' | 'image/png' | 'image/webp'
+  taille_octets: number
   created_at: string
+  updated_at: string
 }
+
+/**
+ * Contrat API client ouvrier — PAS de storage_path (D-4-006)
+ * BREAKING (D-4-007) : ancien PhotoOuvrier.url -> renomme signed_url dans TOUS les callers.
+ */
+export interface PhotoOuvrierDisplay {
+  id: string
+  commentaire: string | null
+  created_at: string
+  uploader_id: string               // pour is_mine cote UI
+  signed_url: string                // ajoutee serveur (TTL 1h), jamais en DB — K4-MED-04 (pino redact)
+}
+
+/**
+ * F005/D-4-019 — props server->client conducteur, PAS de storage_path
+ * Generee server-side dans conducteur/chantiers/[id]/page.tsx
+ */
+export interface PhotoConducteurDisplay {
+  id: string
+  tache_id: string
+  commentaire: string | null
+  created_at: string
+  uploader_id: string
+  uploader_nom?: string             // optionnel (affichage auteur dans la grille moderation)
+  signed_url: string                // generee server-side (signPhotoPaths), jamais en DB
+}
+
+/**
+ * @deprecated Sprint 3 uniquement — utiliser PhotoOuvrierDisplay (D-4-007 breaking change)
+ * Conserve temporairement pour eviter des erreurs de compilation en cascade.
+ * A supprimer quand tous les callers sont migres.
+ */
+export type PhotoOuvrier = PhotoOuvrierDisplay
 
 // TacheMienne et TacheAutre sont STRICTEMENT DISJOINTES (D-3-008).
 // Le discriminant `is_mine` est un literal type, pas une prop partagee.
@@ -632,15 +743,16 @@ export type TacheMienne = TacheOuvrier & {
   description_courte: string | null
   bloque_raison: string | null
   date_echeance: string | null
-  photos_count: number
-  photos: PhotoOuvrier[]
+  // D-4-007 BREAKING CHANGE : photos_count supprime, remplace par photos: PhotoOuvrierDisplay[]
+  // count = photos.length
+  photos: PhotoOuvrierDisplay[]
   photos_truncated?: boolean
 }
 
 export type TacheAutre = TacheOuvrier & {
   is_mine: false
   description_courte: string | null
-  photos_count: number
+  // TacheAutre : aucune photo exposee (D-3-024 coherent D-4-007)
 }
 
 export type GetChantierOuvrierResponse = {
@@ -677,6 +789,44 @@ export interface OuvrierSession {
     vue: 'mes_taches' | 'chantier_complet'
   }>
   created_at: number
+}
+
+// ============================================================
+// Sprint 4 Visibilité — types notifications (D-019 : extension manuelle)
+// Ajout manuel requis car piège TS Windows UTF-16 (pattern établi Sprint 4)
+// SECURITE : note_privee_conducteur et storage_path JAMAIS dans ces types (K4V-09, RG-NOTIF-014/015)
+// ============================================================
+
+export type NotificationType =
+  | 'affectation_tache'
+  | 'tache_terminee'
+  | 'tache_bloquee'
+  | 'derive_budget'
+  | 'echeance_chantier'
+  | 'echeance_tache'
+
+export interface Notification {
+  id: string
+  organisation_id: string
+  user_id: string
+  type: NotificationType
+  titre: string
+  message: string
+  chantier_id: string | null
+  tache_id: string | null
+  lu: boolean
+  read_at: string | null  // ISO 8601
+  created_at: string       // ISO 8601
+}
+
+/** Shape renvoyée au client (identique à Notification — storage_path et note_privee n'existent pas ici) */
+export type NotificationDisplay = Notification
+
+/** Réponse de GET /api/notifications */
+export interface NotificationsListResponse {
+  notifications: NotificationDisplay[]
+  unread_count: number
+  next_cursor: string | null  // ISO 8601 created_at du dernier item, null si fin
 }
 
 export const Constants = {

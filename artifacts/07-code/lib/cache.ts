@@ -118,4 +118,11 @@ export const RATE_LIMITS = {
   login: { limit: 5, windowMs: 15 * 60 * 1000 },
   /** POST /api/auth/magic-link — 5 req/15min/IP */
   magicLink: { limit: 5, windowMs: 15 * 60 * 1000 },
+  /**
+   * POST /api/photos — 20 uploads/ouvrier/heure BINDING V1 (K4-CR-03/K4-OQ-01 BINDING)
+   * Cle : 'ratelimit:upload:${session.user_id}' (par ouvrier, pas par IP)
+   * Fenetre glissante 3600s (1h). Reset au restart conteneur acceptable (single-instance pilote).
+   * Protege contre le DoS memoire (ADR-4-001 : fichier bufferise en RAM avant Storage).
+   */
+  photoUpload: { limit: 20, windowMs: 60 * 60 * 1000 },
 } as const

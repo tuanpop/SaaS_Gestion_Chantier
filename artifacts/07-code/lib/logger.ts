@@ -7,6 +7,11 @@ import pino from 'pino'
 //   - body.bloque_raison : PII potentielle (K3-HI-06)
 //   - body.description : contenu libre potentiellement sensible (K3-MED-12)
 //   - req.headers.cookie / req.headers.authorization : deja presents, confirmes Sprint 3
+// Sprint 4 extensions (K4-MED-04, K4-MED-11, K4-MED-01) :
+//   - signed_url / signedUrl : credential temporaire bucket prive TTL 1h (K4-MED-04)
+//   - storage_path : revele org/tache/photo IDs, ne jamais exposer (D-4-006, K4-MED-11)
+//   - commentaire : contenu libre utilisateur potentiellement sensible (K4-MED-01)
+//   - file : buffer binaire photo (K4-MED-11)
 const REDACTED_FIELDS = [
   'password',
   'token',
@@ -19,6 +24,12 @@ const REDACTED_FIELDS = [
   'body.note_privee_conducteur',
   'body.bloque_raison',
   'body.description',
+  // Sprint 4 — K4-MED-04, K4-MED-11, K4-MED-01
+  'signed_url',
+  'signedUrl',
+  'storage_path',
+  'commentaire',
+  'file',
 ]
 
 const baseLogger = pino({

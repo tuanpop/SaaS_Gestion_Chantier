@@ -21,6 +21,7 @@ import { canAccessChantier } from '@/lib/chantier-access'
 import { calculerCouleur } from '@/lib/coloration'
 import { toApiResponse } from '@/lib/errors'
 import { logger } from '@/lib/logger'
+import { insertNotification, resolveAdminsOrg, resolveConducteurChantier } from '@/lib/notifications/notif'
 import type {
   UserRole,
   Chantier,
@@ -217,24 +218,9 @@ export async function PATCH(
     // 3. assertTrialActive — D-012
     await assertTrialActive(supabase, organisationId)
 
-    const adminClient = createAdminClient()
-
-    // 4. Vérifier ownership — I-06 (404 si hors org)
-    const { data: existing, error: existingError } = await adminClient
-      .from('chantiers')
-      .select('id')
-      .eq('id', chantierId)
-      .eq('organisation_id', organisationId)
-      .single()
-
-    if (existingError || !existing) {
-      return NextResponse.json(
-        { error: 'Ressource introuvable.' },
-        { status: 404 },
-      )
-    }
-
-    // 5. Valider input
+    // 4. Valider input EN PREMIER (fail fast — avant tout accès DB)
+    // Ordre inversé vs original pour éviter les DB calls inutiles sur inputs invalides.
+    // Les tests chantiers-id-rbac PATCH-4/PATCH-5 vérifient ce comportement (regression guard).
     const body: unknown = await request.json()
     const parsed = UpdateChantierSchema.safeParse(body)
     if (!parsed.success) {
@@ -253,6 +239,42 @@ export async function PATCH(
         { status: 400 },
       )
     }
+
+    const adminClient = createAdminClient()
+
+    // 5. Vérifier ownership — I-06 (404 si hors org)
+    // D-4V-006 : étendre le SELECT pour lire les données AVANT UPDATE (couleur avant)
+    // AUDIT: SELECT explicite — note_privee_conducteur non sélectionné (K4V-09)
+    const { data: existing, error: existingError } = await adminClient
+      .from('chantiers')
+      .select('id, nom, budget_alloue, budget_depense, date_fin_prevue')
+      .eq('id', chantierId)
+      .eq('organisation_id', organisationId)
+      .single()
+
+    if (existingError || !existing) {
+      return NextResponse.json(
+        { error: 'Ressource introuvable.' },
+        { status: 404 },
+      )
+    }
+
+    // Calculer couleur AVANT UPDATE (D-4V-006, ADR-4V-002)
+    const existingTyped = existing as unknown as {
+      id: string
+      nom: string
+      budget_alloue: number | null
+      budget_depense: number
+      date_fin_prevue: string
+    }
+    const couleurAvant = calculerCouleur(
+      {
+        date_fin_prevue: existingTyped.date_fin_prevue,
+        budget_alloue: existingTyped.budget_alloue,
+        budget_depense: existingTyped.budget_depense,
+      },
+      new Date(),
+    )
 
     // 6. Mettre à jour
     // Filtrer les `undefined` (exactOptionalPropertyTypes attend `key?: T`, pas `T | undefined`),
@@ -296,6 +318,44 @@ export async function PATCH(
     }
 
     reqLogger.info({ chantierId }, 'Chantier mis à jour')
+
+    // D-4V-006, RG-NOTIF-EVT-008 : détection dérive budget (couleur avant vs après)
+    // Condition : bascule couleur ET axe budget (budget_depense > budget_alloue après UPDATE)
+    const couleurApres = chantierColore.couleur
+    const budgetDepenseApres = dataTyped.budget_depense
+    const budgetAlloueApres = dataTyped.budget_alloue
+
+    if (
+      couleurAvant !== couleurApres &&
+      (couleurApres === 'orange' || couleurApres === 'rouge') &&
+      budgetAlloueApres !== null &&
+      budgetDepenseApres > budgetAlloueApres
+    ) {
+      // Destinataires : admins de l'org + conducteur du chantier (D-4V-006, RG-NOTIF-EVT-008)
+      const [admins, conducteurId] = await Promise.all([
+        resolveAdminsOrg(adminClient, organisationId),
+        resolveConducteurChantier(adminClient, chantierId, organisationId),
+      ])
+
+      // Déduplication destinataires (conducteur peut aussi être admin dans certains setups)
+      const destinataires = [...new Set([...admins, ...(conducteurId ? [conducteurId] : [])])]
+
+      // RG-NOTIF-EVT-009 : message dérive budget
+      const notifTitre = `Dérive budget — ${dataTyped.nom}`
+      const notifMessage = `Le budget du chantier « ${dataTyped.nom} » dépasse le budget alloué (dépensé : ${budgetDepenseApres} € / alloué : ${budgetAlloueApres} €).`
+
+      for (const destinataireId of destinataires) {
+        await insertNotification({
+          organisationId,
+          userId: destinataireId,
+          type: 'derive_budget',
+          titre: notifTitre,
+          message: notifMessage,
+          chantierId,
+          tacheId: null,
+        })
+      }
+    }
 
     return NextResponse.json(chantierColore, { status: 200 })
   } catch (error) {

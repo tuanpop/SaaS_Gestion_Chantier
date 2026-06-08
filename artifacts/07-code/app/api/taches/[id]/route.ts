@@ -14,6 +14,7 @@ import { assertTrialActive } from '@/lib/trial-gate'
 import { toApiResponse } from '@/lib/errors'
 import { logger } from '@/lib/logger'
 import { UpdateTacheSchema } from '@/lib/validation/taches'
+import { insertNotification, resolveConducteurChantier } from '@/lib/notifications/notif'
 import type { UserRole, TacheWithUser, TablesUpdate } from '@/types/database'
 
 // ============================================================
@@ -172,23 +173,92 @@ export async function PATCH(
 
     const updatedTyped = updated as unknown as TacheWithUser
 
-    // 8. Notifications stub Sprint 2
-    if (parsed.data.statut === 'termine' && updatedTyped.assigned_to) {
-      // TODO Sprint 4 — envoyer notif in-app au conducteur
-      // INSERT INTO notifications (user_id=<conducteur du chantier>, type='tache_terminee',
-      //   payload={tache_id: tacheId, chantier_id: tache.chantier_id}, organisation_id=organisationId)
-      reqLogger.debug(
-        { tacheId, assignedTo: updatedTyped.assigned_to },
-        'Notification conducteur (tâche terminée) — stub Sprint 4',
-      )
+    // 8. Notifications event-based Sprint 4 (D-4V-004, D-4V-005)
+    // Appelé APRÈS le commit UPDATE (best-effort — ne peut pas casser le 200)
+
+    // Cas A — statut terminé ou bloqué, ET différent de l'ancien statut (RG-NOTIF-EVT-004/005/006)
+    const tacheRow = tache as unknown as { id: string; chantier_id: string; organisation_id: string; statut: string; assigned_to: string | null }
+    if (
+      parsed.data.statut !== undefined &&
+      (parsed.data.statut === 'termine' || parsed.data.statut === 'bloque') &&
+      parsed.data.statut !== tacheRow.statut
+    ) {
+      // AUDIT: SELECT explicite — titre + bloque_raison + chantier nom, note_privee_conducteur JAMAIS sélectionné (K4V-09)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: tacheDetail } = await (adminClient as unknown as any)
+        .from('taches')
+        .select('titre, bloque_raison')
+        .eq('id', tacheId)
+        .single() as { data: { titre: string; bloque_raison: string | null } | null; error: unknown }
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: chantierDetail } = await (adminClient as unknown as any)
+        .from('chantiers')
+        .select('nom')
+        .eq('id', tacheRow.chantier_id)
+        .single() as { data: { nom: string } | null; error: unknown }
+
+      const conducteurId = await resolveConducteurChantier(adminClient, tacheRow.chantier_id, organisationId)
+
+      if (tacheDetail && chantierDetail) {
+        if (parsed.data.statut === 'termine') {
+          await insertNotification({
+            organisationId,
+            userId: conducteurId ?? '',
+            type: 'tache_terminee',
+            titre: `Tâche terminée : ${tacheDetail.titre}`,
+            message: `La tâche « ${tacheDetail.titre} » sur le chantier « ${chantierDetail.nom} » vient d'être marquée comme terminée.`,
+            chantierId: tacheRow.chantier_id,
+            tacheId,
+          })
+        } else if (parsed.data.statut === 'bloque') {
+          // Message inclut bloque_raison (public) — JAMAIS note_privee_conducteur (K4V-09)
+          const raisonText = tacheDetail.bloque_raison ?? parsed.data.bloque_raison ?? ''
+          await insertNotification({
+            organisationId,
+            userId: conducteurId ?? '',
+            type: 'tache_bloquee',
+            titre: `Tâche bloquée : ${tacheDetail.titre}`,
+            message: `La tâche « ${tacheDetail.titre} » sur le chantier « ${chantierDetail.nom} » est bloquée. Raison : ${raisonText}.`,
+            chantierId: tacheRow.chantier_id,
+            tacheId,
+          })
+        }
+      }
     }
 
-    if (parsed.data.statut === 'bloque' && updatedTyped.assigned_to) {
-      // TODO Sprint 4 — envoyer notif in-app : tâche bloquée
-      reqLogger.debug(
-        { tacheId, bloque_raison: parsed.data.bloque_raison },
-        'Notification tâche bloquée — stub Sprint 4',
-      )
+    // Cas B — ré-assignation vers un nouveau user (RG-NOTIF-EVT-001/003)
+    if (
+      parsed.data.assigned_to !== undefined &&
+      parsed.data.assigned_to !== null &&
+      parsed.data.assigned_to !== tacheRow.assigned_to
+    ) {
+      // AUDIT: SELECT explicite — titre + chantier nom, note_privee_conducteur JAMAIS sélectionné (K4V-09)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: tacheDetailB } = await (adminClient as unknown as any)
+        .from('taches')
+        .select('titre')
+        .eq('id', tacheId)
+        .single() as { data: { titre: string } | null; error: unknown }
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: chantierDetailB } = await (adminClient as unknown as any)
+        .from('chantiers')
+        .select('nom')
+        .eq('id', tacheRow.chantier_id)
+        .single() as { data: { nom: string } | null; error: unknown }
+
+      if (tacheDetailB && chantierDetailB) {
+        await insertNotification({
+          organisationId,
+          userId: parsed.data.assigned_to,
+          type: 'affectation_tache',
+          titre: `Nouvelle tâche assignée : ${tacheDetailB.titre.slice(0, 150)}`,
+          message: `Vous avez été assigné à la tâche « ${tacheDetailB.titre} » sur le chantier « ${chantierDetailB.nom} ».`,
+          chantierId: tacheRow.chantier_id,
+          tacheId,
+        })
+      }
     }
 
     reqLogger.info({ tacheId, statut: updatedTyped.statut }, 'Tâche mise à jour')

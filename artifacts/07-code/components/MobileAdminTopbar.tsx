@@ -6,6 +6,7 @@
 
 import { SheetTrigger } from '@/components/ui/sheet'
 import { Menu } from 'lucide-react'
+import { NotificationBell } from '@/components/notifications/NotificationBell'
 
 export function MobileAdminTopbar() {
   return (
@@ -25,6 +26,11 @@ export function MobileAdminTopbar() {
         {/* RG-DS-006 : logo <span class="text-accent">Claw</span>BTP préservé */}
         <span className="text-accent">Claw</span>BTP
       </span>
+      {/* NotificationBell mobile admin — après le logo, avant fermeture header */}
+      {/* SidebarNavClient porte la cloche desktop (condition !inSheet) — évite le doublon */}
+      <div className="ml-auto">
+        <NotificationBell />
+      </div>
     </header>
   )
 }

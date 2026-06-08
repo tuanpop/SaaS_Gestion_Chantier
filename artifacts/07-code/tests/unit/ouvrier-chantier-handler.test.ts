@@ -21,6 +21,7 @@ import { NextRequest } from 'next/server'
 
 const mockGetOuvrierSession = vi.fn()
 const mockAdminFrom = vi.fn()
+const mockSignPhotoPaths = vi.fn()
 
 vi.mock('../../lib/ouvrier-session', () => ({
   getOuvrierSession: (...args: unknown[]) => mockGetOuvrierSession(...args),
@@ -36,6 +37,14 @@ vi.mock('../../lib/supabase/admin', () => ({
   createAdminClient: () => ({
     from: (...args: unknown[]) => mockAdminFrom(...args),
   }),
+}))
+
+// Sprint 4 — D-4-007 : signPhotoPaths mocke pour les tests
+vi.mock('../../lib/photos-access', () => ({
+  signPhotoPaths: async (...args: unknown[]) => mockSignPhotoPaths(...args),
+  resolvePhotoActor: vi.fn(),
+  canDeletePhoto: vi.fn(),
+  validateImageBuffer: vi.fn(),
 }))
 
 vi.mock('../../lib/logger', () => ({
@@ -157,7 +166,11 @@ function setupAdminMocks({
         return {
           select: () => ({
             in: () => ({
-              order: () => Promise.resolve({ data: null, error: photosError }),
+              eq: () => ({
+                order: () => ({
+                  limit: () => Promise.resolve({ data: null, error: photosError }),
+                }),
+              }),
             }),
           }),
         }
@@ -165,7 +178,11 @@ function setupAdminMocks({
       return {
         select: () => ({
           in: () => ({
-            order: () => Promise.resolve({ data: photosData, error: null }),
+            eq: () => ({
+              order: () => ({
+                limit: () => Promise.resolve({ data: photosData, error: null }),
+              }),
+            }),
           }),
         }),
       }
@@ -224,6 +241,8 @@ describe('GET /api/ouvrier/chantiers/[id]', () => {
     mockGetOuvrierSession.mockResolvedValueOnce(VALID_SESSION)
     const tacheMienne = makeTache('t1', VALID_SESSION.user_id)
     setupAdminMocks({ taches: [tacheMienne] })
+    // D-4-007 Sprint 4 : signPhotoPaths mocke (aucune photo -> Map vide)
+    mockSignPhotoPaths.mockResolvedValueOnce(new Map())
 
     const { GET } = await import('../../app/api/ouvrier/chantiers/[id]/route')
     const response = await GET(buildRequest('chantier-id'), {
@@ -246,6 +265,7 @@ describe('GET /api/ouvrier/chantiers/[id]', () => {
     mockGetOuvrierSession.mockResolvedValueOnce(VALID_SESSION)
     const tacheAutre = makeTache('t1', 'autre-user-id') // pas mienne
     setupAdminMocks({ taches: [tacheAutre] })
+    mockSignPhotoPaths.mockResolvedValueOnce(new Map())
 
     const { GET } = await import('../../app/api/ouvrier/chantiers/[id]/route')
     const response = await GET(buildRequest('chantier-id'), {
@@ -269,6 +289,7 @@ describe('GET /api/ouvrier/chantiers/[id]', () => {
     mockGetOuvrierSession.mockResolvedValueOnce(VALID_SESSION)
     const tacheMienne = makeTache('t1', VALID_SESSION.user_id)
     setupAdminMocks({ taches: [tacheMienne] })
+    mockSignPhotoPaths.mockResolvedValueOnce(new Map())
 
     const { GET } = await import('../../app/api/ouvrier/chantiers/[id]/route')
     const response = await GET(buildRequest('chantier-id'), {
@@ -290,6 +311,7 @@ describe('GET /api/ouvrier/chantiers/[id]', () => {
     mockGetOuvrierSession.mockResolvedValueOnce(VALID_SESSION)
     const tacheAutre = makeTache('t1', 'autre-user-id')
     setupAdminMocks({ taches: [tacheAutre] })
+    mockSignPhotoPaths.mockResolvedValueOnce(new Map())
 
     const { GET } = await import('../../app/api/ouvrier/chantiers/[id]/route')
     const response = await GET(buildRequest('chantier-id'), {
@@ -301,32 +323,36 @@ describe('GET /api/ouvrier/chantiers/[id]', () => {
     const tache = body.taches[0]
 
     expect(tache['is_mine']).toBe(false)
-    // D-3-024 : photos (tableau URLs) absent pour les taches non-siennes
+    // D-4-007 Sprint 4 : TacheAutre n'a plus de propriete photos ni photos_count
     expect(tache).not.toHaveProperty('photos')
-    // photos_count present mais = 0 (pas de charge pour non-mine)
-    expect(tache['photos_count']).toBe(0)
+    expect(tache).not.toHaveProperty('photos_count')
   })
 
-  it('Bonus D-3-024 : table photos absente (42P01) → photos: [] sans crash', async () => {
+  it('Bonus D-3-024 -> Sprint 4 : table photos erreur -> photos: [] sans crash', async () => {
+    // Sprint 4 : le try/catch 42P01 est retire (table existe)
+    // Mais on teste quand meme le comportement en cas d'erreur photos non critique
     mockGetOuvrierSession.mockResolvedValueOnce(VALID_SESSION)
     const tacheMienne = makeTache('t1', VALID_SESSION.user_id)
     setupAdminMocks({
       taches: [tacheMienne],
-      photosError: { code: '42P01', message: 'relation "photos" does not exist' },
+      photosError: { code: 'PGRST000', message: 'erreur photos generique' },
     })
+    mockSignPhotoPaths.mockResolvedValueOnce(new Map())
 
     const { GET } = await import('../../app/api/ouvrier/chantiers/[id]/route')
     const response = await GET(buildRequest('chantier-id'), {
       params: Promise.resolve({ id: 'chantier-id' }),
     })
 
-    // Doit retourner 200, pas 500 (D-3-024 try/catch 42P01)
+    // Doit retourner 200 (erreur photos non bloquante)
     expect(response.status).toBe(200)
     const body = await response.json() as { taches: Array<Record<string, unknown>> }
     const tache = body.taches[0]
 
     expect(tache['is_mine']).toBe(true)
+    // D-4-007 : photos[] present (vide si erreur)
     expect(tache['photos']).toEqual([])
-    expect(tache['photos_count']).toBe(0)
+    // photos_count supprime (D-4-007 breaking change)
+    expect(tache).not.toHaveProperty('photos_count')
   })
 })

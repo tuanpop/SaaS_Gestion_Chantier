@@ -1,26 +1,42 @@
 // app/api/ouvrier/chantiers/[id]/route.ts
 // GET /api/ouvrier/chantiers/[id] — Vue chantier ouvrier "vue moyenne"
 //
-// Implemente : US-3.3 (vue taches chantier), US-3.4 (detail tache mienne), US-3.6 (photos lecture seule)
-//              RG-VUE-001 a 005, D-3-024 (photos table absente Sprint 3), D-3-025 (troncature API-side)
+// Implemente : US-3.3 (vue taches chantier), US-3.4 (detail tache mienne), US-3.6 (photos)
+//              US-4.4 (photos signed_url dans galerie ouvrier)
+//              RG-VUE-001 a 005, D-3-024 -> D-4-007 (breaking change photos[])
+//
+// Sprint 4 changements (D-4-007) :
+//   - Retrait du try/catch 42P01 (table photos desormais creee par migration 008)
+//   - Remplacement de url -> signed_url (PhotoOuvrierDisplay)
+//   - Remplacement de photos_count par photos: PhotoOuvrierDisplay[] dans TacheMienne
+//   - Batch signPhotoPaths (D-4-004 — 1 appel reseau pour N chemins)
+//   - Limite 50 photos + photos_truncated si > 50 (RG-PHOTO-007)
+//
 // Items securite :
-//   D-3-004 : SELECT explicite — note_privee_conducteur EXCLUE (K3-CR-02)
+//   D-3-004 : SELECT explicite — note_privee_conducteur EXCLUE (K3-CR-02, K4-NPR-01)
 //   D-3-005 : pattern 5 etapes RBAC
 //   K3-CR-03 : filtre organisation_id CRITIQUE dans RBAC base
-//   D-3-024 : try/catch Postgres 42P01 (table photos absente Sprint 3)
-//   D-3-025 : troncature description_courte cote API (jamais cote client)
+//   K4-NPR-01 : note_privee_conducteur ABSENTE + storage_path ABSENT de la reponse finale
+//   K4-HI-IDOR : photos taches is_mine=false -> 0 photo (coherent D-3-024)
 
-// D-3-010 : Node runtime obligatoire (ioredis incompatible Edge)
+// D-3-010 : Node runtime obligatoire
 export const runtime = 'nodejs'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getOuvrierSession } from '@/lib/ouvrier-session'
+import { signPhotoPaths } from '@/lib/photos-access'
 import { logger } from '@/lib/logger'
-import type { GetChantierOuvrierResponse, TacheMienne, TacheAutre, PhotoOuvrier } from '@/types/database'
+import type {
+  GetChantierOuvrierResponse,
+  TacheMienne,
+  TacheAutre,
+  PhotoOuvrierDisplay,
+} from '@/types/database'
 
-// Limite photos par tache (D-3-024, D-052/PO-3-02)
-const PHOTOS_LIMIT = 50
+// Limite photos par tache (D-4-007, RG-PHOTO-007) — 50 max, 51 pour detecter troncature
+const PHOTOS_FETCH_LIMIT = 51
+const PHOTOS_DISPLAY_LIMIT = 50
 
 // Longueur max description_courte (D-3-025 — troncature cote API)
 const DESCRIPTION_COURTE_MAX = 120
@@ -36,7 +52,7 @@ export async function GET(
   const reqLogger = logger.child({ correlationId, route: 'GET /api/ouvrier/chantiers/[id]' })
 
   try {
-    // Etape 1 — Validation session Redis (D-3-002, pattern D-3-005 etape 1)
+    // Etape 1 — Validation session (D-3-002, pattern D-3-005 etape 1)
     const session = await getOuvrierSession(request)
     if (!session) {
       return NextResponse.json(
@@ -49,15 +65,13 @@ export async function GET(
 
     // Etape 2 — RBAC base : verifier que l'ouvrier est affecte a CE chantier dans CETTE organisation
     // K3-CR-03 CRITIQUE : organisation_id = session.organisation_id (jamais depuis req.body)
-    // AUDIT: SELECT explicite — D-3-004
     const today = new Date().toISOString().split('T')[0]
     const { data: affectationCheck, error: affError } = await adminClient
       .from('affectations')
       .select('id')
       .eq('user_id', session.user_id)
       .eq('chantier_id', chantierId)
-      .eq('organisation_id', session.organisation_id) // K3-CR-03 : filtre organisation_id CRITIQUE
-      // FIX 2026-06-02 : affectations en hard delete (CASCADE migration 002), pas de deleted_at column
+      .eq('organisation_id', session.organisation_id)
       .or(`date_fin.is.null,date_fin.gte.${today}`)
       .limit(1)
 
@@ -73,7 +87,6 @@ export async function GET(
     }
 
     // Etape 3 — SELECT chantier (colonnes explicites — D-3-004)
-    // AUDIT: SELECT explicite — D-3-004 (note_privee_conducteur exclue)
     const { data: chantierRow, error: chantierError } = await adminClient
       .from('chantiers')
       .select('id, nom, client_nom, adresse, code_postal, statut, date_debut, date_fin_prevue, created_by')
@@ -93,8 +106,7 @@ export async function GET(
     }
 
     // Etape 4 — SELECT taches (colonnes explicites SANS note_privee_conducteur — D-3-004, K3-CR-02)
-    // AUDIT: SELECT explicite — D-3-004 (note_privee_conducteur EXCLUE INTENTIONNELLEMENT)
-    // note_privee_conducteur n'est pas dans cette liste — defense niveau 1/4 (K3-CR-02)
+    // AUDIT: SELECT explicite — D-3-004 (note_privee_conducteur EXCLUE INTENTIONNELLEMENT — K4-NPR-01)
     const { data: tachesRaw, error: tachesError } = await adminClient
       .from('taches')
       .select(
@@ -102,7 +114,6 @@ export async function GET(
       )
       .eq('chantier_id', chantierId)
       .eq('organisation_id', session.organisation_id)
-      // FIX : taches en hard delete (CASCADE migration 002), pas de deleted_at column
 
     if (tachesError) {
       reqLogger.error(
@@ -117,79 +128,69 @@ export async function GET(
 
     const taches = tachesRaw ?? []
 
-    // Etape 5 — Query photos pour les taches is_mine=true (D-3-024)
-    // Sprint 3 : table photos peut ne pas exister (creee Sprint 4)
-    // try/catch sur code Postgres 42P01 (undefined_table)
+    // Etape 5 — Query photos pour les taches is_mine=true (D-4-007, Sprint 4)
+    // PLUS de try/catch 42P01 : table photos cree par migration 008 (D-4-007)
+    // SELECT explicite — D-3-004 : colonnes whitelistees, jamais SELECT *
+    // storage_path inclus INTERNALEMENT pour signPhotoPaths, JAMAIS dans la reponse (K4-NPR-01)
     const myTacheIds = taches
       .filter((t) => t.assigned_to === session.user_id)
       .map((t) => t.id)
 
-    const photosByTacheId: Record<string, PhotoOuvrier[]> = {}
+    // Map tache_id -> PhotoOuvrierDisplay[] (sans storage_path)
+    const photosByTacheId: Record<string, PhotoOuvrierDisplay[]> = {}
     const photosTruncatedByTacheId: Record<string, boolean> = {}
 
     if (myTacheIds.length > 0) {
-      try {
-        // AUDIT: SELECT explicite — D-3-024 (colonnes whitelistees, pas de SELECT *)
-        // Table photos absente du schema TypeScript Sprint 3 (creee Sprint 4)
-        // Cast via unknown necessaire : D-3-024 — try/catch sur 42P01 ci-dessous
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const photosClient = adminClient as unknown as { from: (t: string) => any }
-        const { data: photosRaw, error: photosError } = await photosClient
-          .from('photos')
-          .select('id, tache_id, url, created_at')
-          .in('tache_id', myTacheIds)
-          .order('created_at', { ascending: false }) as { data: unknown[] | null; error: { code?: string; message: string } | null }
+      // SELECT photos : lit storage_path pour signPhotoPaths mais JAMAIS expose (K4-NPR-01)
+      // AUDIT: SELECT explicite — D-3-004. LIMIT 51 pour detecter la troncature (RG-PHOTO-007)
+      const { data: photosRaw, error: photosError } = await adminClient
+        .from('photos')
+        .select('id, tache_id, storage_path, commentaire, uploader_id, created_at')
+        .in('tache_id', myTacheIds)
+        .eq('organisation_id', session.organisation_id) // isolation org (D-4-016)
+        .order('created_at', { ascending: false })
+        .limit(PHOTOS_FETCH_LIMIT * myTacheIds.length) // limite globale = 51 * nb_taches_miennes
 
-        if (photosError) {
-          // Verifier si c'est l'erreur 42P01 (table photos absente Sprint 3 — D-3-024)
-          const pgCode = (photosError as unknown as { code?: string }).code
-          if (pgCode === '42P01') {
-            reqLogger.warn(
-              { chantierId },
-              'Table photos absente (Sprint 3) — photos: [] (D-3-024)',
-            )
-            // photos restent vides : photosByTacheId = {}
-          } else {
-            reqLogger.error(
-              { err: photosError.message, chantierId },
-              'Erreur requete photos',
-            )
-            // Non-bloquant : continuer sans photos
-          }
-        } else {
-          // Grouper les photos par tache_id avec limite PHOTOS_LIMIT
-          type PhotoRaw = { id: string; tache_id: string; url: string; created_at: string }
-          const allPhotos = (photosRaw ?? []) as PhotoRaw[]
-
-          for (const tacheId of myTacheIds) {
-            const tachePhotos = allPhotos.filter((p) => p.tache_id === tacheId)
-            if (tachePhotos.length > PHOTOS_LIMIT) {
-              photosByTacheId[tacheId] = tachePhotos.slice(0, PHOTOS_LIMIT).map((p) => ({
-                id: p.id,
-                url: p.url,
-                created_at: p.created_at,
-              }))
-              photosTruncatedByTacheId[tacheId] = true
-            } else {
-              photosByTacheId[tacheId] = tachePhotos.map((p) => ({
-                id: p.id,
-                url: p.url,
-                created_at: p.created_at,
-              }))
-            }
-          }
-        }
-      } catch (photosException) {
-        // Catch supplementaire pour les exceptions ioredis/supabase non-standard
-        reqLogger.warn(
-          { err: photosException instanceof Error ? photosException.message : String(photosException) },
-          'Exception requete photos — photos: [] (D-3-024 fallback)',
+      if (photosError) {
+        reqLogger.error(
+          { err: photosError.message, chantierId },
+          'GET chantier ouvrier : erreur requete photos',
         )
+        // Non-bloquant : continuer sans photos (defense en profondeur)
+      } else {
+        const allPhotos = photosRaw ?? []
+
+        // Collecter tous les storage_paths uniques pour le batch signPhotoPaths (D-4-004)
+        const storagePaths = [...new Set(allPhotos.map((p) => p.storage_path))]
+        const signedUrlMap = storagePaths.length > 0
+          ? await signPhotoPaths(storagePaths)
+          : new Map<string, string>()
+
+        // Grouper les photos par tache_id avec limite PHOTOS_DISPLAY_LIMIT
+        for (const tacheId of myTacheIds) {
+          const tachePhotos = allPhotos.filter((p) => p.tache_id === tacheId)
+
+          if (tachePhotos.length > PHOTOS_DISPLAY_LIMIT) {
+            photosTruncatedByTacheId[tacheId] = true
+          }
+
+          // Mapper vers PhotoOuvrierDisplay — storage_path JAMAIS dans le type de reponse (K4-NPR-01)
+          photosByTacheId[tacheId] = tachePhotos
+            .slice(0, PHOTOS_DISPLAY_LIMIT)
+            .map((p) => ({
+              id: p.id,
+              commentaire: p.commentaire,
+              created_at: p.created_at,
+              uploader_id: p.uploader_id,
+              signed_url: signedUrlMap.get(p.storage_path) ?? '',
+              // storage_path INTENTIONNELLEMENT ABSENT — defense niveau 1 (K4-NPR-01, D-4-006)
+            }))
+        }
       }
     }
 
     // Etape 6 — Projection deux niveaux (architecture §3.4)
-    // D-3-008 : TacheMienne et TacheAutre sont STRICTEMENT DISJOINTS
+    // D-3-008 : TacheMienne et TacheAutre STRICTEMENT DISJOINTS
     // D-3-025 : troncature description_courte COTE API (jamais cote client)
     type TacheRow = {
       id: string
@@ -205,7 +206,6 @@ export async function GET(
     const projectedTaches: Array<TacheMienne | TacheAutre> = (taches as TacheRow[]).map((t) => {
       const isMine = t.assigned_to === session.user_id
 
-      // D-3-025 : troncature cote API pour les descriptions des taches non-siennes
       const descriptionCourte = t.description !== null
         ? (t.description ?? '').slice(0, DESCRIPTION_COURTE_MAX)
         : null
@@ -217,11 +217,10 @@ export async function GET(
           statut: t.statut,
           is_mine: true,
           description_complete: t.description,
-          // D-3-025 : description_courte fournie aussi pour la mienne (coherence API)
           description_courte: descriptionCourte,
           bloque_raison: t.bloque_raison,
           date_echeance: t.date_echeance,
-          photos_count: (photosByTacheId[t.id] ?? []).length,
+          // D-4-007 BREAKING CHANGE : photos[] remplace photos_count
           photos: photosByTacheId[t.id] ?? [],
           ...(photosTruncatedByTacheId[t.id] ? { photos_truncated: true } : {}),
         }
@@ -232,10 +231,8 @@ export async function GET(
           titre: t.titre,
           statut: t.statut,
           is_mine: false,
-          // D-3-025 : description_courte max 120 chars pour les taches non-siennes
           description_courte: descriptionCourte,
-          // photos_count expose combien de photos existent, mais pas les URLs (K3-HI-05)
-          photos_count: 0, // Non-mine : photos non chargees (D-3-024)
+          // TacheAutre : aucune photo, aucun count (D-4-007, K4-HI-IDOR)
         }
         return tacheAutre
       }
@@ -243,17 +240,14 @@ export async function GET(
 
     // Etape 7 — Tri final : bloque DESC, is_mine DESC, created_at ASC (RG-VUE-003)
     projectedTaches.sort((a, b) => {
-      // Bloque en premier
       if (a.statut === 'bloque' && b.statut !== 'bloque') return -1
       if (a.statut !== 'bloque' && b.statut === 'bloque') return 1
-      // Siennes avant les autres
       if (a.is_mine && !b.is_mine) return -1
       if (!a.is_mine && b.is_mine) return 1
-      return 0 // created_at ASC : deja dans l'ordre de la requete
+      return 0
     })
 
     // Etape 8 — SELECT conducteur (RG-VUE-004)
-    // AUDIT: SELECT explicite — D-3-004
     const { data: conducteurRow } = await adminClient
       .from('users')
       .select('nom, prenom, telephone')
@@ -264,6 +258,8 @@ export async function GET(
     const conducteur = conducteurRow ?? { nom: 'Responsable', prenom: '', telephone: null }
 
     // Etape 9 — Reponse finale GetChantierOuvrierResponse
+    // note_privee_conducteur JAMAIS dans cette reponse (D-3-004, K3-CR-02, K4-NPR-01)
+    // storage_path JAMAIS dans cette reponse (D-4-006, K4-NPR-01)
     const responseBody: GetChantierOuvrierResponse = {
       chantier: {
         id: chantierRow.id,

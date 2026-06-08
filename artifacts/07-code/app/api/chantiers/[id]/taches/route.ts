@@ -16,6 +16,7 @@ import { assertTrialActive } from '@/lib/trial-gate'
 import { canAccessChantier } from '@/lib/chantier-access'
 import { toApiResponse } from '@/lib/errors'
 import { logger } from '@/lib/logger'
+import { insertNotification } from '@/lib/notifications/notif'
 import type { UserRole, TacheWithUser } from '@/types/database'
 
 // ============================================================
@@ -244,16 +245,40 @@ export async function POST(
 
     const tacheTyped = tache as unknown as TacheWithUser
 
-    // 7. Si assigned_to fourni : notification in-app (stub Sprint 2)
+    // 7. Si assigned_to fourni : notification in-app assignation tâche (D-4V-004, RG-NOTIF-EVT-001)
+    // Appelé APRÈS le commit de la tâche (best-effort — ne peut pas casser le 201)
     if (parsed.data.assigned_to) {
-      // TODO Sprint 4 — envoyer notif in-app
-      // INSERT INTO notifications (user_id=assigned_to, type='affectation_tache',
-      //   payload={tache_id: tacheTyped.id, chantier_id: chantierId}, organisation_id=organisationId)
-      // La table notifications sera créée en migration 004_notifications.sql (Sprint 4)
-      reqLogger.debug(
-        { tacheId: tacheTyped.id, assignedTo: parsed.data.assigned_to },
-        'Notification stub — sera implémentée Sprint 4',
-      )
+      // Récupérer le nom du chantier pour le message (AMB-01 : best-effort si SELECT échoue)
+      // AUDIT: SELECT explicite — chantier_nom pour message notif, note_privee_conducteur non sélectionné
+      let chantierNom = ''
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: chantierData } = await (adminClient as unknown as any)
+        .from('chantiers')
+        .select('nom')
+        .eq('id', chantierId)
+        .single() as { data: { nom: string } | null; error: unknown }
+
+      if (chantierData) {
+        chantierNom = chantierData.nom
+      } else {
+        reqLogger.warn(
+          { chantierId, tacheId: tacheTyped.id },
+          'POST taches : chantier_nom introuvable — notification ignorée (best-effort AMB-01)',
+        )
+      }
+
+      // Appel insertNotification — best-effort, ne throw pas (D-4V-002)
+      if (chantierNom) {
+        await insertNotification({
+          organisationId,
+          userId: parsed.data.assigned_to,
+          type: 'affectation_tache',
+          titre: `Nouvelle tâche assignée : ${tacheTyped.titre.slice(0, 150)}`,
+          message: `Vous avez été assigné à la tâche « ${tacheTyped.titre} » sur le chantier « ${chantierNom} ».`,
+          chantierId,
+          tacheId: tacheTyped.id,
+        })
+      }
     }
 
     reqLogger.info(

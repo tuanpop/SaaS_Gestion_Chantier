@@ -4,20 +4,26 @@
 //
 // D-3-008 BINDING : props STRICTEMENT DISJOINTES de TacheAutreCard
 // K3-HI-03 : pas de prop isMine partagee — la distinction est encodee dans les types
-// D-3-023 : touch targets ≥ 56px sur tous les boutons
+// D-3-023 : touch targets >= 56px sur tous les boutons
 // component-mapping-sprint-3.md : variantes boutons selon statut courant
+//
+// Sprint 4 breaking changes (D-4-007) :
+//   - TacheMienne.photos: PhotoOuvrierDisplay[] (remplace photos_count: number)
+//   - Prop ouvrierUserId ajoutee pour GalerieModale
+//   - Badge count = photos.length (pas photos_count)
+//   - Callbacks onUploadSuccess, onDeleteSuccess, onUpdateCommentaire
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { StatutBadge } from './StatutBadge'
 import { MotifBlocageModal } from './MotifBlocageModal'
 import { GalerieModale } from './GalerieModale'
-import type { TacheMienne, PhotoOuvrier } from '@/types/database'
+import type { TacheMienne, PhotoOuvrierDisplay } from '@/types/database'
 
 // Props STRICTEMENT DISJOINTES de TacheAutreCardProps (D-3-008)
-// Ne pas ajouter de props communes avec TacheAutreCard sans decision dans DECISIONLOG.md
 interface TacheMienneCardProps {
   tache: TacheMienne
+  ouvrierUserId: string  // Sprint 4 — pour GalerieModale is_mine (D-4-007)
   onChangerStatut: (
     tacheId: string,
     statut: 'a_faire' | 'en_cours' | 'termine' | 'bloque',
@@ -28,11 +34,27 @@ interface TacheMienneCardProps {
 
 export function TacheMienneCard({
   tache,
+  ouvrierUserId,
   onChangerStatut,
   isLoading = false,
 }: TacheMienneCardProps) {
   const [blocageModalOpen, setBlocageModalOpen] = useState(false)
   const [galerieOpen, setGalerieOpen] = useState(false)
+  // Sprint 4 — photos locales (optimistic update sans re-fetch)
+  const [photos, setPhotos] = useState<PhotoOuvrierDisplay[]>(tache.photos ?? [])
+
+  // Callbacks pour GalerieModale (optimistic updates)
+  function handleUploadSuccess(photo: PhotoOuvrierDisplay) {
+    setPhotos((prev) => [photo, ...prev]) // photo la plus recente en premier
+  }
+
+  function handleDeleteSuccess(photoId: string) {
+    setPhotos((prev) => prev.filter((p) => p.id !== photoId))
+  }
+
+  function handleUpdateCommentaire(photoId: string, commentaire: string | null) {
+    setPhotos((prev) => prev.map((p) => p.id === photoId ? { ...p, commentaire } : p))
+  }
 
   function handleDemarrer() {
     onChangerStatut(tache.id, 'en_cours')
@@ -51,7 +73,7 @@ export function TacheMienneCard({
     onChangerStatut(tache.id, 'bloque', motif)
   }
 
-  // Boutons selon le statut courant (component-mapping tableau "Variantes TacheMienneCard")
+  // Boutons selon le statut courant
   function renderButtons() {
     switch (tache.statut) {
       case 'a_faire':
@@ -67,7 +89,6 @@ export function TacheMienneCard({
                 fontFamily: 'Outfit, sans-serif',
                 fontWeight: 700,
                 fontSize: '15px',
-                // D-3-023 : touch target ≥ 56px
                 height: '56px',
                 width: '100%',
                 border: '2px solid #163958',
@@ -183,6 +204,9 @@ export function TacheMienneCard({
     }
   }
 
+  // D-4-007 : count = photos.length (photos_count supprime)
+  const photosCount = photos.length
+
   return (
     <>
       <div
@@ -267,34 +291,38 @@ export function TacheMienneCard({
           </p>
         )}
 
-        {/* Bouton galerie photos (D-052/PO-3-02 : lecture seule) */}
-        {tache.photos_count > 0 && (
-          <button
-            onClick={() => setGalerieOpen(true)}
-            data-testid="ouvrier-galerie-photos-trigger"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              backgroundColor: 'transparent',
-              border: '1px solid #E5E7EB',
-              borderRadius: '4px',
-              padding: '8px 12px',
-              cursor: 'pointer',
-              fontFamily: '"Public Sans", sans-serif',
-              fontSize: '13px',
-              color: '#4A4A4A',
-            }}
-            aria-label={`Voir ${tache.photos_count} photo${tache.photos_count > 1 ? 's' : ''}`}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-              <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-              <circle cx="8.5" cy="8.5" r="1.5" />
-              <polyline points="21 15 16 10 5 21" />
-            </svg>
-            {tache.photos_count} photo{tache.photos_count > 1 ? 's' : ''}
-          </button>
-        )}
+        {/* Bouton galerie photos — count = photos.length (D-4-007 breaking change) */}
+        <button
+          onClick={() => setGalerieOpen(true)}
+          data-testid="ouvrier-galerie-photos-trigger"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            backgroundColor: 'transparent',
+            border: '1px solid #E5E7EB',
+            borderRadius: '4px',
+            padding: '8px 12px',
+            cursor: 'pointer',
+            fontFamily: '"Public Sans", sans-serif',
+            fontSize: '13px',
+            color: '#4A4A4A',
+          }}
+          aria-label={
+            photosCount === 0
+              ? 'Voir la galerie (aucune photo)'
+              : `Voir ${photosCount} photo${photosCount > 1 ? 's' : ''}`
+          }
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+            <circle cx="8.5" cy="8.5" r="1.5" />
+            <polyline points="21 15 16 10 5 21" />
+          </svg>
+          {photosCount === 0
+            ? 'Photos — Ajouter'
+            : `${photosCount} photo${photosCount > 1 ? 's' : ''}`}
+        </button>
 
         {/* Boutons d'action */}
         <div>{renderButtons()}</div>
@@ -308,13 +336,18 @@ export function TacheMienneCard({
         isLoading={isLoading}
       />
 
-      {/* Galerie photos lecture seule */}
+      {/* Galerie photos étendue Sprint 4 (D-4-007) */}
       <GalerieModale
         open={galerieOpen}
         onOpenChange={setGalerieOpen}
-        photos={tache.photos as PhotoOuvrier[]}
+        photos={photos}
         tacheTitre={tache.titre}
+        tacheId={tache.id}
+        ouvrierUserId={ouvrierUserId}
         photosTruncated={tache.photos_truncated}
+        onUploadSuccess={handleUploadSuccess}
+        onDeleteSuccess={handleDeleteSuccess}
+        onUpdateCommentaire={handleUpdateCommentaire}
       />
     </>
   )

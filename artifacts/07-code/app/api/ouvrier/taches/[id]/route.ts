@@ -18,6 +18,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getOuvrierSession } from '@/lib/ouvrier-session'
 import { PatchOuvrierTacheSchema } from '@/lib/validation/ouvrier'
 import { logger } from '@/lib/logger'
+import { insertNotification, resolveConducteurChantier } from '@/lib/notifications/notif'
 
 // ============================================================
 // Table de transitions autorisees pour l'ouvrier (RG-STATUT-002)
@@ -196,6 +197,72 @@ export async function PATCH(
       { tacheId, oldStatut: currentStatut, newStatut, userId: session.user_id },
       'Tache ouvrier mise a jour',
     )
+
+    // D-4V-005 : notif conducteur si statut → terminé ou bloqué ET changement de statut
+    // Appelé APRÈS le commit UPDATE (best-effort — ne peut pas casser le 200)
+    if (
+      (newStatut === 'termine' || newStatut === 'bloque') &&
+      newStatut !== currentStatut
+    ) {
+      // SELECT additionnel UNIQUEMENT pour le message de notif
+      // AUDIT: SELECT explicite — note_privee_conducteur JAMAIS sélectionné (D-3-004, K4V-09)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: tacheDetails } = await (adminClient as unknown as any)
+        .from('taches')
+        .select('titre, bloque_raison, chantier_id, organisation_id')
+        .eq('id', tacheId)
+        .single() as {
+          data: {
+            titre: string
+            bloque_raison: string | null
+            chantier_id: string
+            organisation_id: string
+          } | null
+          error: unknown
+        }
+
+      if (tacheDetails) {
+        // AUDIT: SELECT explicite — chantier_nom pour message notif, note_privee_conducteur non sélectionné (K4V-09)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: chantierData } = await (adminClient as unknown as any)
+          .from('chantiers')
+          .select('nom')
+          .eq('id', tacheDetails.chantier_id)
+          .single() as { data: { nom: string } | null; error: unknown }
+
+        const conducteurId = await resolveConducteurChantier(
+          adminClient,
+          tacheDetails.chantier_id,
+          session.organisation_id,
+        )
+
+        if (chantierData) {
+          if (newStatut === 'termine') {
+            await insertNotification({
+              organisationId: session.organisation_id,
+              userId: conducteurId ?? '',
+              type: 'tache_terminee',
+              titre: `Tâche terminée : ${tacheDetails.titre}`,
+              message: `La tâche « ${tacheDetails.titre} » sur le chantier « ${chantierData.nom} » vient d'être marquée comme terminée.`,
+              chantierId: tacheDetails.chantier_id,
+              tacheId,
+            })
+          } else if (newStatut === 'bloque') {
+            // bloque_raison = finalBloqueRaison (calculé étape 7) — JAMAIS note_privee_conducteur (K4V-09)
+            const raisonText = finalBloqueRaison ?? tacheDetails.bloque_raison ?? ''
+            await insertNotification({
+              organisationId: session.organisation_id,
+              userId: conducteurId ?? '',
+              type: 'tache_bloquee',
+              titre: `Tâche bloquée : ${tacheDetails.titre}`,
+              message: `La tâche « ${tacheDetails.titre} » sur le chantier « ${chantierData.nom} » est bloquée. Raison : ${raisonText}.`,
+              chantierId: tacheDetails.chantier_id,
+              tacheId,
+            })
+          }
+        }
+      }
+    }
 
     // Etape 9 — Reponse shape limitee (K3-I-05 : 4 champs uniquement)
     // JAMAIS retourner description, bloque_raison du conducteur, ou d'autres champs
