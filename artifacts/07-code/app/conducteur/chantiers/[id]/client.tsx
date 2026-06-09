@@ -15,6 +15,7 @@ import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { TacheItem } from '@/components/TacheItem'
+import { TacheEditModal } from '@/components/TacheEditModal'
 import { AffectationForm } from '@/components/AffectationForm'
 import { RemoveAffectationButton } from '@/components/RemoveAffectationButton'
 import { ConfirmDeletePhotoDialog } from '@/components/ouvrier/ConfirmDeletePhotoDialog'
@@ -66,6 +67,9 @@ export function ChantierDetailConducteurClient({
     photo: null,
     isLoading: false,
   })
+
+  // Gap CRUD UPDATE (2026-06-09) : état modal édition tâche
+  const [editTache, setEditTache] = useState<TacheWithUser | null>(null)
 
   // handleUpdateTache — S4-F02 : accepte note_privee_conducteur (RG-NPR-002 : PATCH séparé)
   const handleUpdateTache = useCallback(
@@ -174,6 +178,7 @@ export function ChantierDetailConducteurClient({
                   tache={tache}
                   onUpdate={(patch) => handleUpdateTache(tache.id, patch)}
                   onUpdateNotePrivee={(note) => handleUpdateNotePrivee(tache.id, note)}
+                  onEdit={() => setEditTache(tache)}
                 />
 
                 {/* F005/D-4-019 — Grille photos modération par tâche (maquette 03) */}
@@ -377,6 +382,19 @@ export function ChantierDetailConducteurClient({
             router.refresh()
           }}
           onClose={() => setShowAffectationForm(false)}
+        />
+      )}
+
+      {/* Modal édition tâche — Gap CRUD UPDATE (2026-06-09) */}
+      {editTache && (
+        <TacheEditModal
+          tache={editTache}
+          membres={membres}
+          onSuccess={() => {
+            setEditTache(null)
+            router.refresh()
+          }}
+          onClose={() => setEditTache(null)}
         />
       )}
 

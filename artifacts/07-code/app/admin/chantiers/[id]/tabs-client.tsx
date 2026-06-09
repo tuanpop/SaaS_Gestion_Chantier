@@ -11,6 +11,7 @@ import { useRouter } from 'next/navigation'
 import type { Chantier, TacheWithUser, AffectationWithUser } from '@/types/database'
 import { AffectationForm } from '@/components/AffectationForm'
 import { TacheCreateModal } from '@/components/TacheCreateModal'
+import { TacheEditModal } from '@/components/TacheEditModal'
 import { RemoveAffectationButton } from '@/components/RemoveAffectationButton'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -100,6 +101,8 @@ export function ChantierDetailAdminTabs({
   const [activeTab, setActiveTab] = useState<string>('infos')
   const [showAffectationForm, setShowAffectationForm] = useState(false)
   const [showTacheModal, setShowTacheModal] = useState(false)
+  // Gap CRUD UPDATE (2026-06-09) : état modal édition tâche
+  const [editTache, setEditTache] = useState<TacheWithUser | null>(null)
   const isArchive = chantier.statut === 'archive'
 
   const budgetProgress = chantier.budget_alloue
@@ -295,6 +298,8 @@ export function ChantierDetailAdminTabs({
                   <TableHead>Assigné</TableHead>
                   <TableHead>Statut</TableHead>
                   <TableHead>Échéance</TableHead>
+                  {/* Gap CRUD UPDATE (2026-06-09) : colonne Actions — visible si chantier non archivé */}
+                  {!isArchive && <TableHead className="text-right">Actions</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -313,11 +318,26 @@ export function ChantierDetailAdminTabs({
                         </Badge>
                       </TableCell>
                       <TableCell>{t.date_echeance ? formatDate(t.date_echeance) : '—'}</TableCell>
+                      {/* Gap CRUD UPDATE (2026-06-09) : bouton Modifier — reachability UI obligatoire (CLAUDE.md) */}
+                      {!isArchive && (
+                        <TableCell className="text-right">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setEditTache(t)}
+                            data-testid={`admin-tache-edit-${t.id}`}
+                            className="text-xs"
+                          >
+                            Modifier
+                          </Button>
+                        </TableCell>
+                      )}
                     </TableRow>
                     {/* RG-REACH-004 : motif blocage visible côté admin (Sprint 2 dette) */}
                     {t.statut === 'bloque' && t.bloque_raison && (
                       <TableRow key={`${t.id}-raison`} className="bg-danger-bg/30">
-                        <TableCell colSpan={4} className="text-sm text-danger">
+                        <TableCell colSpan={isArchive ? 4 : 5} className="text-sm text-danger">
                           <span className="font-semibold">Motif du blocage :</span>{' '}
                           {t.bloque_raison}
                         </TableCell>
@@ -353,6 +373,32 @@ export function ChantierDetailAdminTabs({
             router.refresh()
           }}
           onClose={() => setShowTacheModal(false)}
+        />
+      )}
+
+      {/* Modal édition tâche — Gap CRUD UPDATE (2026-06-09) */}
+      {/* membres assignables = membres affectés au chantier (extraits des affectations) */}
+      {editTache && (
+        <TacheEditModal
+          tache={editTache}
+          membres={affectations
+            .filter((aff) => aff.user !== null && aff.user !== undefined)
+            .map((aff) => {
+              const role = aff.user?.role
+              return {
+                id: aff.user_id,
+                nom: aff.user?.nom ?? '',
+                prenom: aff.user?.prenom ?? '',
+                // admin ne peut pas être assigné à une tâche (role ouvrier/conducteur seulement)
+                // mais on l'inclut comme conducteur pour ne pas perdre l'affichage
+                role: (role === 'conducteur' ? 'conducteur' : 'ouvrier') as 'ouvrier' | 'conducteur',
+              }
+            })}
+          onSuccess={() => {
+            setEditTache(null)
+            router.refresh()
+          }}
+          onClose={() => setEditTache(null)}
         />
       )}
     </div>

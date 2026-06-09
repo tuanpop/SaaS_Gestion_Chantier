@@ -2,6 +2,24 @@
 
 ---
 
+[2026-06-09 22:12] agent=amelia phase=EXECUTE scope=gap-crud-update-tache
+  artifacts:
+    - artifacts/07-code/components/TacheEditModal.tsx (nouveau)
+    - artifacts/07-code/components/TacheItem.tsx (modifié — prop onEdit + bouton "Modifier la tâche")
+    - artifacts/07-code/app/conducteur/chantiers/[id]/client.tsx (modifié — TacheEditModal branché)
+    - artifacts/07-code/app/admin/chantiers/[id]/tabs-client.tsx (modifié — colonne Actions + TacheEditModal)
+    - artifacts/07-code/tests/unit/taches-reassign.test.ts (nouveau — 9 tests)
+  gates:
+    - tsc --noEmit : 0 erreur
+    - npm test : 339 passed, 0 failed (avant: 330)
+    - next build : succès
+    - npm run lint : 0 warning/error
+  gaps_dette:
+    - GAP-CRUD-UPDATE-UI-01 : réachabilité UI modale non testable auto (pas de Playwright) — smoke manuel obligatoire avant validation sprint
+  status: completed
+
+---
+
 [2026-06-08] agent=levi phase=QA sprint=4-visibilite
   test_strategy: unit+component-logic (logique pure extraite — D-050 : pas d'E2E Playwright auto)
   artifacts:

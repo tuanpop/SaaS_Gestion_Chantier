@@ -27,6 +27,9 @@ interface TacheItemProps {
   onUpdate?: (patch: Partial<Pick<Tache, 'statut' | 'bloque_raison'>>) => Promise<void>
   // S4-F02 : callback séparé pour la note privée (RG-NPR-002 — PATCH séparé du statut)
   onUpdateNotePrivee?: (note: string | null) => Promise<void>
+  // Gap CRUD UPDATE (2026-06-09) : ouvrir le modal d'édition complète (titre, description, assignation, échéance)
+  // Fourni par conducteur + admin — absent en vue ouvrier (lecture seule)
+  onEdit?: () => void
 }
 
 // ============================================================
@@ -53,7 +56,7 @@ function formatDate(dateStr: string | null): string | null {
 // TacheItem
 // ============================================================
 
-export function TacheItem({ tache, onUpdate, onUpdateNotePrivee }: TacheItemProps) {
+export function TacheItem({ tache, onUpdate, onUpdateNotePrivee, onEdit }: TacheItemProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [selectedStatut, setSelectedStatut] = useState<TacheStatut>(tache.statut)
   const [bloqueRaison, setBloqueRaison] = useState(tache.bloque_raison ?? '')
@@ -231,15 +234,30 @@ export function TacheItem({ tache, onUpdate, onUpdateNotePrivee }: TacheItemProp
 
       {/* Bouton modifier statut (conducteur, hors mode édition) */}
       {!isReadOnly && !isEditing && (
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => setIsEditing(true)}
-          className="text-xs text-primary font-semibold mt-1 border-transparent"
-        >
-          Modifier le statut
-        </Button>
+        <div className="flex items-center gap-2 mt-1 flex-wrap">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsEditing(true)}
+            className="text-xs text-primary font-semibold border-transparent"
+          >
+            Modifier le statut
+          </Button>
+          {/* Gap CRUD UPDATE (2026-06-09) : bouton d'édition complète (réassignation, titre, description, échéance) */}
+          {onEdit && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={onEdit}
+              data-testid="tache-edit-btn"
+              className="text-xs font-semibold"
+            >
+              Modifier la tâche
+            </Button>
+          )}
+        </div>
       )}
 
       {/* ============================================================ */}

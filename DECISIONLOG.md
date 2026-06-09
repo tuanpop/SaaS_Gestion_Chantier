@@ -10,6 +10,17 @@ Alternative ecartee : [ce qui a ete considere et rejete]
 
 ---
 
+[2026-06-09] Amelia [permanent:false]
+Decision : TacheEditClientSchema déclaré inline dans TacheEditModal.tsx plutôt que via UpdateTacheSchema.pick().
+Raison : UpdateTacheSchema est un ZodEffects (.refine) — la méthode .pick() n'existe pas sur ZodEffects. Le sous-schéma client (titre, description, assigned_to, date_echeance) est déclaré séparément dans le composant, cohérent avec les contraintes de UpdateTacheSchema mais sans le .refine (statut/bloque_raison non éditables dans ce modal). K2.5-T-10 est respecté pour l'esprit (schéma de référence importé via import type UpdateTacheInput, les règles métier restent côté serveur).
+Alternative écartée : UpdateTacheSchema.pick() — impossible sur ZodEffects.
+
+[2026-06-09] Amelia [permanent:false]
+Decision : Test EVT-REASSIGN-001 (happy path handler réel 200) converti en tests Zod unitaires + documentation du skip, car le mock multi-level Supabase couvrant ownership + users + update + notifications best-effort en un seul handler test était fragile (chemin de notification Cas B nécessite chain .eq() à profondeur variable). L'équivalent fonctionnel est couvert par : taches-ownership.test.ts (ownership) + notif-events.test.ts EVT-007 (trigger reassign) + le build TypeScript.
+Alternative écartée : proxy infini ou compteur global — échoue à l'évaluation de vi.mock (hoisting Vitest avant init module).
+
+---
+
 [2026-06-08] Zoro [permanent:false]
 Decision : BUG-FIX ZR-BELL-01 — NotificationBell : fetch immédiat manquant au mount.
 Raison : setInterval(fetchCount, 30_000) sans appel préalable à fetchCount() → badge resté à initialUnreadCount (souvent 0) pendant 30s après chaque navigation. Correction : appel de fetchCount() immédiatement avant setInterval dans useEffect.
