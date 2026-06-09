@@ -12,12 +12,18 @@
 //   - PhotoCard avec actions is_mine (édition + suppression)
 //   - Notice troncature si photos_truncated (RG-PHOTO-007)
 //
+// Fix smoke prod Sprint 4 (#7) :
+//   Après suppression d'une photo, rester dans la galerie (Sheet reste ouverte).
+//   État local `localPhotos` synchronisé avec la prop `photos` à l'ouverture.
+//   onDeleteSuccess retire la photo de localPhotos (optimistic) ET appelle le callback parent.
+//   Si 0 photos restantes → état vide affiché dans la galerie, pas de fermeture brutale.
+//
 // Items securite :
 //   K4-HI-06 : referrerpolicy no-referrer dans PhotoCard
 //   K4-LOW-11 : commentaire text node dans PhotoCard
 //   K4-MED-04 : signed_url non loguee (pino redact actif)
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Sheet,
   SheetContent,
@@ -68,10 +74,22 @@ export function GalerieModale({
   onDeleteSuccess,
   onUpdateCommentaire,
 }: GalerieModaleProps) {
+  // Fix #7 : état local des photos pour rester dans la galerie après suppression.
+  // Synchronisé depuis la prop `photos` à chaque ouverture (open passe à true).
+  const [localPhotos, setLocalPhotos] = useState<PhotoOuvrierDisplay[]>(photos)
   const [deleteState, setDeleteState] = useState<DeleteState>({ open: false, photo: null, isLoading: false })
   const [editState, setEditState] = useState<EditState>({ open: false, photo: null, isLoading: false })
 
-  // Suppression photo — optimistic : l'appelant (TacheMienneCard) met à jour sa liste locale
+  // Sync localPhotos depuis la prop quand la galerie s'ouvre ou que photos change
+  useEffect(() => {
+    if (open) {
+      setLocalPhotos(photos)
+    }
+  }, [open, photos])
+
+  // Suppression photo — Fix #7 : retire la photo de localPhotos (Sheet reste ouverte)
+  // puis appelle le callback parent pour synchroniser TacheMienneCard.
+  // Si 0 photos restantes → état vide affiché dans la galerie, pas de fermeture brutale.
   async function handleDeleteConfirm() {
     if (!deleteState.photo) return
     setDeleteState((prev) => ({ ...prev, isLoading: true }))
@@ -85,14 +103,18 @@ export function GalerieModale({
         throw new Error('Erreur lors de la suppression.')
       }
 
-      onDeleteSuccess(deleteState.photo.id)
+      const deletedId = deleteState.photo.id
+      // Fix #7 : mise à jour locale — Sheet reste ouverte, la photo disparaît de la grille
+      setLocalPhotos((prev) => prev.filter((p) => p.id !== deletedId))
+      // Callback parent (TacheMienneCard) pour synchroniser son état
+      onDeleteSuccess(deletedId)
       setDeleteState({ open: false, photo: null, isLoading: false })
     } catch {
       setDeleteState((prev) => ({ ...prev, isLoading: false }))
     }
   }
 
-  // Édition commentaire
+  // Édition commentaire — met aussi à jour localPhotos
   async function handleSaveCommentaire(commentaire: string | null) {
     if (!editState.photo) return
     setEditState((prev) => ({ ...prev, isLoading: true }))
@@ -108,11 +130,21 @@ export function GalerieModale({
         throw new Error('Erreur lors de la modification.')
       }
 
-      onUpdateCommentaire(editState.photo.id, commentaire)
+      const updatedId = editState.photo.id
+      setLocalPhotos((prev) =>
+        prev.map((p) => (p.id === updatedId ? { ...p, commentaire } : p)),
+      )
+      onUpdateCommentaire(updatedId, commentaire)
       setEditState({ open: false, photo: null, isLoading: false })
     } catch {
       setEditState((prev) => ({ ...prev, isLoading: false }))
     }
+  }
+
+  // Upload réussi — ajoute en tête de localPhotos ET callback parent
+  function handleLocalUpload(photo: PhotoOuvrierDisplay) {
+    setLocalPhotos((prev) => [photo, ...prev])
+    onUploadSuccess(photo)
   }
 
   return (
@@ -145,7 +177,7 @@ export function GalerieModale({
               {/* Bouton "+ Ajouter" dans le header (data-testid ouvrier-galerie-add-photo) */}
               <UploadPhotoButton
                 tacheId={tacheId}
-                onUploadSuccess={onUploadSuccess}
+                onUploadSuccess={handleLocalUpload}
               />
             </div>
             <SheetDescription
@@ -155,14 +187,14 @@ export function GalerieModale({
                 color: '#666666',
               }}
             >
-              {photos.length === 0
+              {localPhotos.length === 0
                 ? 'Aucune photo pour cette tâche'
-                : `${photos.length} photo${photos.length > 1 ? 's' : ''}`}
+                : `${localPhotos.length} photo${localPhotos.length > 1 ? 's' : ''}`}
             </SheetDescription>
           </SheetHeader>
 
-          {/* Etat vide */}
-          {photos.length === 0 ? (
+          {/* Etat vide — Fix #7 : affiché si 0 photos restantes après suppression (pas de fermeture) */}
+          {localPhotos.length === 0 ? (
             <div
               data-testid="ouvrier-galerie-empty"
               style={{
@@ -181,7 +213,7 @@ export function GalerieModale({
             </div>
           ) : (
             <>
-              {/* Notice troncature — RG-PHOTO-007 */}
+              {/* Notice troncature — RG-PHOTO-007 (basée sur état initial, avant suppressions locales) */}
               {photosTruncated && (
                 <div
                   data-testid="ouvrier-galerie-truncation-notice"
@@ -201,7 +233,7 @@ export function GalerieModale({
                 </div>
               )}
 
-              {/* Grille 2 colonnes */}
+              {/* Grille 2 colonnes — Fix #7 : utilise localPhotos (état local après suppressions) */}
               <div
                 style={{
                   display: 'grid',
@@ -209,7 +241,7 @@ export function GalerieModale({
                   gap: '8px',
                 }}
               >
-                {photos.map((photo) => (
+                {localPhotos.map((photo) => (
                   <PhotoCard
                     key={photo.id}
                     photo={photo}

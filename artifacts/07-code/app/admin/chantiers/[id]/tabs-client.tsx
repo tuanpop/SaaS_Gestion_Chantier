@@ -5,14 +5,21 @@
 //   Le sync searchParams est préservé via useRouter.push (pattern existant)
 // data-testid sur TabsTrigger : préservés (annexe B)
 // RG-MIGR-002 : commentaires RBAC: préservés
+//
+// Fix #5 (smoke prod Sprint 4) : onglet Photos activé, grille photos + delete admin
+//   Props photos: PhotoConducteurDisplay[] ajoutée (server-side depuis page.tsx)
+//   État local localPhotos pour optimistic delete (Sheet reste ouverte / grille mise à jour)
+//   K4-HI-06 : referrerpolicy="no-referrer" sur <img> signed_url
+//   D-4-006 : storage_path JAMAIS côté client (PhotoConducteurDisplay sans storage_path)
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import type { Chantier, TacheWithUser, AffectationWithUser } from '@/types/database'
+import type { Chantier, TacheWithUser, AffectationWithUser, PhotoConducteurDisplay } from '@/types/database'
 import { AffectationForm } from '@/components/AffectationForm'
 import { TacheCreateModal } from '@/components/TacheCreateModal'
 import { TacheEditModal } from '@/components/TacheEditModal'
 import { RemoveAffectationButton } from '@/components/RemoveAffectationButton'
+import { ConfirmDeletePhotoDialog } from '@/components/ouvrier/ConfirmDeletePhotoDialog'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
@@ -25,6 +32,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Fragment } from 'react'
+import { useToast } from '@/lib/hooks/use-toast'
 
 // ============================================================
 // Types
@@ -35,6 +43,12 @@ interface AssignableMember {
   nom: string
   prenom: string
   role: 'ouvrier' | 'conducteur'
+}
+
+interface DeletePhotoState {
+  open: boolean
+  photo: PhotoConducteurDisplay | null
+  isLoading: boolean
 }
 
 interface TabsClientProps {
@@ -48,6 +62,8 @@ interface TabsClientProps {
     badge: string
     label: string
   }
+  // Fix #5 : photos passées server-side (PhotoConducteurDisplay[] — sans storage_path, D-4-006)
+  photos: PhotoConducteurDisplay[]
 }
 
 // ============================================================
@@ -96,14 +112,63 @@ export function ChantierDetailAdminTabs({
   affectations,
   membres,
   couleurStyles,
+  photos: initialPhotos,
 }: TabsClientProps) {
   const router = useRouter()
+  const { toast } = useToast()
   const [activeTab, setActiveTab] = useState<string>('infos')
   const [showAffectationForm, setShowAffectationForm] = useState(false)
   const [showTacheModal, setShowTacheModal] = useState(false)
   // Gap CRUD UPDATE (2026-06-09) : état modal édition tâche
   const [editTache, setEditTache] = useState<TacheWithUser | null>(null)
+  // Fix #5 : état local photos pour optimistic delete (tab Photos reste actif après suppression)
+  const [photos, setPhotos] = useState<PhotoConducteurDisplay[]>(initialPhotos)
+  const [deletePhotoState, setDeletePhotoState] = useState<DeletePhotoState>({
+    open: false,
+    photo: null,
+    isLoading: false,
+  })
   const isArchive = chantier.statut === 'archive'
+
+  // Fix #5 : photos regroupées par tache_id (même pattern que conducteur/client.tsx)
+  const photosByTacheId = photos.reduce<Record<string, PhotoConducteurDisplay[]>>(
+    (acc, photo) => {
+      const arr = acc[photo.tache_id] ?? []
+      arr.push(photo)
+      acc[photo.tache_id] = arr
+      return acc
+    },
+    {},
+  )
+
+  // Fix #5 : suppression photo admin — DELETE /api/photos/[id] (déjà autorisé role=admin par canDeletePhoto)
+  async function handleDeletePhotoConfirm() {
+    if (!deletePhotoState.photo) return
+    setDeletePhotoState((prev) => ({ ...prev, isLoading: true }))
+
+    try {
+      const response = await fetch(`/api/photos/${deletePhotoState.photo.id}`, {
+        method: 'DELETE',
+      })
+
+      if (!response.ok && response.status !== 204) {
+        const data = await response.json() as { error?: string }
+        throw new Error(data.error ?? 'Erreur lors de la suppression')
+      }
+
+      const deletedId = deletePhotoState.photo.id
+      setPhotos((prev) => prev.filter((p) => p.id !== deletedId))
+      setDeletePhotoState({ open: false, photo: null, isLoading: false })
+      toast({ title: 'Photo supprimée', description: 'La photo a été supprimée avec succès.' })
+    } catch (err) {
+      setDeletePhotoState((prev) => ({ ...prev, isLoading: false }))
+      toast({
+        title: 'Erreur',
+        description: err instanceof Error ? err.message : 'Erreur lors de la suppression.',
+        variant: 'destructive',
+      })
+    }
+  }
 
   const budgetProgress = chantier.budget_alloue
     ? Math.min(Math.round((chantier.budget_depense / chantier.budget_alloue) * 100), 100)
@@ -128,8 +193,9 @@ export function ChantierDetailAdminTabs({
           <TabsTrigger value="taches" data-testid="tab-taches">
             Tâches ({taches.length})
           </TabsTrigger>
-          <TabsTrigger value="photos" disabled className="opacity-50 cursor-not-allowed" title="Disponible Sprint 3">
-            Photos
+          {/* Fix #5 : onglet Photos activé (smoke prod Sprint 4) */}
+          <TabsTrigger value="photos" data-testid="tab-photos">
+            Photos ({photos.length})
           </TabsTrigger>
           <TabsTrigger value="cr" disabled className="opacity-50 cursor-not-allowed" title="Disponible Sprint 3">
             Comptes-rendus
@@ -349,6 +415,178 @@ export function ChantierDetailAdminTabs({
             </Table>
           )}
         </TabsContent>
+
+        {/* ============ Tab Photos — Fix #5 ============ */}
+        {/* Admin peut voir + supprimer les photos (modération) — canDeletePhoto autorise role=admin */}
+        {/* K4-HI-06 : referrerpolicy="no-referrer" sur tout <img> signed_url */}
+        {/* D-4-006 : storage_path absent de PhotoConducteurDisplay (jamais transmis au client) */}
+        <TabsContent value="photos" className="pt-4">
+          {photos.length === 0 ? (
+            <div className="card-brutal p-8 text-center" data-testid="admin-photos-empty">
+              <p className="font-heading text-lg font-bold mb-2">Aucune photo</p>
+              <p className="text-sm text-muted">
+                {isArchive
+                  ? 'Ce chantier est archivé.'
+                  : 'Les ouvriers n\'ont pas encore déposé de photos.'}
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {/* Grille par tâche — même organisation que conducteur/client.tsx */}
+              {taches.map((tache) => {
+                const tachePhotos = photosByTacheId[tache.id] ?? []
+                if (tachePhotos.length === 0) return null
+                return (
+                  <div key={tache.id}>
+                    <h3 className="font-heading font-semibold text-sm mb-3 text-muted">
+                      {tache.titre}
+                      <span className="ml-2 font-normal">({tachePhotos.length} photo{tachePhotos.length > 1 ? 's' : ''})</span>
+                    </h3>
+                    <div
+                      data-testid="admin-photos-grid"
+                      className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3"
+                    >
+                      {tachePhotos.map((photo) => (
+                        <div
+                          key={photo.id}
+                          className="relative"
+                          style={{
+                            border: '2px solid #000',
+                            borderRadius: '4px',
+                            overflow: 'hidden',
+                            aspectRatio: '1',
+                            boxShadow: '2px 2px 0 0 #000',
+                          }}
+                        >
+                          {/* K4-HI-06 : referrerpolicy="no-referrer" BINDING */}
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={photo.signed_url}
+                            alt={photo.commentaire ? `Photo : ${photo.commentaire}` : 'Photo de chantier'}
+                            referrerPolicy="no-referrer"
+                            loading="lazy"
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          />
+                          {/* Bouton supprimer — modération admin */}
+                          <button
+                            data-testid={`admin-photo-delete-${photo.id}`}
+                            onClick={() => setDeletePhotoState({ open: true, photo, isLoading: false })}
+                            style={{
+                              position: 'absolute',
+                              top: '4px',
+                              right: '4px',
+                              backgroundColor: '#C00000',
+                              color: '#fff',
+                              border: 'none',
+                              borderRadius: '4px',
+                              padding: '4px',
+                              cursor: 'pointer',
+                              minWidth: '28px',
+                              minHeight: '28px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                            }}
+                            aria-label="Supprimer la photo"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                              <polyline points="3 6 5 6 21 6"/>
+                              <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/>
+                            </svg>
+                          </button>
+                          {/* K4-LOW-11 : commentaire text node — jamais innerHTML */}
+                          {photo.commentaire && (
+                            <div
+                              style={{
+                                position: 'absolute',
+                                bottom: 0,
+                                left: 0,
+                                right: 0,
+                                backgroundColor: 'rgba(0,0,0,0.6)',
+                                padding: '4px 6px',
+                              }}
+                            >
+                              <p
+                                style={{
+                                  fontSize: '11px',
+                                  color: '#fff',
+                                  margin: 0,
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  whiteSpace: 'nowrap',
+                                }}
+                              >
+                                {photo.commentaire}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )
+              })}
+              {/* Photos sans tâche associée — cas edge, affiché séparément */}
+              {photos.filter((p) => !taches.find((t) => t.id === p.tache_id)).length > 0 && (
+                <div>
+                  <h3 className="font-heading font-semibold text-sm mb-3 text-muted">Autres photos</h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                    {photos
+                      .filter((p) => !taches.find((t) => t.id === p.tache_id))
+                      .map((photo) => (
+                        <div
+                          key={photo.id}
+                          className="relative"
+                          style={{
+                            border: '2px solid #000',
+                            borderRadius: '4px',
+                            overflow: 'hidden',
+                            aspectRatio: '1',
+                            boxShadow: '2px 2px 0 0 #000',
+                          }}
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={photo.signed_url}
+                            alt={photo.commentaire ? `Photo : ${photo.commentaire}` : 'Photo de chantier'}
+                            referrerPolicy="no-referrer"
+                            loading="lazy"
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          />
+                          <button
+                            data-testid={`admin-photo-delete-${photo.id}`}
+                            onClick={() => setDeletePhotoState({ open: true, photo, isLoading: false })}
+                            style={{
+                              position: 'absolute',
+                              top: '4px',
+                              right: '4px',
+                              backgroundColor: '#C00000',
+                              color: '#fff',
+                              border: 'none',
+                              borderRadius: '4px',
+                              padding: '4px',
+                              cursor: 'pointer',
+                              minWidth: '28px',
+                              minHeight: '28px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                            }}
+                            aria-label="Supprimer la photo"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                              <polyline points="3 6 5 6 21 6"/>
+                              <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/>
+                            </svg>
+                          </button>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </TabsContent>
       </Tabs>
 
       {/* Modals */}
@@ -399,6 +637,20 @@ export function ChantierDetailAdminTabs({
             router.refresh()
           }}
           onClose={() => setEditTache(null)}
+        />
+      )}
+
+      {/* Fix #5 : Dialog confirmation suppression photo admin */}
+      {deletePhotoState.photo && (
+        <ConfirmDeletePhotoDialog
+          open={deletePhotoState.open}
+          onOpenChange={(open) => {
+            if (!open) setDeletePhotoState({ open: false, photo: null, isLoading: false })
+          }}
+          onConfirm={handleDeletePhotoConfirm}
+          photoSignedUrl={deletePhotoState.photo.signed_url}
+          isLoading={deletePhotoState.isLoading}
+          isConducteur={false}
         />
       )}
     </div>

@@ -53,12 +53,17 @@ import type { UpdateTacheInput } from '@/lib/validation/taches'
 // ============================================================
 // Sous-schéma client (subset de UpdateTacheSchema sans .refine)
 // ============================================================
+// Fix #6 (smoke prod Sprint 4) : note_privee_conducteur ajoutée pour admin + conducteur.
+// K4-NPR-01 / D-051 / D-3-004 : ce champ est autorisé côté backend pour role=admin et conducteur.
+// NON exposé à l'ouvrier (routes /api/ouvrier/* et TacheOuvrier type ne l'incluent pas — défense TS).
 
 const TacheEditClientSchema = z.object({
   titre: z.string().min(1, 'Le titre est requis').max(200, 'Max 200 caractères'),
   description: z.string().max(2000).nullable().optional(),
   assigned_to: z.string().uuid().nullable().optional(),
   date_echeance: z.string().date().nullable().optional(),
+  // Fix #6 : note interne — acceptée par PATCH /api/taches/[id] pour admin + conducteur
+  note_privee_conducteur: z.string().max(2000).nullable().optional(),
 })
 
 type EditFormValues = z.infer<typeof TacheEditClientSchema>
@@ -104,6 +109,8 @@ export function TacheEditModal({
       description: tache.description ?? '',
       assigned_to: tache.assigned_to ?? null,
       date_echeance: tache.date_echeance ?? null,
+      // Fix #6 : pré-remplissage note interne (null si absente)
+      note_privee_conducteur: tache.note_privee_conducteur ?? null,
     },
   })
 
@@ -111,11 +118,13 @@ export function TacheEditModal({
 
   async function onSubmit(values: EditFormValues) {
     // Construire le payload PATCH avec seulement les champs définis
+    // Fix #6 : note_privee_conducteur incluse pour admin + conducteur (K4-NPR-01 : jamais exposé ouvrier)
     const patch: Partial<UpdateTacheInput> = {
       titre: values.titre,
       description: values.description || null,
       assigned_to: values.assigned_to,
       date_echeance: values.date_echeance || null,
+      note_privee_conducteur: values.note_privee_conducteur ?? null,
     }
 
     const response = await fetch(`/api/taches/${tache.id}`, {
@@ -242,6 +251,40 @@ export function TacheEditModal({
                       type="date"
                       value={field.value ?? ''}
                       onChange={(e) => field.onChange(e.target.value || null)}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Note privée (interne) — Fix #6 : visible admin + conducteur, badge "Interne" */}
+            {/* K4-NPR-01 / D-051 : JAMAIS exposé à l'ouvrier — ce modal n'est pas rendu côté ouvrier */}
+            {/* K4-MED-14 : badge "Interne" permanent pour distinguer la note des champs publics */}
+            <FormField
+              control={form.control}
+              name="note_privee_conducteur"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="flex items-center gap-2">
+                    Note privée
+                    <span
+                      className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide bg-amber-100 text-amber-800 border border-amber-300"
+                      aria-label="Champ interne, non visible par l'ouvrier"
+                    >
+                      Interne
+                    </span>
+                    <span className="text-muted font-normal normal-case text-xs">(optionnel)</span>
+                  </FormLabel>
+                  <FormControl>
+                    <Textarea
+                      {...field}
+                      value={field.value ?? ''}
+                      onChange={(e) => field.onChange(e.target.value || null)}
+                      placeholder="Note visible conducteur + admin uniquement..."
+                      className="resize-none h-24"
+                      maxLength={2000}
+                      data-testid="tache-edit-note-privee"
                     />
                   </FormControl>
                   <FormMessage />

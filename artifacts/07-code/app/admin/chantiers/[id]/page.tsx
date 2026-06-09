@@ -1,5 +1,5 @@
 // app/(admin)/chantiers/[id]/page.tsx
-// Détail chantier admin — infos, tâches, affectations
+// Détail chantier admin — infos, tâches, affectations, photos
 // Server Component — data fetching via adminClient
 //
 // Proto référencé :
@@ -9,8 +9,16 @@
 // Sections :
 //   1. Header : nom, client, pastille couleur, badge statut, dates, budget
 //   2. Actions admin : bouton "Archiver" (confirmation)
-//   3. Liste des tâches : TacheItem (lecture seule pour admin)
+//   3. Liste des tâches avec note_privee_conducteur (SELECT mis à jour — fix #6)
 //   4. Liste des affectations actives
+//   5. Photos — fix #5 : fetch server-side + signPhotoPaths (mirror pattern D-4-019 conducteur)
+//
+// Sécurité fix #5 :
+//   K4-CR-02 : SELECT photos filtre organisation_id = org du JWT (isolation org server-side)
+//   D-4-019 : pas d'endpoint REST GET photos admin — server-side direct
+//   D-4-006 : storage_path JAMAIS transmis au client
+//   K4-HI-06 : referrerpolicy="no-referrer" sur <img> signed_url côté client
+//   K4-NPR-01 : note_privee_conducteur JAMAIS dans payload ouvrier (non-régression préservée)
 
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
@@ -18,10 +26,11 @@ import { ArrowLeft, Pencil } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { calculerCouleur } from '@/lib/coloration'
+import { signPhotoPaths } from '@/lib/photos-access'
 import { ArchiveButton } from './archive-button'
 import { UnarchiveButton } from './unarchive-button'
 import { ChantierDetailAdminTabs } from './tabs-client'
-import type { Chantier, TacheWithUser, AffectationWithUser } from '@/types/database'
+import type { Chantier, TacheWithUser, AffectationWithUser, PhotoConducteurDisplay } from '@/types/database'
 // T04 — TacheItem supprimé de cet import (remplacé par tableau inline dans tabs-client.tsx)
 // T04 — ChantierDetailAdminTabs extrait en Client Component pour gérer l'état des tabs
 
@@ -81,12 +90,14 @@ export default async function ChantierDetailAdminPage({ params }: PageProps) {
   )
   const couleurStyles = COULEUR_MAP[couleur]
 
-  // Récupérer les tâches
+  // Récupérer les tâches — fix #6 : SELECT inclut note_privee_conducteur (admin autorisé à voir/éditer)
+  // K4-NPR-01 : ce SELECT est admin-only (adminClient + filtres org) — jamais exposé ouvrier
   const { data: tachesRaw } = await adminClient
     .from('taches')
     .select(`
       id, chantier_id, organisation_id, titre, description,
-      statut, assigned_to, date_echeance, bloque_raison, created_by, created_at, updated_at,
+      statut, assigned_to, date_echeance, bloque_raison, note_privee_conducteur,
+      created_by, created_at, updated_at,
       assigned_user:users!taches_assigned_to_fkey (nom, prenom)
     `)
     .eq('chantier_id', chantierId)
@@ -125,6 +136,37 @@ export default async function ChantierDetailAdminPage({ params }: PageProps) {
     prenom: string
     role: 'ouvrier' | 'conducteur'
   }>
+
+  // Fix #5 — Photos fetch server-side (mirror pattern D-4-019 conducteur)
+  // K4-CR-02 : SELECT photos filtre organisation_id = org du JWT (isolation org BINDING)
+  // D-4-006 : storage_path lu internalement pour signPhotoPaths, JAMAIS transmis au client
+  const tacheIds = taches.map((t) => t.id)
+  let photosAdmin: PhotoConducteurDisplay[] = []
+
+  if (tacheIds.length > 0) {
+    const { data: photosRaw, error: photosError } = await adminClient
+      .from('photos')
+      .select('id, tache_id, storage_path, commentaire, uploader_id, created_at')
+      .in('tache_id', tacheIds)
+      .eq('organisation_id', organisationId) // K4-CR-02 : isolation org
+      .order('created_at', { ascending: false })
+
+    if (!photosError && photosRaw && photosRaw.length > 0) {
+      const storagePaths = [...new Set(photosRaw.map((p) => p.storage_path))]
+      const signedUrlMap = await signPhotoPaths(storagePaths)
+
+      // Mapper vers PhotoConducteurDisplay — storage_path JAMAIS transmis au client (D-4-006)
+      photosAdmin = photosRaw.map((p) => ({
+        id: p.id,
+        tache_id: p.tache_id,
+        commentaire: p.commentaire,
+        created_at: p.created_at,
+        uploader_id: p.uploader_id,
+        signed_url: signedUrlMap.get(p.storage_path) ?? '',
+      }))
+    }
+    // Erreur fetch photos — non-bloquant, la page s'affiche sans photos (best-effort)
+  }
 
   return (
     <div>
@@ -183,7 +225,7 @@ export default async function ChantierDetailAdminPage({ params }: PageProps) {
       )}
 
       {/* T04 — Système de tabs : Client Component gère les tabs et tout le contenu tabulé */}
-      {/* Informations (grille infos + budget + affectations) et Tâches sont dans ChantierDetailAdminTabs */}
+      {/* Fix #5 : photos passées au client (PhotoConducteurDisplay[] — sans storage_path) */}
       <ChantierDetailAdminTabs
         chantier={chantier}
         chantierId={chantierId}
@@ -191,6 +233,7 @@ export default async function ChantierDetailAdminPage({ params }: PageProps) {
         affectations={affectations}
         membres={membres}
         couleurStyles={couleurStyles}
+        photos={photosAdmin}
       />
     </div>
   )

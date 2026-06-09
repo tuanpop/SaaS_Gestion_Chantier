@@ -2,6 +2,19 @@
 
 ---
 
+[2026-06-09 23:06] agent=amelia phase=EXECUTE scope=smoke-prod-sprint4-fixes
+  artifacts:
+    - artifacts/07-code/components/ouvrier/GalerieModale.tsx (modifié — fix #7 : état local localPhotos, Sheet reste ouverte après delete)
+    - artifacts/07-code/components/TacheEditModal.tsx (modifié — fix #6 : champ note_privee_conducteur avec badge Interne)
+    - artifacts/07-code/app/admin/chantiers/[id]/page.tsx (modifié — fix #5+#6 : fetch photos server-side + note_privee_conducteur dans SELECT)
+    - artifacts/07-code/app/admin/chantiers/[id]/tabs-client.tsx (modifié — fix #5 : onglet Photos activé, grille + delete admin)
+  gates:
+    - tsc --noEmit : 0 erreur
+    - npm test : 340 passed, 0 failed
+    - next build : succès
+    - npm run lint : 0 warning/error
+  status: completed
+
 [2026-06-09 22:12] agent=amelia phase=EXECUTE scope=gap-crud-update-tache
   artifacts:
     - artifacts/07-code/components/TacheEditModal.tsx (nouveau)
