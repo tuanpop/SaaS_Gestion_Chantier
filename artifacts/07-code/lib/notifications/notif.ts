@@ -59,6 +59,33 @@ export async function resolveConducteurChantier(
   orgId: string,
 ): Promise<string | null> {
   try {
+    // 1. Conducteur "propriétaire" du chantier = chantiers.created_by (source canonique du
+    //    domaine, cf. écran no-affectation Sprint 3). FIX smoke prod 2026-06-09 : la création
+    //    de chantier N'auto-affecte PAS le conducteur — sans ce lookup, un conducteur créateur
+    //    non affecté n'était jamais résolu → notif statut tâche ignorée (userId='').
+    const { data: chantierRow } = await adminClient
+      .from('chantiers')
+      .select('created_by')
+      .eq('id', chantierId)
+      .eq('organisation_id', orgId)
+      .maybeSingle()
+
+    const createdBy = (chantierRow as { created_by: string | null } | null)?.created_by ?? null
+    if (createdBy) {
+      const { data: creator } = await adminClient
+        .from('users')
+        .select('id, role, deleted_at')
+        .eq('id', createdBy)
+        .eq('organisation_id', orgId)
+        .maybeSingle()
+      const creatorTyped = creator as { id: string; role: string; deleted_at: string | null } | null
+      if (creatorTyped && creatorTyped.role === 'conducteur' && creatorTyped.deleted_at === null) {
+        return creatorTyped.id
+      }
+    }
+
+    // 2. Fallback : premier conducteur AFFECTÉ au chantier (cas créateur = admin, ou conducteur
+    //    affecté distinct du créateur).
     const { data, error } = await adminClient
       .from('affectations')
       .select('user_id, users!affectations_user_id_fkey(role, deleted_at)')
