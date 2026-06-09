@@ -1,6 +1,10 @@
 'use client'
 // components/notifications/NotificationDropdown.tsx
-// Fil d'activité — dropdown desktop / Sheet mobile
+// Panneau "fil d'activité" — CONTENU SEUL (data + UI).
+//
+// Le conteneur (DropdownMenu desktop / Sheet mobile) est choisi par NotificationBell
+// via useIsMobile — UN SEUL variant monté à la fois (fix bug double-panneau smoke prod).
+// Ce composant ne rend QUE le contenu du panneau (export `NotificationPanel`).
 //
 // Implémente : US-032 (fil d'activité, marquer lu, marquer tout lu)
 // D-4V-012 : fetch lazy au premier open, optimistic local
@@ -8,17 +12,6 @@
 // Sécurité : titre/message rendus en JSX (React échappe par défaut)
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet'
 import { NotificationItem } from '@/components/notifications/NotificationItem'
 import { useToast } from '@/lib/hooks/use-toast'
 import type { NotificationDisplay } from '@/types/database'
@@ -27,7 +20,8 @@ import type { NotificationDisplay } from '@/types/database'
 // Types
 // ============================================================
 
-interface NotificationDropdownProps {
+interface NotificationPanelProps {
+  /** true quand le panneau est ouvert — déclenche le fetch lazy */
   open: boolean
   onClose: () => void
   onUnreadCountChange?: (count: number) => void
@@ -70,10 +64,10 @@ function NotificationSkeleton() {
 }
 
 // ============================================================
-// Composant principal
+// Panneau (contenu seul)
 // ============================================================
 
-export function NotificationDropdown({ open, onClose, onUnreadCountChange }: NotificationDropdownProps) {
+export function NotificationPanel({ open, onClose, onUnreadCountChange }: NotificationPanelProps) {
   const { toast } = useToast()
   const [notifications, setNotifications] = useState<NotificationDisplay[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
@@ -127,12 +121,9 @@ export function NotificationDropdown({ open, onClose, onUnreadCountChange }: Not
 
   // Marquer 1 notif lue — optimistic local
   // BUG-FIX ZR-DROP-01 : stale closure sur unreadCount capturé par l'ancienne implémentation.
-  // Avant : useCallback([notifications, unreadCount, updateParentCount]) capturait les valeurs
-  //   au moment du render → en cas de clics rapides, le 2e clic lisait unreadCount périmé.
   // Après : notificationsRef.current (toujours à jour via setNotificationsTracked) permet de
   //   vérifier l'état lu RÉEL de la notif ; setUnreadCount fonctionnel garantit prev correct.
   const handleRead = useCallback(async (id: string) => {
-    // Lire l'état courant depuis la ref (toujours à jour, pas de stale closure)
     const currentNotif = notificationsRef.current.find((n) => n.id === id)
     const wasUnread = currentNotif !== undefined && !currentNotif.lu
 
@@ -158,7 +149,6 @@ export function NotificationDropdown({ open, onClose, onUnreadCountChange }: Not
 
   // Marquer tout lu
   const handleReadAll = useCallback(async () => {
-    // Optimistic : tout marquer lu localement
     setNotificationsTracked((prev) => prev.map((n) => ({ ...n, lu: true })))
     updateParentCount(0)
 
@@ -176,11 +166,10 @@ export function NotificationDropdown({ open, onClose, onUnreadCountChange }: Not
     toast({ title: 'Cette ressource n\'existe plus.' })
   }, [toast])
 
-  // Contenu du panel
-  const panelContent = (
+  return (
     <div
       data-testid="notification-dropdown"
-      className="flex flex-col"
+      className="flex flex-col w-full"
       style={{ backgroundColor: 'var(--color-notif-panel-bg)' }}
     >
       {/* Header panel */}
@@ -243,43 +232,6 @@ export function NotificationDropdown({ open, onClose, onUnreadCountChange }: Not
       </div>
     </div>
   )
-
-  return (
-    <>
-      {/* Desktop : DropdownMenu (md+) */}
-      <div className="hidden md:block">
-        <DropdownMenu open={open} onOpenChange={(o) => { if (!o) onClose() }}>
-          <DropdownMenuTrigger asChild>
-            <span className="sr-only">trigger</span>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            align="end"
-            className="p-0 border-2 border-black shadow-[4px_4px_0_#000] rounded-[6px] overflow-hidden"
-            style={{ width: 380 }}
-            sideOffset={8}
-          >
-            {panelContent}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-
-      {/* Mobile : Sheet depuis le bas (< md) */}
-      <div className="md:hidden">
-        <Sheet open={open} onOpenChange={(o) => { if (!o) onClose() }}>
-          <SheetContent
-            side="bottom"
-            className="p-0 border-t-2 border-black rounded-t-[6px] overflow-hidden"
-            style={{ maxHeight: '70vh' }}
-          >
-            <SheetHeader className="sr-only">
-              <SheetTitle>Notifications</SheetTitle>
-            </SheetHeader>
-            {panelContent}
-          </SheetContent>
-        </Sheet>
-      </div>
-    </>
-  )
 }
 
-export default NotificationDropdown
+export default NotificationPanel

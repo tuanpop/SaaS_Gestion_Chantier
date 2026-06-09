@@ -171,9 +171,10 @@ export function NotificationItem({
           {notification.titre}
         </p>
         <p className="text-[13px] text-[var(--color-text-muted)] line-clamp-2 mt-0.5">
-          {/* K4V-04 : message tronqué 80 chars en JSX pur */}
-          {notification.message.slice(0, 80)}
-          {notification.message.length > 80 && '…'}
+          {/* K4V-04 : message en JSX pur. Slice large (160) pour ne pas couper une date
+              en plein milieu ("...depuis le 202…") ; line-clamp-2 borne le rendu visuel. */}
+          {notification.message.slice(0, 160)}
+          {notification.message.length > 160 && '…'}
         </p>
         <time
           className="text-[12px] text-[var(--color-text-muted)] mt-0.5 block"
