@@ -96,12 +96,13 @@ export function UploadPhotoButton({ tacheId, onUploadSuccess }: UploadPhotoButto
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-      {/* Input file masque — accept sans HEIC (A1 PO 2026-06-07) */}
+      {/* Input file masque — accept sans HEIC (A1 PO 2026-06-07).
+          PAS de `capture` : laisse le choix caméra OU galerie sur mobile (retour smoke D1).
+          `capture="environment"` forçait la caméra et masquait l'option galerie. */}
       <input
         ref={inputRef}
         type="file"
         accept="image/jpeg,image/png,image/webp"
-        capture="environment"
         onChange={handleFileChange}
         style={{ display: 'none' }}
         aria-hidden="true"

@@ -17,11 +17,14 @@ if (IS_DEV) {
   // En dev, accepter HMR websocket + Supabase local
   connectSrcParts.push('ws://localhost:*', 'http://127.0.0.1:*', 'http://localhost:*')
 }
+// img-src : autoriser les photos servies par Supabase Storage (signed URLs sur SUPABASE_URL).
+// Sans ça, la CSP bloque l'affichage des photos (Sprint 4) — "violates img-src" (smoke prod).
+const imgSrcParts = ["'self'", 'data:', 'blob:', SUPABASE_URL]
 const ContentSecurityPolicy = [
   "default-src 'self'",
   scriptSrc,
   styleSrc,
-  "img-src 'self' data: blob:",
+  `img-src ${imgSrcParts.filter(Boolean).join(' ')}`,
   fontSrc,
   `connect-src ${connectSrcParts.filter(Boolean).join(' ')}`,
   "frame-ancestors 'none'",
