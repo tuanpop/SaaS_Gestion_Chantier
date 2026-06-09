@@ -144,7 +144,8 @@ export async function POST(request: NextRequest) {
       .select('id, assigned_to')
       .eq('id', tacheId)
       .eq('organisation_id', session.organisation_id) // K4-HI-01 : organisation BINDING
-      .is('deleted_at', null) // taches en hard delete mais defense en profondeur
+      // NB : `taches` est en HARD delete — PAS de colonne `deleted_at`. Ne jamais filtrer
+      // dessus ici (provoquait 42703 "column taches.deleted_at does not exist" → upload KO).
       .maybeSingle()
 
     if (tacheError) {

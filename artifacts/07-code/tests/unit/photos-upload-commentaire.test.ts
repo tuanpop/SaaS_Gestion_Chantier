@@ -123,12 +123,10 @@ function setupHappyPathMocks(commentaireInBase: string | null = null) {
         select: () => ({
           eq: () => ({
             eq: () => ({
-              is: () => ({
-                maybeSingle: () => Promise.resolve({
+              maybeSingle: () => Promise.resolve({
                   data: { id: TACHE_ID, assigned_to: USER_ID },
                   error: null,
                 }),
-              }),
             }),
           }),
         }),

@@ -139,12 +139,10 @@ describe('POST /api/photos — rollback Storage si INSERT DB KO (RG-PHOTO-004)',
           select: () => ({
             eq: () => ({
               eq: () => ({
-                is: () => ({
-                  maybeSingle: () => Promise.resolve({
+                maybeSingle: () => Promise.resolve({
                     data: { id: TACHE_ID, assigned_to: USER_ID },
                     error: null,
                   }),
-                }),
               }),
             }),
           }),
@@ -190,12 +188,10 @@ describe('POST /api/photos — rollback Storage si INSERT DB KO (RG-PHOTO-004)',
           select: () => ({
             eq: () => ({
               eq: () => ({
-                is: () => ({
-                  maybeSingle: () => Promise.resolve({
+                maybeSingle: () => Promise.resolve({
                     data: { id: TACHE_ID, assigned_to: USER_ID },
                     error: null,
                   }),
-                }),
               }),
             }),
           }),

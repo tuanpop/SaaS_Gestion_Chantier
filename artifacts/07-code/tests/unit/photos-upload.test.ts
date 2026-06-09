@@ -127,12 +127,10 @@ function setupHappyPath() {
         select: () => ({
           eq: () => ({
             eq: () => ({
-              is: () => ({
-                maybeSingle: () => Promise.resolve({
+              maybeSingle: () => Promise.resolve({
                   data: { id: TACHE_ID, assigned_to: USER_ID },
                   error: null,
                 }),
-              }),
             }),
           }),
         }),
@@ -273,12 +271,10 @@ describe('POST /api/photos', () => {
       select: () => ({
         eq: () => ({
           eq: () => ({
-            is: () => ({
-              maybeSingle: () => Promise.resolve({
+            maybeSingle: () => Promise.resolve({
                 data: { id: TACHE_ID, assigned_to: otherUserId }, // pas le bon user
                 error: null,
               }),
-            }),
           }),
         }),
       }),
@@ -302,9 +298,7 @@ describe('POST /api/photos', () => {
       select: () => ({
         eq: () => ({
           eq: () => ({
-            is: () => ({
-              maybeSingle: () => Promise.resolve({ data: null, error: null }),
-            }),
+            maybeSingle: () => Promise.resolve({ data: null, error: null }),
           }),
         }),
       }),
