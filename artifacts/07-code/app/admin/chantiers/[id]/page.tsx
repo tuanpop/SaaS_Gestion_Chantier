@@ -31,6 +31,7 @@ import { ArchiveButton } from './archive-button'
 import { UnarchiveButton } from './unarchive-button'
 import { ChantierDetailAdminTabs } from './tabs-client'
 import type { Chantier, TacheWithUser, AffectationWithUser, PhotoConducteurDisplay } from '@/types/database'
+import type { CompteRenduListe, RapportHebdoListe } from '@/types/reporting'
 // T04 — TacheItem supprimé de cet import (remplacé par tableau inline dans tabs-client.tsx)
 // T04 — ChantierDetailAdminTabs extrait en Client Component pour gérer l'état des tabs
 
@@ -137,6 +138,33 @@ export default async function ChantierDetailAdminPage({ params }: PageProps) {
     role: 'ouvrier' | 'conducteur'
   }>
 
+  // Sprint 5 — CRs journaliers (liste compacte — sans contenu_genere/donnees_brutes)
+  // Note: comptes_rendus/rapports_hebdo pas encore dans Database types (dette post-migration)
+  // Pattern Zoro Bug A : (adminClient as unknown as any).from('table') — identique notifications
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: crsRaw } = await (adminClient as unknown as any)
+    .from('comptes_rendus')
+    .select('id, chantier_id, organisation_id, date_cr, statut, declenche_par, valide_par, valide_at, envoye_at, created_at, updated_at')
+    .eq('chantier_id', chantierId)
+    .eq('organisation_id', organisationId)
+    .order('date_cr', { ascending: false })
+    .limit(20)
+
+  const crs = (crsRaw ?? []) as unknown as CompteRenduListe[]
+
+  // Sprint 5 — Rapports hebdo (liste compacte — sans contenu_genere)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: rapportsHebdoRaw } = await (adminClient as unknown as any)
+    .from('rapports_hebdo')
+    .select('id, chantier_id, organisation_id, annee_iso, semaine_iso, cr_ids, statut, valide_par, valide_at, envoye_at, created_at, updated_at')
+    .eq('chantier_id', chantierId)
+    .eq('organisation_id', organisationId)
+    .order('annee_iso', { ascending: false })
+    .order('semaine_iso', { ascending: false })
+    .limit(10)
+
+  const rapportsHebdo = (rapportsHebdoRaw ?? []) as unknown as RapportHebdoListe[]
+
   // Fix #5 — Photos fetch server-side (mirror pattern D-4-019 conducteur)
   // K4-CR-02 : SELECT photos filtre organisation_id = org du JWT (isolation org BINDING)
   // D-4-006 : storage_path lu internalement pour signPhotoPaths, JAMAIS transmis au client
@@ -234,6 +262,8 @@ export default async function ChantierDetailAdminPage({ params }: PageProps) {
         membres={membres}
         couleurStyles={couleurStyles}
         photos={photosAdmin}
+        crs={crs}
+        rapportsHebdo={rapportsHebdo}
       />
     </div>
   )

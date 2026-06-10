@@ -28,6 +28,7 @@ import type {
   AffectationWithUser,
   PhotoConducteurDisplay,
 } from '@/types/database'
+import type { CompteRenduListe, RapportHebdoListe } from '@/types/reporting'
 import { ChantierDetailConducteurClient } from './client'
 
 export const dynamic = 'force-dynamic'
@@ -123,6 +124,32 @@ export default async function ChantierDetailConduPage({ params }: PageProps) {
     role: 'ouvrier' | 'conducteur'
   }>
 
+  // Sprint 5 — CRs journaliers (liste compacte — sans contenu_genere/donnees_brutes)
+  // Pattern Zoro Bug A : (adminClient as unknown as any).from('table') — identique notifications
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: crsRaw } = await (adminClient as unknown as any)
+    .from('comptes_rendus')
+    .select('id, chantier_id, organisation_id, date_cr, statut, declenche_par, valide_par, valide_at, envoye_at, created_at, updated_at')
+    .eq('chantier_id', chantierId)
+    .eq('organisation_id', organisationId)
+    .order('date_cr', { ascending: false })
+    .limit(20)
+
+  const crs = (crsRaw ?? []) as unknown as CompteRenduListe[]
+
+  // Sprint 5 — Rapports hebdo (liste compacte)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: rapportsHebdoRaw } = await (adminClient as unknown as any)
+    .from('rapports_hebdo')
+    .select('id, chantier_id, organisation_id, annee_iso, semaine_iso, cr_ids, statut, valide_par, valide_at, envoye_at, created_at, updated_at')
+    .eq('chantier_id', chantierId)
+    .eq('organisation_id', organisationId)
+    .order('annee_iso', { ascending: false })
+    .order('semaine_iso', { ascending: false })
+    .limit(10)
+
+  const rapportsHebdo = (rapportsHebdoRaw ?? []) as unknown as RapportHebdoListe[]
+
   // Sprint 4 — F005/D-4-019 : photos fetchées server-side (pas d'endpoint REST GET conducteur)
   // SELECT photos filtre par organisation_id du JWT (K4-CR-02 — isolation org BINDING)
   // storage_path lu internalement pour signPhotoPaths, JAMAIS transmis au client
@@ -187,7 +214,7 @@ export default async function ChantierDetailConduPage({ params }: PageProps) {
         <p className="text-white/60 text-xs mt-1">{chantier.client_nom}</p>
       </div>
 
-      {/* Client Component pour les interactions (tâches + affectation + photos modération) */}
+      {/* Client Component pour les interactions (tâches + affectation + photos + CRs) */}
       <ChantierDetailConducteurClient
         chantier={chantier}
         chantierId={chantierId}
@@ -195,6 +222,8 @@ export default async function ChantierDetailConduPage({ params }: PageProps) {
         affectations={affectations}
         membres={membres}
         photos={photosConducteur}
+        crs={crs}
+        rapportsHebdo={rapportsHebdo}
       />
 
       {/* Bottom Navigation conducteur */}

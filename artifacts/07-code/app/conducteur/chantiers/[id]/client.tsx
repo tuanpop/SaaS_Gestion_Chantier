@@ -24,6 +24,11 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { useToast } from '@/lib/hooks/use-toast'
 import type { Chantier, TacheWithUser, AffectationWithUser, Tache, PhotoConducteurDisplay } from '@/types/database'
+// Sprint 5 — Reporting
+import { CrListItem } from '@/components/reporting/CrListItem'
+import { RapportHebdoCard } from '@/components/reporting/RapportHebdoCard'
+import { LlmLoadingCard } from '@/components/reporting/LlmLoadingCard'
+import type { CompteRenduListe, RapportHebdoListe } from '@/types/reporting'
 
 interface MembreOption {
   id: string
@@ -39,6 +44,9 @@ interface Props {
   affectations: AffectationWithUser[]
   membres: MembreOption[]
   photos: PhotoConducteurDisplay[]  // F005/D-4-019 : passees server-side
+  // Sprint 5 — Reporting
+  crs?: CompteRenduListe[]
+  rapportsHebdo?: RapportHebdoListe[]
 }
 
 interface DeletePhotoState {
@@ -54,6 +62,8 @@ export function ChantierDetailConducteurClient({
   affectations: initialAffectations,
   membres,
   photos: initialPhotos,
+  crs: initialCrs = [],
+  rapportsHebdo: initialRapportsHebdo = [],
 }: Props) {
   const router = useRouter()
   const { toast } = useToast()
@@ -70,6 +80,10 @@ export function ChantierDetailConducteurClient({
 
   // Gap CRUD UPDATE (2026-06-09) : état modal édition tâche
   const [editTache, setEditTache] = useState<TacheWithUser | null>(null)
+
+  // Sprint 5 — génération CR
+  const [isGeneratingCr, setIsGeneratingCr] = useState(false)
+  const [crError, setCrError] = useState<string | null>(null)
 
   // handleUpdateTache — S4-F02 : accepte note_privee_conducteur (RG-NPR-002 : PATCH séparé)
   const handleUpdateTache = useCallback(
@@ -158,6 +172,10 @@ export function ChantierDetailConducteurClient({
           </TabsTrigger>
           <TabsTrigger value="equipe" data-testid="tab-conducteur-equipe">
             Équipe ({affectations.length})
+          </TabsTrigger>
+          {/* Sprint 5 : onglet CR */}
+          <TabsTrigger value="cr" data-testid="tab-conducteur-cr">
+            CR ({initialCrs.length})
           </TabsTrigger>
         </TabsList>
 
@@ -368,6 +386,88 @@ export function ChantierDetailConducteurClient({
               </svg>
               Affecter un membre
             </Button>
+          </div>
+        </TabsContent>
+
+        {/* ============ Tab Comptes Rendus — Sprint 5 ============ */}
+        <TabsContent value="cr" className="pt-2">
+          <div className="pb-40 flex flex-col gap-4">
+            {/* Section CRs journaliers */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-heading font-bold text-base">Comptes rendus journaliers</h3>
+                <Button
+                  size="sm"
+                  data-testid="conducteur-generer-cr"
+                  disabled={isGeneratingCr}
+                  onClick={async () => {
+                    setIsGeneratingCr(true)
+                    setCrError(null)
+                    try {
+                      const res = await fetch(`/api/chantiers/${chantierId}/cr/generer`, {
+                        method: 'POST',
+                        credentials: 'include',
+                      })
+                      if (!res.ok) {
+                        const d = await res.json().catch(() => ({}))
+                        setCrError((d as { error?: string }).error ?? 'Erreur lors de la génération.')
+                      } else {
+                        router.refresh()
+                      }
+                    } catch {
+                      setCrError('Erreur réseau. Veuillez réessayer.')
+                    } finally {
+                      setIsGeneratingCr(false)
+                    }
+                  }}
+                  className="text-xs"
+                >
+                  + Générer CR
+                </Button>
+              </div>
+
+              {crError && (
+                <p className="text-xs text-[#C00000] border-2 border-[#C00000] rounded px-3 py-2 bg-[#FFCCCC] mb-3">
+                  {crError}
+                </p>
+              )}
+
+              {isGeneratingCr && (
+                <LlmLoadingCard message="Génération du compte rendu en cours…" />
+              )}
+
+              {!isGeneratingCr && initialCrs.length === 0 && (
+                <div className="card-brutal-mobile p-6 text-center">
+                  <p className="font-heading font-bold text-base mb-1">Aucun compte rendu</p>
+                  <p className="text-xs text-muted">Le CR journalier sera généré automatiquement à 18h.</p>
+                </div>
+              )}
+
+              {!isGeneratingCr && initialCrs.length > 0 && (
+                <div className="space-y-2">
+                  {initialCrs.map((cr) => (
+                    <CrListItem key={cr.id} cr={cr} basePath="/conducteur" />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Section Rapports hebdo */}
+            <div>
+              <h3 className="font-heading font-bold text-base mb-3">Rapports hebdomadaires</h3>
+              {initialRapportsHebdo.length === 0 ? (
+                <div className="card-brutal-mobile p-6 text-center">
+                  <p className="font-heading font-bold text-base mb-1">Aucun rapport hebdo</p>
+                  <p className="text-xs text-muted">Généré automatiquement le lundi à 7h15.</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {initialRapportsHebdo.map((r) => (
+                    <RapportHebdoCard key={r.id} rapport={r} basePath="/conducteur" />
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </TabsContent>
       </Tabs>

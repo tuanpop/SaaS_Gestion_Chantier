@@ -76,14 +76,17 @@ const nextConfig = {
   // en production (Next.js output:standalone ne trace que les fichiers importés statiquement).
   // Pattern : toutes les routes API peuvent lire les templates.
   outputFileTracingIncludes: {
-    '/api/**/*': ['./templates/**/*'],
+    // Templates emails (Resend) + prompts LLM (Sprint 5)
+    '/api/**/*': ['./templates/**/*', '../artifacts/09-llm/prompts/**/*'],
   },
 
   // Packages dont le bundling webpack casse le runtime — externalise (Next.js charge
   // depuis node_modules en runtime via outputFileTracingIncludes Next.js standalone).
   // - pino + pino-pretty + thread-stream : worker thread mal bundlé
+  // - @react-pdf/renderer : D-5-07 BINDING — génération PDF côté Node uniquement,
+  //   ne pas bundler (contient des dépendances canvas/worker incompatibles avec Webpack)
   // Note D-054 : ioredis retire de serverExternalPackages (lib/redis.ts supprimee, D-054 pivot Postgres)
-  serverExternalPackages: ['pino', 'pino-pretty', 'thread-stream'],
+  serverExternalPackages: ['pino', 'pino-pretty', 'thread-stream', '@react-pdf/renderer'],
 
   async headers() {
     return [

@@ -11,6 +11,8 @@
 //   État local localPhotos pour optimistic delete (Sheet reste ouverte / grille mise à jour)
 //   K4-HI-06 : referrerpolicy="no-referrer" sur <img> signed_url
 //   D-4-006 : storage_path JAMAIS côté client (PhotoConducteurDisplay sans storage_path)
+//
+// Sprint 5 : onglet CR activé — liste CRs + génération manuelle + section rapports-hebdo
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -33,6 +35,11 @@ import {
 } from '@/components/ui/table'
 import { Fragment } from 'react'
 import { useToast } from '@/lib/hooks/use-toast'
+// Sprint 5 — Reporting components
+import { CrListItem } from '@/components/reporting/CrListItem'
+import { RapportHebdoCard } from '@/components/reporting/RapportHebdoCard'
+import { LlmLoadingCard } from '@/components/reporting/LlmLoadingCard'
+import type { CompteRenduListe, RapportHebdoListe } from '@/types/reporting'
 
 // ============================================================
 // Types
@@ -64,6 +71,9 @@ interface TabsClientProps {
   }
   // Fix #5 : photos passées server-side (PhotoConducteurDisplay[] — sans storage_path, D-4-006)
   photos: PhotoConducteurDisplay[]
+  // Sprint 5 — données initiales reporting (server-side, pas de refetch client initial)
+  crs?: CompteRenduListe[]
+  rapportsHebdo?: RapportHebdoListe[]
 }
 
 // ============================================================
@@ -113,10 +123,15 @@ export function ChantierDetailAdminTabs({
   membres,
   couleurStyles,
   photos: initialPhotos,
+  crs: initialCrs = [],
+  rapportsHebdo: initialRapportsHebdo = [],
 }: TabsClientProps) {
   const router = useRouter()
   const { toast } = useToast()
   const [activeTab, setActiveTab] = useState<string>('infos')
+  // Sprint 5 — état génération CR
+  const [isGeneratingCr, setIsGeneratingCr] = useState(false)
+  const [crError, setCrError] = useState<string | null>(null)
   const [showAffectationForm, setShowAffectationForm] = useState(false)
   const [showTacheModal, setShowTacheModal] = useState(false)
   // Gap CRUD UPDATE (2026-06-09) : état modal édition tâche
@@ -197,8 +212,9 @@ export function ChantierDetailAdminTabs({
           <TabsTrigger value="photos" data-testid="tab-photos">
             Photos ({photos.length})
           </TabsTrigger>
-          <TabsTrigger value="cr" disabled className="opacity-50 cursor-not-allowed" title="Disponible Sprint 3">
-            Comptes-rendus
+          {/* Sprint 5 : onglet CR activé */}
+          <TabsTrigger value="cr" data-testid="tab-cr">
+            Comptes rendus ({initialCrs.length})
           </TabsTrigger>
         </TabsList>
 
@@ -586,6 +602,92 @@ export function ChantierDetailAdminTabs({
               )}
             </div>
           )}
+        </TabsContent>
+
+        {/* ============ Tab Comptes Rendus — Sprint 5 ============ */}
+        <TabsContent value="cr" className="pt-4 space-y-8">
+          {/* Section CRs journaliers */}
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-heading font-bold text-[22px]">Comptes rendus journaliers</h2>
+              {/* Génération manuelle — admin/conducteur uniquement */}
+              {!isArchive && (
+                <Button
+                  size="sm"
+                  data-testid="admin-generer-cr"
+                  disabled={isGeneratingCr}
+                  onClick={async () => {
+                    setIsGeneratingCr(true)
+                    setCrError(null)
+                    try {
+                      const res = await fetch(`/api/chantiers/${chantierId}/cr/generer`, {
+                        method: 'POST',
+                        credentials: 'include',
+                      })
+                      if (!res.ok) {
+                        const d = await res.json().catch(() => ({}))
+                        setCrError((d as { error?: string }).error ?? 'Erreur lors de la génération.')
+                      } else {
+                        router.refresh()
+                      }
+                    } catch {
+                      setCrError('Erreur réseau. Veuillez réessayer.')
+                    } finally {
+                      setIsGeneratingCr(false)
+                    }
+                  }}
+                >
+                  + Générer CR du jour
+                </Button>
+              )}
+            </div>
+
+            {crError && (
+              <p className="text-sm text-[#C00000] border-2 border-[#C00000] rounded px-3 py-2 bg-[#FFCCCC] mb-4">
+                {crError}
+              </p>
+            )}
+
+            {isGeneratingCr && <LlmLoadingCard message="Génération du compte rendu en cours…" />}
+
+            {!isGeneratingCr && initialCrs.length === 0 && (
+              <div className="card-brutal p-8 text-center">
+                <p className="font-heading text-lg font-bold mb-2">Aucun compte rendu</p>
+                <p className="text-sm text-muted">
+                  {isArchive
+                    ? 'Ce chantier est archivé.'
+                    : 'Le CR journalier sera généré automatiquement à 18h ou manuellement ici.'}
+                </p>
+              </div>
+            )}
+
+            {!isGeneratingCr && initialCrs.length > 0 && (
+              <div className="space-y-2">
+                {initialCrs.map((cr) => (
+                  <CrListItem key={cr.id} cr={cr} basePath="/admin" />
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Section Rapports hebdo */}
+          <div>
+            <h2 className="font-heading font-bold text-[22px] mb-4">Rapports hebdomadaires</h2>
+            {initialRapportsHebdo.length === 0 ? (
+              <div className="card-brutal p-8 text-center">
+                <p className="font-heading text-lg font-bold mb-2">Aucun rapport hebdomadaire</p>
+                <p className="text-sm text-muted">
+                  Le rapport hebdo est généré automatiquement le lundi à 7h15 ou manuellement depuis la page CR.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {initialRapportsHebdo.map((r) => (
+                  <RapportHebdoCard key={r.id} rapport={r} basePath="/admin" />
+                ))}
+              </div>
+            )}
+          </div>
         </TabsContent>
       </Tabs>
 
