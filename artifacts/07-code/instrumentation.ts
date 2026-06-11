@@ -25,6 +25,13 @@ export async function register(): Promise<void> {
   // safe côté Node.js uniquement.
   const { logger } = await import('@/lib/logger')
 
+  // Enregistrement de la factory LLM (AnthropicClient) — UNE SEULE FOIS au démarrage.
+  // Sprint 5 : register.ts a un side-effect d'import qui appelle registerLLMClientFactory().
+  // Sans ce chargement, getLLMClient() lève "LLM client not registered" sur cr/generer.
+  // Import dynamique : @anthropic-ai/sdk (Node natif) ne doit jamais être bundlé côté Edge.
+  await import('@/lib/llm/register')
+  logger.info({ llm: 'AnthropicClient' }, 'Factory LLM enregistrée (Sprint 5 Reporting)')
+
   /**
    * Filet de sécurité : erreur synchrone non catchée hors d'une Promise.
    *
