@@ -4,6 +4,7 @@
  * TST-K5-08 : RBAC — JWT ouvrier → 403 sur /valider ; JWT org B → 404 sur /valider
  * TST-K5-10 : verifyCronSecret timing-safe compare
  * TST-K5-12 : idempotence cron — CR valide non écrasé
+ * TST-K5-13 : resolveDestinatairesInternes — logique destinataires (règle PO 2026-06-15)
  * TST-K5-14 : envoyer brouillon → 409 (Resend 0 appel) ; envoyé→envoyer → 409 (Resend 0 appel)
  */
 
@@ -291,3 +292,190 @@ describe('idempotence cron CR (TST-K5-12)', () => {
     expect(source).toContain('skipped_no_activity')
   })
 })
+
+// ============================================================
+// TST-K5-13 : resolveDestinatairesInternes — règle PO 2026-06-15
+// Tests comportementaux via vi.importActual (contourne le vi.mock hoistée du module)
+// ============================================================
+
+describe('resolveDestinatairesInternes — règle PO 2026-06-15 (TST-K5-13)', () => {
+  /**
+   * Fabrique un adminClient mocké dont .from() retourne des résultats configurables.
+   * Séquence d'appels Supabase dans resolveDestinatairesInternes :
+   *   1. from('users') — admins org
+   *   2. from('chantiers') — created_by du chantier
+   *   3. from('users') — infos du created_by (si non null)
+   *   4. from('affectations') — affectations actives
+   *   5. from('users') — conducteurs affectés (si activeUserIds.length > 0)
+   */
+  function makeAdminClientMock(calls: Array<{ data: unknown; error: null | { message: string } }>) {
+    let callIndex = 0
+    const makeFluentChain = (): Record<string, unknown> => {
+      const fluent: Record<string, (...args: unknown[]) => unknown> = {}
+      const terminal = () => {
+        const result = calls[callIndex++] ?? { data: [], error: null }
+        return Promise.resolve(result)
+      }
+      // Méthodes fluent — toutes retournent fluent sauf les terminales
+      const chainMethods = ['select', 'eq', 'in', 'lte', 'is', 'maybeSingle']
+      for (const m of chainMethods) {
+        fluent[m] = () => fluent
+      }
+      fluent['maybeSingle'] = terminal
+      // Pour les requêtes qui terminent par maybeSingle() on overwrite ci-dessus
+      // Pour les requêtes qui n'appellent pas maybeSingle (admins, conducteurs affectés, affectations)
+      // Vitest évalue le résultat quand la Promise est attendue — on doit retourner une Promise
+      // Solution : le fluent lui-même est une Promise (thenable)
+      fluent['then'] = (resolve: (v: unknown) => unknown, reject: (e: unknown) => unknown) => {
+        const result = calls[callIndex++] ?? { data: [], error: null }
+        return Promise.resolve(result).then(resolve, reject)
+      }
+      return fluent as unknown as Record<string, unknown>
+    }
+    return {
+      from: () => makeFluentChain(),
+    }
+  }
+
+  it('admin de l\'org NON rattaché au chantier → reçoit quand même', async () => {
+    const { resolveDestinatairesInternes: fn } = await vi.importActual<
+      typeof import('@/lib/reporting/destinataires')
+    >('@/lib/reporting/destinataires')
+
+    // Séquence : admins=[admin@org.fr], created_by=null, affectations=[]
+    const adminClient = {
+      from: vi.fn()
+        .mockReturnValueOnce(buildFluent({ data: [{ email: 'admin@org.fr' }], error: null }))   // admins
+        .mockReturnValueOnce(buildFluent({ data: null, error: null }, true))                     // chantiers created_by → null
+        .mockReturnValueOnce(buildFluent({ data: [], error: null })),                            // affectations
+    }
+
+    const emails = await fn('org-001', 'ch-001', adminClient as unknown as Parameters<typeof fn>[2])
+    expect(emails).toContain('admin@org.fr')
+    expect(emails).toHaveLength(1)
+  })
+
+  it('conducteur NON rattaché (ni created_by ni affectation active) → ne reçoit PAS', async () => {
+    const { resolveDestinatairesInternes: fn } = await vi.importActual<
+      typeof import('@/lib/reporting/destinataires')
+    >('@/lib/reporting/destinataires')
+
+    // Séquence : admins=[admin@org.fr], created_by=null, affectations=[] (conducteur non affecté)
+    const adminClient = {
+      from: vi.fn()
+        .mockReturnValueOnce(buildFluent({ data: [{ email: 'admin@org.fr' }], error: null }))
+        .mockReturnValueOnce(buildFluent({ data: null, error: null }, true))                     // chantier → created_by null
+        .mockReturnValueOnce(buildFluent({ data: [], error: null })),                            // affectations → vide
+    }
+
+    const emails = await fn('org-001', 'ch-001', adminClient as unknown as Parameters<typeof fn>[2])
+    expect(emails).not.toContain('conducteur-non-rattache@org.fr')
+    expect(emails).toEqual(['admin@org.fr'])
+  })
+
+  it('conducteur avec affectation active → reçoit', async () => {
+    const { resolveDestinatairesInternes: fn } = await vi.importActual<
+      typeof import('@/lib/reporting/destinataires')
+    >('@/lib/reporting/destinataires')
+
+    const today = new Date().toISOString().split('T')[0]!
+
+    // Séquence : admins, chantier (created_by=admin-id → non conducteur), affectations actives, conducteurs
+    const adminClient = {
+      from: vi.fn()
+        .mockReturnValueOnce(buildFluent({ data: [{ email: 'admin@org.fr' }], error: null }))
+        .mockReturnValueOnce(buildFluent({ data: { created_by: 'admin-id' }, error: null }, true))  // chantier
+        .mockReturnValueOnce(buildFluent(                                                            // created_by = admin, pas conducteur
+          { data: { email: 'admin@org.fr', role: 'admin', deleted_at: null }, error: null },
+          true,
+        ))
+        .mockReturnValueOnce(buildFluent({                                                          // affectations actives
+          data: [{ user_id: 'conducteur-id', date_fin: null }],
+          error: null,
+        }))
+        .mockReturnValueOnce(buildFluent({                                                          // conducteurs
+          data: [{ email: 'conducteur@org.fr', role: 'conducteur', deleted_at: null }],
+          error: null,
+        })),
+    }
+
+    const emails = await fn('org-001', 'ch-001', adminClient as unknown as Parameters<typeof fn>[2])
+    expect(emails).toContain('admin@org.fr')
+    expect(emails).toContain('conducteur@org.fr')
+  })
+
+  it('conducteur avec affectation terminée (date_fin passée) non created_by → ne reçoit PAS', async () => {
+    const { resolveDestinatairesInternes: fn } = await vi.importActual<
+      typeof import('@/lib/reporting/destinataires')
+    >('@/lib/reporting/destinataires')
+
+    // Affectation date_fin = hier (passée)
+    const yesterday = new Date(Date.now() - 86_400_000).toISOString().split('T')[0]!
+
+    const adminClient = {
+      from: vi.fn()
+        .mockReturnValueOnce(buildFluent({ data: [{ email: 'admin@org.fr' }], error: null }))
+        .mockReturnValueOnce(buildFluent({ data: null, error: null }, true))                         // chantier created_by null
+        .mockReturnValueOnce(buildFluent({                                                            // affectations — date_fin passée
+          data: [{ user_id: 'conducteur-id', date_fin: yesterday }],
+          error: null,
+        })),
+        // pas de 5e appel — activeUserIds vide après filtre date_fin
+    }
+
+    const emails = await fn('org-001', 'ch-001', adminClient as unknown as Parameters<typeof fn>[2])
+    expect(emails).not.toContain('conducteur-termine@org.fr')
+    expect(emails).toEqual(['admin@org.fr'])
+  })
+
+  it('conducteur soft-deleted → exclu (TST-K5-13 existant)', async () => {
+    const { resolveDestinatairesInternes: fn } = await vi.importActual<
+      typeof import('@/lib/reporting/destinataires')
+    >('@/lib/reporting/destinataires')
+
+    const today = new Date().toISOString().split('T')[0]!
+
+    const adminClient = {
+      from: vi.fn()
+        .mockReturnValueOnce(buildFluent({ data: [{ email: 'admin@org.fr' }], error: null }))
+        .mockReturnValueOnce(buildFluent({ data: null, error: null }, true))
+        .mockReturnValueOnce(buildFluent({
+          data: [{ user_id: 'conducteur-deleted-id', date_fin: null }],
+          error: null,
+        }))
+        .mockReturnValueOnce(buildFluent({
+          // conducteur soft-deleted : deleted_at non null
+          data: [{ email: 'conducteur-deleted@org.fr', role: 'conducteur', deleted_at: '2026-01-01T00:00:00Z' }],
+          error: null,
+        })),
+    }
+
+    const emails = await fn('org-001', 'ch-001', adminClient as unknown as Parameters<typeof fn>[2])
+    expect(emails).not.toContain('conducteur-deleted@org.fr')
+  })
+})
+
+/**
+ * Utilitaire local : construit un objet fluent Supabase pour les mocks TST-K5-13.
+ * Si `terminal` est true, maybeSingle() résout immédiatement (pas d'await sur l'objet).
+ * Si `terminal` est false, l'objet est thenable (await sur le fluent lui-même).
+ */
+function buildFluent(
+  result: { data: unknown; error: null | { message: string } },
+  terminal = false,
+): Record<string, unknown> {
+  const fluent: Record<string, unknown> = {}
+  const chainMethods = ['select', 'eq', 'in', 'lte', 'is', 'maybeSingle']
+  for (const m of chainMethods) {
+    fluent[m] = () => fluent
+  }
+  if (terminal) {
+    // maybeSingle() est la méthode terminale
+    fluent['maybeSingle'] = () => Promise.resolve(result)
+  } else {
+    // L'objet lui-même est thenable (await fluent)
+    fluent['then'] = (resolve: (v: unknown) => unknown, reject: (e: unknown) => unknown) =>
+      Promise.resolve(result).then(resolve, reject)
+  }
+  return fluent
+}

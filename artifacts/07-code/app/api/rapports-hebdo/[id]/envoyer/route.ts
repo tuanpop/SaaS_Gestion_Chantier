@@ -119,7 +119,8 @@ export async function POST(request: Request, { params }: Params) {
     }
 
     // ── 8. Destinataires internes (AM-03 : expéditeur inclus) ────────────────
-    const destinataires = await resolveDestinatairesInternes(organisationId, adminClient)
+    // Nouvelle règle PO 2026-06-15 : admins org + conducteurs rattachés au chantier
+    const destinataires = await resolveDestinatairesInternes(organisationId, rapport.chantier_id, adminClient)
 
     // ── 9. Email (TST-K5-15 : escapeHtml obligatoire) ─────────────────────────
     const semaineLabel = formatSemaineLabel(rapport.annee_iso, rapport.semaine_iso)

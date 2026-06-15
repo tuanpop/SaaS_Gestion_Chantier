@@ -123,7 +123,8 @@ export async function POST(request: Request, { params }: Params) {
     }
 
     // ── 8. Résoudre destinataires internes (AM-03 : expéditeur inclus) ───────
-    const destinataires = await resolveDestinatairesInternes(organisationId, adminClient)
+    // Nouvelle règle PO 2026-06-15 : admins org + conducteurs rattachés au chantier
+    const destinataires = await resolveDestinatairesInternes(organisationId, cr.chantier_id, adminClient)
 
     // ── 9. Construire et envoyer email (TST-K5-15 : escapeHtml obligatoire) ──
     const extrait = (cr.contenu_genere ?? '').slice(0, 300)

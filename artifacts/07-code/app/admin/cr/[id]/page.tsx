@@ -5,6 +5,7 @@
 import { notFound } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
+import { resolveDestinatairesInternes } from '@/lib/reporting/destinataires'
 import { CrDetailClient } from './CrDetailClient'
 import type { CompteRendu } from '@/types/reporting'
 
@@ -49,16 +50,9 @@ export default async function AdminCrDetailPage({ params }: PageProps) {
   const chantierNom = (chantierRaw as unknown as { nom: string } | null)?.nom ?? 'Chantier inconnu'
 
   // Comptage des destinataires internes pour le dialog Envoyer (PO-5-04)
-  // Même population que resolveDestinatairesInternes : role IN (admin,conducteur) AND deleted_at IS NULL
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { count: nbDestinatairesRaw } = await (adminClient as unknown as any)
-    .from('users')
-    .select('id', { count: 'exact', head: true })
-    .eq('organisation_id', organisationId)
-    .in('role', ['admin', 'conducteur'])
-    .is('deleted_at', null)
-
-  const nbDestinataires = (nbDestinatairesRaw as number | null) ?? 0
+  // Utilise resolveDestinatairesInternes pour que le compteur corresponde EXACTEMENT à l'envoi réel
+  // (décision PO 2026-06-15 : admins org + conducteurs rattachés au chantier, pas tous les conducteurs)
+  const nbDestinataires = (await resolveDestinatairesInternes(organisationId, cr.chantier_id, adminClient)).length
 
   return (
     <CrDetailClient
