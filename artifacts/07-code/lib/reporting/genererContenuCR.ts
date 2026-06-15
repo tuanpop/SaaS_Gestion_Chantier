@@ -10,6 +10,11 @@ import { join } from 'node:path'
 import type { SignauxTerrain } from '@/types/reporting'
 import type { ILLMClient } from '@/lib/llm/client'
 import { getLLMClient } from '@/lib/llm/client'
+// Side-effect : enregistre la factory AnthropicClient dans le MÊME graphe de modules
+// que ce consommateur. NE PAS retirer. instrumentation.ts ne suffit pas : il s'exécute
+// dans un contexte de module isolé, le singleton _clientFactory n'y est pas partagé avec
+// les route handlers → "LLM client not registered" en prod (bug smoke Sprint 5).
+import '@/lib/llm/register'
 import { escapeDelimiter } from '@/lib/llm/prompt'
 import { logger } from '@/lib/logger'
 

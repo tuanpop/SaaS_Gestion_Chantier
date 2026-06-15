@@ -10,6 +10,9 @@ import { join } from 'node:path'
 import type { HebdoInput } from '@/types/reporting'
 import type { ILLMClient } from '@/lib/llm/client'
 import { getLLMClient } from '@/lib/llm/client'
+// Side-effect : enregistre la factory AnthropicClient dans le MÊME graphe de modules
+// que ce consommateur. NE PAS retirer (voir genererContenuCR.ts pour le détail).
+import '@/lib/llm/register'
 import { escapeDelimiter } from '@/lib/llm/prompt'
 import { logger } from '@/lib/logger'
 
