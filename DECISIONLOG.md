@@ -10,6 +10,14 @@ Alternative ecartee : [ce qui a ete considere et rejete]
 
 ---
 
+[2026-06-15] Zoro [permanent:false]
+Decision : RG-CR-011 REMPLACÉ — resolveDestinatairesInternes nouvelle signature (orgId, chantierId, adminClient). Nouvelle logique : (admins org, role='admin', deleted_at IS NULL) ∪ (conducteurs rattachés au chantier : created_by du chantier si conducteur non supprimé, OU conducteurs avec affectation ACTIVE, deleted_at IS NULL). Dédoublonnage par email via Set<string>. Compteur nbDestinataires dans les 4 pages détail remplacé par resolveDestinatairesInternes().length (exact match envoi réel). Routes cr/envoyer et rapports-hebdo/envoyer passent cr.chantier_id / rapport.chantier_id en 2e argument.
+Raison : Décision PO binding smoke 2026-06-15 : l'envoi d'un CR ou rapport hebdo ne doit plus cibler TOUS les conducteurs de l'org, mais uniquement ceux rattachés au chantier concerné. PO-5-04 respecté (N calculé côté serveur). AM-03 propriété vérifiée : un conducteur qui envoie passe forcément canAccessChantier → est created_by ou affecté (actif ou passé) ; la nouvelle règle l'inclut si actif, l'exclut si affectation uniquement passée (décision PO assumée).
+Alternative ecartee : filtre côté DB avec .or() Supabase (verbeux, moins lisible pour le cas date_fin IS NULL OR date_fin >= today — filtrage JS post-fetch trivial pour le volume pilote). Requête unique JOIN affectations+users (complexité SQL inutile pour le volume pilote). Garder RG-CR-011 (contredit la décision PO binding).
+Divergence assumée (documentée en commentaire source) : canAccessChantier accepte les affectations actives OU passées ; resolveDestinatairesInternes exige actives uniquement (date_debut <= today AND (date_fin IS NULL OR date_fin >= today)) — parties prenantes COURANTES du chantier par décision PO explicite.
+
+---
+
 [2026-06-10] Amelia [permanent:false]
 Decision : GAP-DATA-TESTID-01 fermé. CrActionButtons et RapportHebdoActionButtons remplacent les actions directes au clic par des Dialogs shadcn de confirmation. La prop `nbDestinataires: number` est ajoutée et calculée server-side dans les 4 pages détail (count SELECT users WHERE org + role IN admin/conducteur + deleted_at IS NULL). La prop `chantierId` est ajoutée à RapportHebdoActionButtons pour les appels de régénération.
 Raison : design-notes-sprint-5.md lignes 109-110 et §6 sont binding (Dialog shadcn + data-testid spécifiés). PO-5-04 BINDING : le dialog Envoyer affiche "Sera envoyé à N membres", jamais la liste des emails — N calculé côté serveur pour ne pas exposer les emails au client.

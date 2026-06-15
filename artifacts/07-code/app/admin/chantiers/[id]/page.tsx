@@ -27,6 +27,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { calculerCouleur } from '@/lib/coloration'
 import { signPhotoPaths } from '@/lib/photos-access'
+import { getPreviousIsoWeek, getWeekBounds, formatSemaineLabel } from '@/lib/reporting/isoWeek'
 import { ArchiveButton } from './archive-button'
 import { UnarchiveButton } from './unarchive-button'
 import { ChantierDetailAdminTabs } from './tabs-client'
@@ -81,6 +82,17 @@ export default async function ChantierDetailAdminPage({ params }: PageProps) {
   if (error || !chantierRaw) return notFound()
 
   const chantier = chantierRaw as unknown as Chantier
+
+  // Semaine ISO précédente — calculée server-side (évite hydration/timezone côté client)
+  const { anneeIso: prevAnneeIso, semaineIso: prevSemaineIso } = getPreviousIsoWeek(new Date())
+  const { lundi: prevLundi } = getWeekBounds(prevAnneeIso, prevSemaineIso)
+  const previousWeek = {
+    anneeIso: prevAnneeIso,
+    semaineIso: prevSemaineIso,
+    label: formatSemaineLabel(prevAnneeIso, prevSemaineIso),
+    lundi: prevLundi,
+  }
+
   const couleur = calculerCouleur(
     {
       date_fin_prevue: chantier.date_fin_prevue,
@@ -264,6 +276,7 @@ export default async function ChantierDetailAdminPage({ params }: PageProps) {
         photos={photosAdmin}
         crs={crs}
         rapportsHebdo={rapportsHebdo}
+        previousWeek={previousWeek}
       />
     </div>
   )

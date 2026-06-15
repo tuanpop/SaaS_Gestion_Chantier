@@ -2,6 +2,38 @@
 
 ---
 
+[2026-06-16 00:07] agent=amelia phase=EXECUTE sprint=5-smoke-fix mode=targeted
+  feature: btn-generer-rapport-hebdo — génération manuelle rapport hebdo (US-045, reachability UI)
+  artifacts_modified:
+    artifacts/07-code/app/admin/chantiers/[id]/page.tsx (calcul previousWeek server-side via getPreviousIsoWeek + getWeekBounds + formatSemaineLabel)
+    artifacts/07-code/app/admin/chantiers/[id]/tabs-client.tsx (prop previousWeek + état isGeneratingHebdo/hebdoError + carte btn-generer-rapport-hebdo + gestion 402/409/502 + redirect /admin/rapports-hebdo/{id})
+    artifacts/07-code/app/conducteur/chantiers/[id]/page.tsx (calcul previousWeek server-side)
+    artifacts/07-code/app/conducteur/chantiers/[id]/client.tsx (prop previousWeek + même carte + redirect /conducteur/rapports-hebdo/{id})
+    artifacts/07-code/tests/unit/reporting-levi-gaps.test.ts (9 tests GAP-BTN-HEBDO-01 : source-grep reachability tabs-client + client + page admin + page conducteur)
+  status: completed
+  build: PASS (0 erreur TypeScript, 30/30 pages)
+  tests: 483 passed / 10 skipped / 0 failed (493 total) — reporting-levi-gaps.test.ts : 53 tests (+9 vs avant)
+
+---
+
+[2026-06-15 23:59] agent=zoro mode=C sprint=5-reporting
+  artifacts:
+    artifacts/07-code/lib/reporting/destinataires.ts (nouvelle signature + logique admins ∪ conducteurs rattachés)
+    artifacts/07-code/app/api/cr/[id]/envoyer/route.ts (passe cr.chantier_id à resolveDestinatairesInternes)
+    artifacts/07-code/app/api/rapports-hebdo/[id]/envoyer/route.ts (passe rapport.chantier_id)
+    artifacts/07-code/app/admin/cr/[id]/page.tsx (nbDestinataires via resolveDestinatairesInternes)
+    artifacts/07-code/app/conducteur/cr/[id]/page.tsx (idem)
+    artifacts/07-code/app/admin/rapports-hebdo/[id]/page.tsx (idem)
+    artifacts/07-code/app/conducteur/rapports-hebdo/[id]/page.tsx (idem)
+    artifacts/07-code/tests/unit/reporting-workflow.test.ts (5 nouveaux cas TST-K5-13)
+    artifacts/07-code/tests/unit/reporting-levi-gaps.test.ts (GAP-S5-02 : 3 tests adaptés nouvelle signature + helpers buildFluentChain)
+  turns_used: 12/20
+  status: completed
+  build: PASS (0 erreur TypeScript)
+  tests: 474 passed / 10 skipped / 0 failed (484 total)
+
+---
+
 [2026-06-10 23:10] revue post-pipeline sprint=5-reporting
   bilan: périmètre pipeline Sprint 5 CLOS (Itachi phase4 + Zoro + Levi + hotfix dialogs Amelia). Build PASS, 469 tests / 0 failed. NON committé, NON déployé, migrations NON appliquées.
   revue_F003: REVERT du fix Zoro (faux positif Itachi). photos.tache_id NOT NULL (mig 008) → chantier sans tâche = 0 photo. Fallback org-only de Zoro remontait photos d'AUTRES chantiers dans signaux LLM (fuite cross-chantier). Reverté : photos scopées exclusivement par .in('tache_id', tacheIds). Tracé DECISIONLOG [Revue post-Zoro permanent:true].

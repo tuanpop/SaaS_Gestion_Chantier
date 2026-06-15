@@ -77,41 +77,63 @@ describe('GAP-S5-01 : TST-K5-11 — rate-limit 10/h sur cr/generer (comportement
 // ============================================================
 
 describe('GAP-S5-02 : TST-K5-13 — resolveDestinatairesInternes exclut les soft-deleted (comportemental)', () => {
+  // NOTE MIGRATION (2026-06-15) : signature mise à jour — (orgId, chantierId, adminClient)
+  // Nouvelle logique : admins org ∪ conducteurs rattachés au chantier (created_by + affectations actives)
+  // Les mocks ci-dessous couvrent la séquence de requêtes de la nouvelle implémentation.
+
   it('renvoie uniquement les emails des utilisateurs actifs (deleted_at IS NULL)', async () => {
-    // Mock adminClient qui simule la réponse Supabase
-    // Scénario : 2 conducteurs dont 1 soft-deleted
+    // Séquence requêtes de resolveDestinatairesInternes :
+    //   1. from('users') admins org → email filtre par DB (deleted_at IS NULL au niveau DB)
+    //   2. from('chantiers') created_by → null (pas de created_by conducteur)
+    //   3. from('affectations') actives → conducteur-actif-id avec date_fin=null
+    //   4. from('users') conducteurs affectés → conducteur-actif retourné, conducteur-deleted absent
+    //   (Supabase filtre deleted_at IS NULL côté DB via .eq('role',...) + filtres côté app)
+    let callCount = 0
+    const today = new Date().toISOString().split('T')[0]!
+
     const mockAdminClient = {
       from: (table: string) => {
-        if (table !== 'users') throw new Error(`Unexpected table: ${table}`)
-        return {
-          select: () => ({
-            eq: (_col: string, _val: string) => ({
-              in: (_col2: string, _val2: string[]) => ({
-                is: (col: string, val: unknown) => {
-                  // Vérification que le filtre IS NULL sur deleted_at est bien appliqué
-                  expect(col).toBe('deleted_at')
-                  expect(val).toBeNull()
-                  return Promise.resolve({
-                    // Simuler que Supabase a bien filtré — retourne uniquement les actifs
-                    data: [
-                      { email: 'admin@org.fr' },
-                      { email: 'conducteur-actif@org.fr' },
-                      // conducteur-deleted@org.fr est absent car Supabase filtre côté DB
-                    ],
-                    error: null,
-                  })
-                },
-              }),
-            }),
-          }),
+        callCount++
+        if (callCount === 1 && table === 'users') {
+          // Admins org — retourne admin actif (soft-deleted filtré par DB via .is('deleted_at', null))
+          return buildFluentChain({
+            data: [{ email: 'admin@org.fr' }],
+            error: null,
+          })
         }
+        if (callCount === 2 && table === 'chantiers') {
+          // created_by = null → pas de conducteur propriétaire
+          return buildFluentChainMaybeSingle({ data: null, error: null })
+        }
+        if (callCount === 3 && table === 'affectations') {
+          // Affectations actives : conducteur-actif-id présent, pas de date_fin
+          return buildFluentChain({
+            data: [{ user_id: 'conducteur-actif-id', date_fin: null }],
+            error: null,
+          })
+        }
+        if (callCount === 4 && table === 'users') {
+          // Conducteurs affectés — Supabase retourne uniquement les actifs (deleted_at IS NULL)
+          // conducteur-deleted@org.fr est absent car filtered par la DB
+          return buildFluentChain({
+            data: [
+              { email: 'conducteur-actif@org.fr', role: 'conducteur', deleted_at: null },
+              // conducteur-deleted@org.fr absent — Supabase filtre côté app via deleted_at check
+            ],
+            error: null,
+          })
+        }
+        // Fallback — ne devrait pas être atteint
+        return buildFluentChain({ data: [], error: null })
       },
     }
 
-    const { resolveDestinatairesInternes } = await import('@/lib/reporting/destinataires')
-    const emails = await resolveDestinatairesInternes('org-001', mockAdminClient as never)
+    const { resolveDestinatairesInternes } = await vi.importActual<
+      typeof import('@/lib/reporting/destinataires')
+    >('@/lib/reporting/destinataires')
+    const emails = await resolveDestinatairesInternes('org-001', 'ch-001', mockAdminClient as never)
 
-    // conducteur-deleted n'est pas dans la liste (filtré par la DB via IS NULL)
+    // conducteur-deleted n'est pas dans la liste (filtré par la DB via deleted_at IS NULL)
     expect(emails).toContain('admin@org.fr')
     expect(emails).toContain('conducteur-actif@org.fr')
     expect(emails).not.toContain('conducteur-deleted@org.fr')
@@ -119,41 +141,70 @@ describe('GAP-S5-02 : TST-K5-13 — resolveDestinatairesInternes exclut les soft
   })
 
   it('retourne [] si la DB ne retourne aucun destinataire (log warn)', async () => {
+    // Tous les appels retournent vide → aucun destinataire → [] + log warn
     const mockAdminClient = {
-      from: () => ({
-        select: () => ({
-          eq: () => ({
-            in: () => ({
-              is: () => Promise.resolve({ data: [], error: null }),
-            }),
-          }),
-        }),
-      }),
+      from: (table: string) => {
+        if (table === 'chantiers') {
+          return buildFluentChainMaybeSingle({ data: null, error: null })
+        }
+        return buildFluentChain({ data: [], error: null })
+      },
     }
 
-    const { resolveDestinatairesInternes } = await import('@/lib/reporting/destinataires')
-    const emails = await resolveDestinatairesInternes('org-vide', mockAdminClient as never)
+    const { resolveDestinatairesInternes } = await vi.importActual<
+      typeof import('@/lib/reporting/destinataires')
+    >('@/lib/reporting/destinataires')
+    const emails = await resolveDestinatairesInternes('org-vide', 'ch-vide', mockAdminClient as never)
     expect(emails).toEqual([])
   })
 
-  it('retourne [] si la DB retourne une erreur', async () => {
+  it('retourne [] si la DB retourne une erreur sur les admins', async () => {
+    // Erreur sur la requête admins → branche continue, autres branches retournent vide
     const mockAdminClient = {
-      from: () => ({
-        select: () => ({
-          eq: () => ({
-            in: () => ({
-              is: () => Promise.resolve({ data: null, error: { message: 'DB error' } }),
-            }),
-          }),
-        }),
-      }),
+      from: (table: string) => {
+        if (table === 'users') {
+          return buildFluentChain({ data: null, error: { message: 'DB error' } })
+        }
+        if (table === 'chantiers') {
+          return buildFluentChainMaybeSingle({ data: null, error: null })
+        }
+        return buildFluentChain({ data: [], error: null })
+      },
     }
 
-    const { resolveDestinatairesInternes } = await import('@/lib/reporting/destinataires')
-    const emails = await resolveDestinatairesInternes('org-error', mockAdminClient as never)
+    const { resolveDestinatairesInternes } = await vi.importActual<
+      typeof import('@/lib/reporting/destinataires')
+    >('@/lib/reporting/destinataires')
+    const emails = await resolveDestinatairesInternes('org-error', 'ch-error', mockAdminClient as never)
     expect(emails).toEqual([])
   })
 })
+
+/** Construit un fluent Supabase thenable (await sur le fluent) — pour les requêtes sans .maybeSingle() */
+function buildFluentChain(result: { data: unknown; error: null | { message: string } }): Record<string, unknown> {
+  const fluent: Record<string, unknown> = {}
+  const methods = ['select', 'eq', 'in', 'lte', 'is', 'maybeSingle']
+  for (const m of methods) {
+    fluent[m] = () => fluent
+  }
+  fluent['then'] = (resolve: (v: unknown) => unknown, reject: (e: unknown) => unknown) =>
+    Promise.resolve(result).then(resolve, reject)
+  return fluent
+}
+
+/** Construit un fluent Supabase avec .maybeSingle() terminal — pour from('chantiers').select().eq().maybeSingle() */
+function buildFluentChainMaybeSingle(result: { data: unknown; error: null | { message: string } }): Record<string, unknown> {
+  const fluent: Record<string, unknown> = {}
+  const methods = ['select', 'eq', 'in', 'lte', 'is']
+  for (const m of methods) {
+    fluent[m] = () => fluent
+  }
+  fluent['maybeSingle'] = () => Promise.resolve(result)
+  // Aussi thenable pour les requêtes qui n'appellent pas maybeSingle sur ce fluent
+  fluent['then'] = (resolve: (v: unknown) => unknown, reject: (e: unknown) => unknown) =>
+    Promise.resolve(result).then(resolve, reject)
+  return fluent
+}
 
 // ============================================================
 // GAP-S5-03 : TST-K5-01 comportemental — injection titre tâche reste dans <signaux_terrain>
@@ -609,6 +660,103 @@ describe('GAP-DATA-TESTID-01 : data-testid workflow CR (design-notes-sprint-5.md
       expect(source).not.toMatch(/window\.confirm/)
       expect(source).not.toMatch(/\bconfirm\(/)
     })
+  })
+})
+
+// ============================================================
+// GAP-BTN-HEBDO-01 : reachability UI — btn-generer-rapport-hebdo présent
+// Vérifie que le bouton de génération manuelle du rapport hebdo (US-045) est câblé
+// dans les deux clients (admin et conducteur) — ne peut pas disparaître silencieusement.
+// ============================================================
+
+describe('GAP-BTN-HEBDO-01 : btn-generer-rapport-hebdo — reachability UI (admin + conducteur)', () => {
+  const fs = require('fs')
+  const path = require('path')
+
+  it('tabs-client.tsx admin porte data-testid="btn-generer-rapport-hebdo"', () => {
+    const source = fs.readFileSync(
+      path.resolve(__dirname, '../../app/admin/chantiers/[id]/tabs-client.tsx'),
+      'utf-8',
+    )
+    expect(source).toContain('data-testid="btn-generer-rapport-hebdo"')
+  })
+
+  it('client.tsx conducteur porte data-testid="btn-generer-rapport-hebdo"', () => {
+    const source = fs.readFileSync(
+      path.resolve(__dirname, '../../app/conducteur/chantiers/[id]/client.tsx'),
+      'utf-8',
+    )
+    expect(source).toContain('data-testid="btn-generer-rapport-hebdo"')
+  })
+
+  it('le bouton admin POST vers /api/chantiers/[id]/rapports-hebdo/generer avec annee_iso + semaine_iso', () => {
+    const source = fs.readFileSync(
+      path.resolve(__dirname, '../../app/admin/chantiers/[id]/tabs-client.tsx'),
+      'utf-8',
+    )
+    expect(source).toContain('rapports-hebdo/generer')
+    expect(source).toContain('annee_iso')
+    expect(source).toContain('semaine_iso')
+  })
+
+  it('le bouton conducteur POST vers /api/chantiers/[id]/rapports-hebdo/generer avec annee_iso + semaine_iso', () => {
+    const source = fs.readFileSync(
+      path.resolve(__dirname, '../../app/conducteur/chantiers/[id]/client.tsx'),
+      'utf-8',
+    )
+    expect(source).toContain('rapports-hebdo/generer')
+    expect(source).toContain('annee_iso')
+    expect(source).toContain('semaine_iso')
+  })
+
+  it('admin redirige vers /admin/rapports-hebdo/{id} après succès', () => {
+    const source = fs.readFileSync(
+      path.resolve(__dirname, '../../app/admin/chantiers/[id]/tabs-client.tsx'),
+      'utf-8',
+    )
+    expect(source).toContain('/admin/rapports-hebdo/')
+  })
+
+  it('conducteur redirige vers /conducteur/rapports-hebdo/{id} après succès', () => {
+    const source = fs.readFileSync(
+      path.resolve(__dirname, '../../app/conducteur/chantiers/[id]/client.tsx'),
+      'utf-8',
+    )
+    expect(source).toContain('/conducteur/rapports-hebdo/')
+  })
+
+  it('admin page.tsx passe previousWeek à ChantierDetailAdminTabs', () => {
+    const source = fs.readFileSync(
+      path.resolve(__dirname, '../../app/admin/chantiers/[id]/page.tsx'),
+      'utf-8',
+    )
+    expect(source).toContain('previousWeek')
+    expect(source).toContain('getPreviousIsoWeek')
+  })
+
+  it('conducteur page.tsx passe previousWeek à ChantierDetailConducteurClient', () => {
+    const source = fs.readFileSync(
+      path.resolve(__dirname, '../../app/conducteur/chantiers/[id]/page.tsx'),
+      'utf-8',
+    )
+    expect(source).toContain('previousWeek')
+    expect(source).toContain('getPreviousIsoWeek')
+  })
+
+  it('la semaine cible est la semaine ISO précédente (getPreviousIsoWeek, pas currentDate)', () => {
+    // L'instruction est de montrer la semaine précédente (cohérent avec le cron RG-RH-002)
+    // Vérifier que getPreviousIsoWeek est utilisé (pas getIsoWeek seul sur new Date())
+    const adminPage = fs.readFileSync(
+      path.resolve(__dirname, '../../app/admin/chantiers/[id]/page.tsx'),
+      'utf-8',
+    )
+    expect(adminPage).toContain('getPreviousIsoWeek(new Date())')
+
+    const conducteurPage = fs.readFileSync(
+      path.resolve(__dirname, '../../app/conducteur/chantiers/[id]/page.tsx'),
+      'utf-8',
+    )
+    expect(conducteurPage).toContain('getPreviousIsoWeek(new Date())')
   })
 })
 
