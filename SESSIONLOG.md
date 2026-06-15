@@ -2,6 +2,14 @@
 
 ---
 
+[2026-06-16] CLOTURE sprint=5-reporting gate=smoke decideur=PO
+  verdict: "on est bon sur le sprint 5" → LIVRÉ PROD + VALIDÉ SMOKE PO.
+  statut_rigoureux: completed sous réserve E2E auto (D-050/D-058 standby — condition 3 CLAUDE.md §8 non requise par décision PO).
+  conditions_validation: cond1 (0 GAP bloquant Levi) OK ; cond2 (smoke manuel prod documenté) OK ; cond3 (E2E auto) non requise.
+  bugs_smoke_corriges: CR2 LLM not registered (6041daf, 1er fix 4821037 KO), CR8 destinataires scopés chantier (2eee1a9), RH2 bouton générer hebdo manquant (0bd606b), + déviation #6 crontab parasite.
+  prod: main = 0bd606b, origin synchro, migrations 012/013 appliquées, ANTHROPIC_API_KEY Dokploy OK. 483 tests / 0 failed.
+  next: cadrage Sprint 6 OU dette pré-pilote (E2E auto, Redis cleanup, gen types, trial org).
+
 [2026-06-16 00:07] agent=amelia phase=EXECUTE sprint=5-smoke-fix mode=targeted
   feature: btn-generer-rapport-hebdo — génération manuelle rapport hebdo (US-045, reachability UI)
   artifacts_modified:
