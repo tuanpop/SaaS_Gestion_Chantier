@@ -8,6 +8,7 @@ import { cookies, headers } from 'next/headers'
 import { NextRequest } from 'next/server'
 import { OuvrierChantierClient } from './client'
 import { getOuvrierSession } from '@/lib/ouvrier-session'
+import { ClawWelcomeFetcher } from '@/components/chat/ClawWelcomeFetcher'
 import type { GetChantierOuvrierResponse } from '@/types/database'
 
 type FetchResult =
@@ -124,6 +125,11 @@ export default async function OuvrierChantierPage({
           {chantierData.chantier.adresse}, {chantierData.chantier.code_postal}
         </p>
       </div>
+
+      {/* Sprint 8 — Accueil Claw (best-effort — ne bloque pas le rendu)
+          D-8-16 : ClawWelcomeFetcher est best-effort, jamais visible en erreur
+          US-082 BINDING : bannière visible sur la page tâches/chantier mobile */}
+      <ClawWelcomeFetcher />
 
       {/* Client Component pour les interactions (mutation statut + photos Sprint 4) */}
       <OuvrierChantierClient

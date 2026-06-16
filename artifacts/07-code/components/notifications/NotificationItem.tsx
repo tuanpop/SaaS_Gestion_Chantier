@@ -16,6 +16,7 @@ import {
   CalendarClock,
   AlertOctagon,
   Sun,
+  Bot,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { NotificationDisplay, NotificationType } from '@/types/database'
@@ -48,6 +49,12 @@ const NOTIF_ICON_MAP: Record<NotificationType, IconConfig> = {
   // Sprint 7 — briefing lundi matin : BLEU (distinct du vert Rapport Hebdo)
   // data-testid: icon identifiable via notif-item-{id} parent
   briefing_lundi:       { icon: Sun,             color: '#3B82F6', bgColor: '#EFF6FF' },
+  // Sprint 8 — proposition bot Claw : INDIGO (icône Bot)
+  // Design-notes Sprint 8 §8.4 : #6366F1 fond #EEF2FF
+  action_proposal:      { icon: Bot,             color: '#6366F1', bgColor: '#EEF2FF' },
+  // Sprint 8 — alerte chat : AMBER (icône AlertTriangle)
+  // Design-notes Sprint 8 §8.4 : #F59E0B fond #FFFBEB
+  alerte_chat:          { icon: AlertTriangle,   color: '#F59E0B', bgColor: '#FFFBEB' },
 }
 
 // ============================================================
@@ -91,6 +98,14 @@ function buildUrl(
     if (type === 'briefing_lundi') {
       return `/admin/chantiers/${chantier_id}#briefing`
     }
+    // Sprint 8 : action_proposal → onglet chat (file de propositions)
+    if (type === 'action_proposal') {
+      return `/admin/chantiers/${chantier_id}#chat`
+    }
+    // Sprint 8 : alerte_chat → onglet chat
+    if (type === 'alerte_chat') {
+      return `/admin/chantiers/${chantier_id}#chat`
+    }
     return `/admin/chantiers/${chantier_id}`
   }
 
@@ -110,6 +125,12 @@ function buildUrl(
     case 'briefing_lundi':
       // Sprint 7 : navigue vers section #briefing du chantier (PO décision binding)
       return `/conducteur/chantiers/${chantier_id}#briefing`
+    case 'action_proposal':
+      // Sprint 8 : navigue vers onglet chat (file de propositions)
+      return `/conducteur/chantiers/${chantier_id}#chat`
+    case 'alerte_chat':
+      // Sprint 8 : navigue vers onglet chat
+      return `/conducteur/chantiers/${chantier_id}#chat`
     default:
       return `/conducteur/chantiers/${chantier_id}`
   }

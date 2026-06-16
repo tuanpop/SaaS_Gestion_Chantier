@@ -288,6 +288,7 @@ export default async function ChantierDetailAdminPage({ params }: PageProps) {
         crs={crs}
         rapportsHebdo={rapportsHebdo}
         previousWeek={previousWeek}
+        currentUserId={user.id}
       />
     </div>
   )

@@ -40,6 +40,8 @@ import { CrListItem } from '@/components/reporting/CrListItem'
 import { RapportHebdoCard } from '@/components/reporting/RapportHebdoCard'
 import { LlmLoadingCard } from '@/components/reporting/LlmLoadingCard'
 import type { CompteRenduListe, RapportHebdoListe } from '@/types/reporting'
+// Sprint 8 — Chat + propositions
+import { ChatFilMessages } from '@/components/chat/ChatFilMessages'
 
 // ============================================================
 // Types
@@ -81,6 +83,8 @@ interface TabsClientProps {
     label: string
     lundi: string
   }
+  // Sprint 8 — Chat
+  currentUserId?: string
 }
 
 // ============================================================
@@ -133,6 +137,7 @@ export function ChantierDetailAdminTabs({
   crs: initialCrs = [],
   rapportsHebdo: initialRapportsHebdo = [],
   previousWeek,
+  currentUserId = '',
 }: TabsClientProps) {
   const router = useRouter()
   const { toast } = useToast()
@@ -226,6 +231,10 @@ export function ChantierDetailAdminTabs({
           {/* Sprint 5 : onglet CR activé */}
           <TabsTrigger value="cr" data-testid="tab-cr">
             Comptes rendus ({initialCrs.length})
+          </TabsTrigger>
+          {/* Sprint 8 : onglet Chat */}
+          <TabsTrigger value="chat" data-testid="tab-chat" id="chat">
+            Chat
           </TabsTrigger>
         </TabsList>
 
@@ -817,6 +826,33 @@ export function ChantierDetailAdminTabs({
                 ))}
               </div>
             )}
+          </div>
+        </TabsContent>
+
+        {/* ============ Tab Chat — Sprint 8 ============ */}
+        {/* US-066 : admin peut lire + écrire dans le chat
+            US-083 : admin peut supprimer des messages (modération)
+            EXI-8-06 BINDING : ChatFilMessages rend JSX pur — jamais dangerouslySetInnerHTML
+            PO-8-01=A BINDING : polling 30s dans ChatFilMessages */}
+        <TabsContent value="chat" className="pt-4">
+          <div
+            data-testid="chat-container-admin"
+            className="card-brutal p-0 overflow-hidden"
+            style={{ height: '600px', display: 'flex', flexDirection: 'column' }}
+          >
+            <div className="p-3 border-b-2 border-[var(--color-border-black)] bg-[var(--color-primary)] text-white">
+              <h3 className="font-heading font-bold text-sm">Chat d&apos;équipe — {chantier.nom}</h3>
+              <p className="text-xs opacity-75">
+                Utilisez @claw pour interroger l&apos;assistant IA sur ce chantier.
+              </p>
+            </div>
+            <div className="flex-1 overflow-hidden">
+              <ChatFilMessages
+                chantierId={chantierId}
+                currentUserId={currentUserId}
+                currentUserRole="admin"
+              />
+            </div>
           </div>
         </TabsContent>
       </Tabs>

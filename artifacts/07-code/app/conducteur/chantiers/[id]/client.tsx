@@ -29,6 +29,8 @@ import { CrListItem } from '@/components/reporting/CrListItem'
 import { RapportHebdoCard } from '@/components/reporting/RapportHebdoCard'
 import { LlmLoadingCard } from '@/components/reporting/LlmLoadingCard'
 import type { CompteRenduListe, RapportHebdoListe } from '@/types/reporting'
+// Sprint 8 — Chat
+import { ChatFilMessages } from '@/components/chat/ChatFilMessages'
 
 interface MembreOption {
   id: string
@@ -54,6 +56,8 @@ interface Props {
     label: string
     lundi: string
   }
+  // Sprint 8 — Chat
+  currentUserId?: string
 }
 
 interface DeletePhotoState {
@@ -72,6 +76,7 @@ export function ChantierDetailConducteurClient({
   crs: initialCrs = [],
   rapportsHebdo: initialRapportsHebdo = [],
   previousWeek,
+  currentUserId = '',
 }: Props) {
   const router = useRouter()
   const { toast } = useToast()
@@ -187,6 +192,10 @@ export function ChantierDetailConducteurClient({
           {/* Sprint 5 : onglet CR */}
           <TabsTrigger value="cr" data-testid="tab-conducteur-cr">
             CR ({initialCrs.length})
+          </TabsTrigger>
+          {/* Sprint 8 : onglet Chat */}
+          <TabsTrigger value="chat" data-testid="tab-conducteur-chat" id="chat">
+            Chat
           </TabsTrigger>
         </TabsList>
 
@@ -597,6 +606,30 @@ export function ChantierDetailConducteurClient({
                   ))}
                 </div>
               )}
+            </div>
+          </div>
+        </TabsContent>
+
+        {/* ============ Tab Chat — Sprint 8 ============ */}
+        {/* US-066 : conducteur peut lire + écrire dans le chat
+            EXI-8-06 BINDING : ChatFilMessages rend JSX pur
+            PO-8-01=A BINDING : polling 30s dans ChatFilMessages */}
+        <TabsContent value="chat" className="pt-2">
+          <div
+            data-testid="chat-container-conducteur"
+            className="card-brutal-mobile overflow-hidden"
+            style={{ height: '600px', display: 'flex', flexDirection: 'column' }}
+          >
+            <div className="p-3 border-b-2 border-[var(--color-border-black)] bg-[var(--color-primary)] text-white">
+              <h3 className="font-heading font-bold text-sm">Chat d&apos;équipe</h3>
+              <p className="text-xs opacity-75">Utilisez @claw pour interroger l&apos;assistant IA.</p>
+            </div>
+            <div className="flex-1 overflow-hidden">
+              <ChatFilMessages
+                chantierId={chantierId}
+                currentUserId={currentUserId}
+                currentUserRole="conducteur"
+              />
             </div>
           </div>
         </TabsContent>

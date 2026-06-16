@@ -248,6 +248,7 @@ export default async function ChantierDetailConduPage({ params }: PageProps) {
         crs={crs}
         rapportsHebdo={rapportsHebdo}
         previousWeek={previousWeek}
+        currentUserId={user.id}
       />
 
       {/* Bottom Navigation conducteur */}
