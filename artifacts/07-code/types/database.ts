@@ -427,6 +427,353 @@ export type Database = {
           },
         ]
       }
+      // ================================================================
+      // Tables Sprints 5/6/7 — non dans le type original (extension manuelle)
+      // Pattern : ajout conservatif, colonnes utilisées uniquement
+      // ================================================================
+      comptes_rendus: {
+        Row: {
+          id: string
+          chantier_id: string
+          organisation_id: string
+          date_cr: string
+          statut: string
+          donnees_brutes: Record<string, unknown>
+          contenu_genere: string | null
+          created_by: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          chantier_id: string
+          organisation_id: string
+          date_cr: string
+          statut?: string
+          donnees_brutes?: Record<string, unknown>
+          contenu_genere?: string | null
+          created_by: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          chantier_id?: string
+          organisation_id?: string
+          date_cr?: string
+          statut?: string
+          donnees_brutes?: Record<string, unknown>
+          contenu_genere?: string | null
+          created_by?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      derives_detectees: {
+        Row: {
+          id: string
+          chantier_id: string
+          organisation_id: string
+          type_derive: string
+          description: string
+          statut: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          chantier_id: string
+          organisation_id: string
+          type_derive: string
+          description: string
+          statut?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          chantier_id?: string
+          organisation_id?: string
+          type_derive?: string
+          description?: string
+          statut?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
+      seuils_derives: {
+        Row: {
+          id: string
+          organisation_id: string
+          type_derive: string
+          seuil_valeur: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          organisation_id: string
+          type_derive: string
+          seuil_valeur: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          organisation_id?: string
+          type_derive?: string
+          seuil_valeur?: number
+          created_at?: string
+        }
+        Relationships: []
+      }
+      meteo_cache: {
+        Row: {
+          id: string
+          code_postal: string
+          data: Record<string, unknown>
+          fetched_at: string
+          expires_at: string
+        }
+        Insert: {
+          id?: string
+          code_postal: string
+          data: Record<string, unknown>
+          fetched_at?: string
+          expires_at: string
+        }
+        Update: {
+          id?: string
+          code_postal?: string
+          data?: Record<string, unknown>
+          fetched_at?: string
+          expires_at?: string
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          id: string
+          organisation_id: string
+          user_id: string
+          type: string
+          titre: string
+          message: string
+          chantier_id: string | null
+          tache_id: string | null
+          lu: boolean
+          read_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          organisation_id: string
+          user_id: string
+          type: string
+          titre: string
+          message: string
+          chantier_id?: string | null
+          tache_id?: string | null
+          lu?: boolean
+          read_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          organisation_id?: string
+          user_id?: string
+          type?: string
+          titre?: string
+          message?: string
+          chantier_id?: string | null
+          tache_id?: string | null
+          lu?: boolean
+          read_at?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      briefings: {
+        Row: {
+          id: string
+          chantier_id: string
+          organisation_id: string
+          semaine_iso: number
+          annee_iso: number
+          contenu: string
+          statut: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          chantier_id: string
+          organisation_id: string
+          semaine_iso: number
+          annee_iso: number
+          contenu?: string
+          statut?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          chantier_id?: string
+          organisation_id?: string
+          semaine_iso?: number
+          annee_iso?: number
+          contenu?: string
+          statut?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      // ================================================================
+      // Tables Sprint 8 — Chat + Bot (migration 019-021)
+      // Ajout manuel requis (pattern Amelia piège TS Windows UTF-16 Sprint 4/5)
+      // ================================================================
+      chats: {
+        Row: {
+          id: string
+          chantier_id: string
+          organisation_id: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          chantier_id: string
+          organisation_id: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          chantier_id?: string
+          organisation_id?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
+      messages: {
+        Row: {
+          id: string
+          chat_id: string
+          chantier_id: string
+          auteur_id: string | null
+          auteur_nom: string | null
+          auteur_role: string | null
+          type: 'user' | 'bot' | 'system'
+          contenu: string
+          deleted_at: string | null
+          action_proposal_id: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          chat_id: string
+          chantier_id: string
+          auteur_id?: string | null
+          auteur_nom?: string | null
+          auteur_role?: string | null
+          type: 'user' | 'bot' | 'system'
+          contenu: string
+          deleted_at?: string | null
+          action_proposal_id?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          chat_id?: string
+          chantier_id?: string
+          auteur_id?: string | null
+          auteur_nom?: string | null
+          auteur_role?: string | null
+          type?: 'user' | 'bot' | 'system'
+          contenu?: string
+          deleted_at?: string | null
+          action_proposal_id?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      action_proposals: {
+        Row: {
+          id: string
+          organisation_id: string
+          chantier_id: string
+          message_id: string
+          type: 'creer_tache' | 'ajouter_cr' | 'replanifier' | 'alerte'
+          payload: Json
+          statut: 'pending' | 'valide' | 'rejete' | 'execute'
+          valide_par: string | null
+          valide_at: string | null
+          erreur_execution: string | null
+          ressource_id: string | null
+          ressource_type: 'tache' | 'chantier' | 'notification' | 'compte_rendu' | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          organisation_id: string
+          chantier_id: string
+          message_id: string
+          type: 'creer_tache' | 'ajouter_cr' | 'replanifier' | 'alerte'
+          payload: Json
+          statut?: 'pending' | 'valide' | 'rejete' | 'execute'
+          valide_par?: string | null
+          valide_at?: string | null
+          erreur_execution?: string | null
+          ressource_id?: string | null
+          ressource_type?: 'tache' | 'chantier' | 'notification' | 'compte_rendu' | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          organisation_id?: string
+          chantier_id?: string
+          message_id?: string
+          type?: 'creer_tache' | 'ajouter_cr' | 'replanifier' | 'alerte'
+          payload?: Json
+          statut?: 'pending' | 'valide' | 'rejete' | 'execute'
+          valide_par?: string | null
+          valide_at?: string | null
+          erreur_execution?: string | null
+          ressource_id?: string | null
+          ressource_type?: 'tache' | 'chantier' | 'notification' | 'compte_rendu' | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      claw_accueil_log: {
+        Row: {
+          id: string
+          user_id: string
+          chantier_id: string
+          date_accueil: string
+          contenu: string
+          meteo_disponible: boolean
+          llm_utilise: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          chantier_id: string
+          date_accueil: string
+          contenu: string
+          meteo_disponible?: boolean
+          llm_utilise?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          chantier_id?: string
+          date_accueil?: string
+          contenu?: string
+          meteo_disponible?: boolean
+          llm_utilise?: boolean
+          created_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -806,6 +1153,8 @@ export type NotificationType =
   | 'echeance_tache'
   | 'derive_proactive'  // Sprint 6 — détection proactive cron (migration 014 ADD VALUE)
   | 'briefing_lundi'    // Sprint 7 — briefing automatique lundi matin (migration 016 ADD VALUE)
+  | 'action_proposal'  // Sprint 8 — proposition bot Claw (migration 019)
+  | 'alerte_chat'      // Sprint 8 — alerte via chat bot (migration 019)
 
 export interface Notification {
   id: string
