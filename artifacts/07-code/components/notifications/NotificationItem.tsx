@@ -15,6 +15,7 @@ import {
   CalendarX,
   CalendarClock,
   AlertOctagon,
+  Sun,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { NotificationDisplay, NotificationType } from '@/types/database'
@@ -44,6 +45,9 @@ const NOTIF_ICON_MAP: Record<NotificationType, IconConfig> = {
   // Alertes du chantier (AlertCardDerive.tsx) où le type de dérive est disponible.
   // DECISIONLOG: déviation assumée Hana S6-01 F004 (orange inactivité dans dropdown) — YAGNI.
   derive_proactive:     { icon: AlertOctagon,    color: '#EF4444', bgColor: '#FEF2F2' },
+  // Sprint 7 — briefing lundi matin : BLEU (distinct du vert Rapport Hebdo)
+  // data-testid: icon identifiable via notif-item-{id} parent
+  briefing_lundi:       { icon: Sun,             color: '#3B82F6', bgColor: '#EFF6FF' },
 }
 
 // ============================================================
@@ -82,6 +86,11 @@ function buildUrl(
     if (type === 'derive_proactive') {
       return `/admin/chantiers/${chantier_id}#alertes`
     }
+    // Sprint 7 : briefing_lundi navigue vers la section #briefing du chantier (PO décision binding)
+    // Navigation directe vers briefing_id non implémentée (metadata absente des notifications)
+    if (type === 'briefing_lundi') {
+      return `/admin/chantiers/${chantier_id}#briefing`
+    }
     return `/admin/chantiers/${chantier_id}`
   }
 
@@ -98,6 +107,9 @@ function buildUrl(
     case 'derive_proactive':
       // Sprint 6 : navigate vers section alertes du chantier conducteur
       return `/conducteur/chantiers/${chantier_id}#alertes`
+    case 'briefing_lundi':
+      // Sprint 7 : navigue vers section #briefing du chantier (PO décision binding)
+      return `/conducteur/chantiers/${chantier_id}#briefing`
     default:
       return `/conducteur/chantiers/${chantier_id}`
   }

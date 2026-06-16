@@ -32,6 +32,7 @@ import { ArchiveButton } from './archive-button'
 import { UnarchiveButton } from './unarchive-button'
 import { ChantierDetailAdminTabs } from './tabs-client'
 import { SectionAlertesChantier } from '@/components/derives/SectionAlertesChantier'
+import { SectionBriefingChantier } from '@/components/briefing/SectionBriefingChantier'
 import type { Chantier, TacheWithUser, AffectationWithUser, PhotoConducteurDisplay } from '@/types/database'
 import type { CompteRenduListe, RapportHebdoListe } from '@/types/reporting'
 // T04 — TacheItem supprimé de cet import (remplacé par tableau inline dans tabs-client.tsx)
@@ -267,6 +268,12 @@ export default async function ChantierDetailAdminPage({ params }: PageProps) {
 
       {/* Sprint 6 — Section alertes proactives (F001 BINDING : avant les onglets, ancre id="alertes" dans SectionAlertesChantier) */}
       <SectionAlertesChantier chantierId={chantierId} />
+
+      {/* Sprint 7 — Section briefing de la semaine (V-7-14 BINDING : visible sans clic supplémentaire)
+          Positionnée AVANT les onglets pour être visible dès l'ouverture de la page chantier.
+          D-7-15 BINDING : distinction bleu (briefing prospectif) vs vert (rapport rétrospectif Sprint 5).
+          data-testid="section-briefing-chantier" dans SectionBriefingChantier */}
+      <SectionBriefingChantier chantierId={chantierId} role="admin" />
 
       {/* T04 — Système de tabs : Client Component gère les tabs et tout le contenu tabulé */}
       {/* Fix #5 : photos passées au client (PhotoConducteurDisplay[] — sans storage_path) */}

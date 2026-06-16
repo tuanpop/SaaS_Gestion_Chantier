@@ -32,6 +32,7 @@ import type {
 import type { CompteRenduListe, RapportHebdoListe } from '@/types/reporting'
 import { ChantierDetailConducteurClient } from './client'
 import { SectionAlertesChantier } from '@/components/derives/SectionAlertesChantier'
+import { SectionBriefingChantier } from '@/components/briefing/SectionBriefingChantier'
 
 export const dynamic = 'force-dynamic'
 
@@ -229,6 +230,12 @@ export default async function ChantierDetailConduPage({ params }: PageProps) {
 
       {/* Sprint 6 — Section alertes proactives (F001 BINDING : avant les onglets, ancre id="alertes" dans SectionAlertesChantier) */}
       <SectionAlertesChantier chantierId={chantierId} />
+
+      {/* Sprint 7 — Section briefing de la semaine (V-7-14 BINDING : visible sans clic supplémentaire)
+          D-7-15 BINDING : distinction bleu (briefing prospectif) vs vert (rapport rétrospectif Sprint 5)
+          role="conducteur" → "Voir le briefing complet" → /conducteur/briefings/[id]
+          data-testid="section-briefing-chantier" dans SectionBriefingChantier */}
+      <SectionBriefingChantier chantierId={chantierId} role="conducteur" />
 
       {/* Client Component pour les interactions (tâches + affectation + photos + CRs) */}
       <ChantierDetailConducteurClient
