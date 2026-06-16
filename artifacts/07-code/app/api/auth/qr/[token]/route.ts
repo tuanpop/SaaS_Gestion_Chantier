@@ -23,6 +23,7 @@ import { decryptQR, InvalidQRTokenError } from '@/lib/crypto'
 import { getSessionStore } from '@/lib/session-store'
 import { logger } from '@/lib/logger'
 import { OUVRIER_SESSION_TTL } from '@/lib/ouvrier-session'
+import { genererAccueilClaw } from '@/lib/chat/genererAccueilClaw'
 import type { OuvrierSession } from '@/types/database'
 
 // ============================================================
@@ -204,12 +205,19 @@ export async function GET(
 
   // 7. Construire le redirect selon le nombre d'affectations
   let redirectPath: string
+  let accueilChantierId: string | null = null
+
   if (affectations.length === 1 && affectations[0] !== undefined) {
     // 1 affectation → aller directement au chantier (RG-MULTI-002)
     redirectPath = `/ouvrier/chantiers/${affectations[0].chantier_id}`
+    accueilChantierId = affectations[0].chantier_id
   } else {
     // ≥2 affectations → selecteur de chantiers (RG-MULTI-001)
     redirectPath = '/ouvrier/chantiers'
+    // Accueil Claw avec le premier chantier (best-effort)
+    if (affectations[0] !== undefined) {
+      accueilChantierId = affectations[0].chantier_id
+    }
   }
 
   // 8. Poser le cookie HttpOnly ouvrier_session
@@ -244,7 +252,100 @@ export async function GET(
     'QR scan : session creee + redirect',
   )
 
+  // Sprint 8 — Accueil Claw best-effort (D-8-16 BINDING : jamais bloquer le scan QR)
+  // Génère l'accueil Claw du jour et l'insère dans claw_accueil_log
+  // getOuvrierSession n'est pas appelable ici (pas de NextRequest cookie encore posé)
+  // On lance directement la génération en fire-and-forget
+  if (accueilChantierId) {
+    void genererEtSauvegarderAccueilClaw(
+      user_id,
+      accueilChantierId,
+      organisation_id,
+      adminClient,
+    )
+  }
+
   return redirectResponse
+}
+
+// ============================================================
+// Sprint 8 — Accueil Claw fire-and-forget (D-8-16 best-effort)
+// Génère l'accueil Claw et l'insère dans claw_accueil_log
+// RG-ACCUEIL-006 : unicité (user_id, date_accueil) via UNIQUE INDEX ON CONFLICT DO NOTHING
+// D-051 BINDING : genererAccueilClaw ne retourne jamais note_privee_conducteur
+// Ne jamais throw — toute erreur est loggée silencieusement
+// ============================================================
+
+async function genererEtSauvegarderAccueilClaw(
+  ouvrierUserId: string,
+  chantierId: string,
+  organisationId: string,
+  adminClient: ReturnType<typeof createAdminClient>,
+): Promise<void> {
+  try {
+    // Récupérer infos chantier nécessaires
+    const { data: chantierRow } = await (adminClient as unknown as ReturnType<typeof createAdminClient>)
+      .from('chantiers')
+      .select('id, nom, code_postal, organisation_id')
+      .eq('id', chantierId)
+      .eq('organisation_id', organisationId)
+      .maybeSingle() as unknown as {
+        data: { id: string; nom: string; code_postal: string | null; organisation_id: string } | null
+        error: unknown
+      }
+
+    if (!chantierRow) {
+      logger.warn({ ouvrierUserId, chantierId }, 'genererEtSauvegarderAccueilClaw: chantier introuvable')
+      return
+    }
+
+    const today = new Date().toISOString().split('T')[0]! // YYYY-MM-DD
+
+    // Générer l'accueil (best-effort — retourne null si erreur)
+    const resultat = await genererAccueilClaw(ouvrierUserId, chantierRow, adminClient)
+
+    if (!resultat) {
+      // genererAccueilClaw a déjà loggé l'erreur
+      return
+    }
+
+    // Insérer dans claw_accueil_log — ignoreSuffixKey pour ON CONFLICT DO NOTHING
+    // RG-ACCUEIL-006 : UNIQUE INDEX (user_id, date_accueil) — si déjà généré ce jour = skip
+    // Supabase upsert avec ignoreDuplicates: true = INSERT ... ON CONFLICT DO NOTHING
+    const { error: insertError } = await (adminClient as unknown as ReturnType<typeof createAdminClient>)
+      .from('claw_accueil_log')
+      .upsert(
+        {
+          user_id: ouvrierUserId,
+          chantier_id: chantierId,
+          organisation_id: organisationId, // F002 fix — NOT NULL REFERENCES organisations(id) migration 020 l.20
+          date_accueil: today,
+          contenu: resultat.contenu,
+          meteo_disponible: resultat.meteo_disponible,
+          llm_utilise: resultat.llm_utilise,
+        } as unknown as import('@/types/database').Database['public']['Tables']['claw_accueil_log']['Insert'],
+        { onConflict: 'user_id,date_accueil', ignoreDuplicates: true },
+      ) as unknown as { error: { message: string } | null }
+
+    if (insertError) {
+      logger.warn(
+        { ouvrierUserId, chantierId, error: insertError.message },
+        'genererEtSauvegarderAccueilClaw: erreur INSERT (non-bloquant)',
+      )
+    } else {
+      logger.info({ ouvrierUserId, chantierId, date: today }, 'Accueil Claw inséré')
+    }
+  } catch (err) {
+    // D-8-16 : catch global — jamais throw (le scan QR doit toujours réussir)
+    logger.warn(
+      {
+        ouvrierUserId,
+        chantierId,
+        error: err instanceof Error ? err.message : String(err),
+      },
+      'genererEtSauvegarderAccueilClaw: erreur inattendue — best-effort silencieux',
+    )
+  }
 }
 
 // ============================================================

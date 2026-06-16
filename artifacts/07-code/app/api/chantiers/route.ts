@@ -242,9 +242,34 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 6. TODO Sprint 8 : INSERT INTO chats (chantier_id, organisation_id) VALUES (data.id, organisationId)
-    // La table chats sera créée en migration 006_chat.sql (Sprint 8)
-    // specs.md : POST /api/chantiers "crée aussi le chat automatiquement"
+    // 6. Sprint 8 : INSERT chat automatiquement (best-effort — ne bloque pas la création du chantier)
+    // specs.md : POST /api/chantiers "crée aussi le chat automatiquement" (US-066)
+    // D-8-16 BINDING : best-effort total — erreur chat = log warn, pas d'erreur vers le client
+    try {
+      const { error: chatError } = await adminClient
+        .from('chats')
+        .insert({
+          chantier_id: (data as unknown as { id: string }).id,
+          organisation_id: organisationId,
+        } as unknown as { chantier_id: string; organisation_id: string })
+
+      if (chatError) {
+        reqLogger.warn(
+          { error: chatError.message, chantierId: (data as unknown as { id: string }).id },
+          'POST chantiers: erreur création chat automatique (non-bloquant)',
+        )
+      } else {
+        reqLogger.debug(
+          { chantierId: (data as unknown as { id: string }).id },
+          'POST chantiers: chat créé automatiquement',
+        )
+      }
+    } catch (chatErr) {
+      reqLogger.warn(
+        { error: chatErr instanceof Error ? chatErr.message : String(chatErr) },
+        'POST chantiers: exception création chat (non-bloquant)',
+      )
+    }
 
     // 7. Retourner le chantier créé avec coloration -> HTTP 201
     const chantierTyped = data as unknown as Chantier

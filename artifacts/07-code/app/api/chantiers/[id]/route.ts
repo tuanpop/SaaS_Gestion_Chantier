@@ -459,6 +459,63 @@ export async function DELETE(
       )
     }
 
+    // Sprint 8 — Cascade archivage chat (best-effort total)
+    // D-8-10 BINDING : cascade non-bloquante — erreur = log warn, archivage continue
+    // Étape 1 : message système dans le chat du chantier
+    // Étape 2 : rejeter les propositions pending (plus de contexte actif)
+    try {
+      const { data: chatRow } = await adminClient
+        .from('chats')
+        .select('id')
+        .eq('chantier_id', chantierId)
+        .eq('organisation_id', organisationId)
+        .maybeSingle() as unknown as { data: { id: string } | null; error: unknown }
+
+      if (chatRow?.id) {
+        // Étape 1 : message système "chantier archivé"
+        await (adminClient as unknown as ReturnType<typeof createAdminClient>)
+          .from('messages')
+          .insert({
+            chat_id: chatRow.id,
+            chantier_id: chantierId,
+            auteur_id: null,
+            auteur_nom: 'Système',
+            auteur_role: null,
+            type: 'system',
+            contenu: 'Ce chantier a été archivé. Le chat est désormais en lecture seule.',
+            deleted_at: null,
+            action_proposal_id: null,
+          } as unknown as import('@/types/database').Database['public']['Tables']['messages']['Insert'])
+
+        reqLogger.debug({ chantierId, chatId: chatRow.id }, 'Sprint 8 cascade: message système archivage inséré')
+      }
+
+      // Étape 2 : rejeter toutes les propositions pending du chantier
+      const { error: rejectError } = await (adminClient as unknown as ReturnType<typeof createAdminClient>)
+        .from('action_proposals')
+        .update({ statut: 'rejete' } as unknown as import('@/types/database').Database['public']['Tables']['action_proposals']['Update'])
+        .eq('chantier_id', chantierId)
+        .eq('organisation_id', organisationId)
+        .eq('statut', 'pending') as unknown as { error: { message: string } | null }
+
+      if (rejectError) {
+        reqLogger.warn(
+          { chantierId, error: rejectError.message },
+          'Sprint 8 cascade: erreur rejet propositions pending (non-bloquant)',
+        )
+      } else {
+        reqLogger.debug({ chantierId }, 'Sprint 8 cascade: propositions pending rejetées')
+      }
+    } catch (cascadeErr) {
+      reqLogger.warn(
+        {
+          chantierId,
+          error: cascadeErr instanceof Error ? cascadeErr.message : String(cascadeErr),
+        },
+        'Sprint 8 cascade archivage chat: erreur inattendue (non-bloquante)',
+      )
+    }
+
     return new NextResponse(null, { status: 204 })
   } catch (error) {
     return toApiResponse(error, correlationId)
