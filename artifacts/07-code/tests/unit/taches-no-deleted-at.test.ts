@@ -26,7 +26,9 @@ function findRouteFiles(dir: string): string[] {
 describe('Régression : aucune requête sur `taches` ne filtre `deleted_at` (colonne inexistante)', () => {
   it('aucun handler /api ne chaîne .is/.eq("deleted_at") sur un .from("taches")', () => {
     const apiDir = join(process.cwd(), 'app', 'api')
-    const files = findRouteFiles(apiDir)
+    // Sprint 6 : étendre le scan aux fichiers lib/detection/ (D-045 BINDING)
+    const detectionDir = join(process.cwd(), 'lib', 'detection')
+    const files = [...findRouteFiles(apiDir), ...findRouteFiles(detectionDir)]
     const violations: string[] = []
 
     for (const file of files) {
