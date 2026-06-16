@@ -10,7 +10,107 @@ Alternative ecartee : [ce qui a ete considere et rejete]
 
 ---
 
-[2026-06-16] Amelia [permanent:true]
+[2026-06-16] Amelia [permanent:false]
+Decision : OPENWEATHER_API_KEY check deplace de module-level vers lazy (inside geocoderCodePostal + fetchOneCall)
+Raison : process.env check a module-level throw pendant `next build` (collecte static page data) meme quand la var est absente — comportement attendu en dev/prod mais casse le build. La validation lazy preserve le fail-fast au runtime (premier appel reel) et ne change pas le comportement au deploy.
+Alternative ecartee : startup check module-level (spec architecture) — incompatible avec next build static analysis
+
+[2026-06-16] Zoro [permanent:false]
+Decision : D-7-12 AMENDE — OPENWEATHER_API_KEY approche lazy + WARNING au boot (pas de throw). getOpenWeatherApiKey() retourne string|null au lieu de throw. Warning module-level UNE FOIS au demarrage si cle absente ("OPENWEATHER_API_KEY absente — briefing fonctionnera sans meteo (fallback best-effort D-7-07)"). Pas de throw au niveau module (incompatible next build) ni dans getOpenWeatherApiKey() (la meteo etant best-effort, un appel sans cle retourne source='indisponible' silencieusement apres le warn de boot). F001 Itachi Phase 4 resolu.
+Raison : D-7-07 (meteo best-effort) et D-7-12 (startup check) etaient en contradiction. La reconciliation retenue : clé OPTIONNELLE (coherent D-7-07 — app demarre sans elle, briefing fonctionne en degradé), mais l'operateur est alerte une seule fois au boot via logger.warn visible dans les logs Dokploy. Le throw au boot (D-7-12 original) aurait bloque le demarrage si la cle est absente en dev/smoke/pilote, violant D-7-07 et cassant next build.
+Alternative ecartee : throw module-level (casse next build, bloque demarrage — viole D-7-07) ; throw dans getOpenWeatherApiKey() sans warn boot (silencieux — l'operateur n'est pas alerte) ; ne pas modifier (contradiction D-7-07/D-7-12 laissee ouverte — F001 Itachi).
+
+[2026-06-16] Zoro [permanent:false]
+Decision : F002 Itachi Phase 4 — chantiers_skipped_archive retire de ReponseCronBriefing (types/briefing.ts) et de l'initialisation route.ts. Le champ etait structurellement toujours 0 car le cron charge uniquement statut='actif' (les archives ne sont jamais evalues, donc pas "skipped").
+Raison : Un compteur toujours 0 est trompeur pour l'operateur et pour Levi. Le choix le plus simple et coherent : retirer le champ plutot qu'ajouter une requete supplementaire pour compter les chantiers archives (cout inutile, information non actionnable).
+Alternative ecartee : charger tous les chantiers puis filtrer statut='actif' pour compter les archives (requete plus lourde, information non actionnable au pilote).
+
+[2026-06-16] Zoro [permanent:false]
+Decision : F003 Itachi Phase 4 — 4 erreurs tsc corrigees dans les fichiers de test __tests__/ (dans le scope tsc — non exclus par tsconfig.json qui exclut tests/** mais pas __tests__/**). Corrections chirurgicales : (1) cron-briefing.test.ts ligne 175 : body conditionnel via init partiel RequestInit (pas de body: undefined explicite, incompatible exactOptionalPropertyTypes) ; (2/3) llm-model-extension.test.ts + non-regression-sprint5-6.test.ts : AnthropicMock caste en (new () => object) & { APIConnectionTimeoutError: ... } pour permettre l'assignation de la propriete statique sur Mock<Procedure> ; (4) non-regression-sprint5-6.test.ts NR-2 : model: undefined remplace par cle omise (exactOptionalPropertyTypes interdit undefined explicite sur prop optionnelle LLMModel). tsc --noEmit = 0 erreur apres correction.
+Raison : exactOptionalPropertyTypes:true dans tsconfig impose que les proprietes optionnelles (prop?: T) ne peuvent pas recevoir undefined explicitement — la cle doit etre absente. Mock<Procedure> de Vitest n'a pas de proprietes statiques typees — le cast as unknown as ... contourne le type sans modifier le code de production.
+Alternative ecartee : ajouter __tests__/** a l'exclude du tsconfig (les tests doivent etre types — CLAUDE.md) ; model: undefined avec cast (masque le vrai probleme de type).
+
+[2026-06-16] Zoro [permanent:false]
+Decision : F004 Itachi Phase 4 — ajout alerte observabilite quota OpenWeather dans cron/briefing/route.ts : if (reponse.meteo_appels_api > 200) logger.warn({ meteo_appels_api }, 'cron/briefing: meteo_appels_api > 200, surveiller quota OpenWeather'). Positionne apres le traitement de tous les chantiers, avant le logger.info final. EXI-Y-K7-09 / TST-K7-10 satisfait.
+Raison : Le plan gratuit OpenWeather = 1000 appels/jour. A 20 chantiers distincts CP, le cron peut faire 20 appels API. Un passage avec > 200 appels indiquerait une configuration anormale (centaines de chantiers ou bug de cache). L'alerte est un garde-fou observabilite sans blocage (EXI-Y-K7-09 "pas de blocage V1").
+Alternative ecartee : blocage si > 200 (interdit par EXI-Y-K7-09 "pas de blocage V1") ; seuil different (200 = spec TST-K7-10 / coherence_phase4-sprint7.md F004).
+
+[2026-06-16] Amelia [permanent:false]
+Decision : Tests LM/NR utilisent process.env['ANTHROPIC_API_KEY'] = 'test-key-mock' dans beforeAll
+Raison : AnthropicClient constructor verifie la presence de la cle avant d'instancier le SDK. Le mock vi.mock('@anthropic-ai/sdk') remplace le SDK mais pas le check env. Seul pattern viable : setter une valeur fake avant construction.
+Alternative ecartee : Mocker le constructor entier — violerait le principe de test de la logique de routage model?.
+
+[2026-06-16] Amelia [permanent:false]
+Decision : Mock '@anthropic-ai/sdk' inclut APIConnectionTimeoutError comme classe dans le mock factory
+Raison : anthropic.ts utilise `err instanceof Anthropic.APIConnectionTimeoutError` dans le catch. Sans cette classe dans le mock, TypeError: Right-hand side of instanceof is not an object.
+Alternative ecartee : try/catch autour du instanceof — modifierait le code de production pour contourner un probleme de test.
+
+[2026-06-16] Amelia [permanent:false]
+Decision : genererMessageFallbackBriefing capitalise "Semaine" (capital S) dans l'en-tete
+Raison : test FB-1 attendait "Semaine 26" (capital S). La cle test-ID n'est pas arbitrary — elle reflete la lecture humaine du briefing imprime ou affiche (cohérence avec "ÉTAT DU CHANTIER", "ALERTES", etc. tous en majuscules).
+Alternative ecartee : modifier le test pour accepter "semaine" minuscule — les tests sont la spec, on ne les modifie pas.
+
+[2026-06-16] Amelia [permanent:false]
+Decision : cron-briefing.test.ts mocke resolveDestinatairesInternes et insertNotification (manquants v1)
+Raison : le cron route appelle envoyerNotificationsBriefing qui appelle resolveDestinatairesInternes et insertNotification — sans mocks ces fonctions tentaient des appels DB reels et provoquaient un timeout 5000ms.
+Alternative ecartee : timeout test augmente a 30s — masquerait le vrai probleme (appel DB reel en test unitaire).
+
+---
+
+[2026-06-16] Shinji [permanent:true]
+Decision : Sprint 8 — pipeline bot asynchrone FIRE-AND-FORGET (pas de queue). Le POST /api/chantiers/[id]/chat/messages INSERT le message (type=user, service_role) -> retourne 201 IMMEDIAT -> lance `void lancerPipelineBot(message)` SANS await dans le meme process Node. Le pipeline (Haiku tri -> Sonnet conditionnel) catch tout en interne (best-effort), ne throw jamais, n'a aucun effet sur le 201 ni sur le message humain. La proposition/reponse bot apparait au polling client suivant (<=30s). Pas de retry. (D-8-11 / ADR-8-001)
+Raison : l'analyse LLM prend 2-10s ; bloquer le POST degraderait l'UX terrain (ouvrier qui attend). Une queue (BullMQ/Redis) reintroduirait l'infra Redis droppee V1 (D-054, bug ioredis Docker Swarm) = over-engineering au volume pilote (quelques messages/h/chantier). Coherent avec le best-effort Sprint 5/6/7. Le message humain est persiste avant le pipeline -> aucune perte de donnee meme si le process meurt.
+Alternative ecartee : await le pipeline avant 201 (bloque l'UX 2-10s, inacceptable terrain) ; queue Redis/BullMQ (reintroduit infra fragile Docker Swarm pour un besoin sur-dimensionne) ; table jobs + cron supercronic (latence cron periodique + complexite worker pour gain nul au volume pilote).
+
+[2026-06-16] Shinji [permanent:true]
+Decision : Sprint 8 — pipeline LLM 2 passes Haiku->Sonnet CONDITIONNEL (filtre cout). Haiku (model defaut claude-haiku-4-5, ~$0.00006/msg) trie CHAQUE message humain en neutre/claw_inline/action_a_proposer. Sonnet (model:'claude-sonnet-4-6' via le model? de D-7-11) appele UNIQUEMENT si intention != neutre (~15% des messages). Haiku ne construit jamais le payload (il trie). Rate-limit 10 Sonnet/h/chantier via lib/cache.ts (cle sonnet_rate_${chantier_id}). Trial-gate : org trial_expired -> 0 appel LLM (message poste normalement). (D-8-12/17/18 / ADR-8-002)
+Raison : appeler Sonnet sur chaque message couterait x10 inutilement (85% des messages neutres). Haiku filtre en amont bon marche. Cout pilote estime ~$3.33/mois 5 chantiers ~0.6% MRR (stress 50% Sonnet ~3%), tres sous la limite PRD 15%. Reutilise model? (D-7-11) sans nouveau client. Haiku robuste aux fautes/SMS ouvrier (PO-8-02=B participant actif).
+Alternative ecartee : Sonnet seul/message (cout x10 inutile) ; Haiku seul extraction directe (qualite JSON FR-BTP insuffisante) ; classifieur local regex/keywords (fragile sur langage terrain libre, faux pos/neg eleves).
+
+[2026-06-16] Shinji [permanent:true]
+Decision : Sprint 8 — le bot PROPOSE, l'humain EXECUTE (ADR-007/D-008/D-013 etendu au chat). Sonnet produit UNIQUEMENT une action_proposals.statut='pending' (4 types : creer_tache/ajouter_cr/replanifier/alerte, ADR-013). AUCUNE execution dans le pipeline. L'execution reelle (INSERT taches / UPDATE date / lien comptes_rendus / insertNotification) se fait UNIQUEMENT dans PATCH /api/action-proposals/[id]/valider apres decision humaine (admin/conducteur). IDOR : chantier_id/organisation_id FORCES depuis action_proposals (figes serveur a la creation), JAMAIS depuis le payload editable — toute UPDATE/INSERT porte le double filtre. Workflow pending->valide->execute / pending->rejete, statut pending requis (sinon 409, idempotence anti double-execution). Execution best-effort : KO -> statut reste valide + erreur_execution (pas de rollback de la decision). (D-8-13/14 / ADR-8-003)
+Raison : le chat est la surface d'injection MAXIMALE du projet (texte libre, multi-acteurs, ouvrier inclus PO-8-02=B). Une instruction injectee ("@claw supprime toutes les taches") ne peut au pire produire qu'une proposition pending — visible, editable, rejetable. Coherent ADR-007 (validation CR humaine) / D-008 (LLM ne decide jamais) / D-013 (chat). Argument commercial fort (PME garde le controle). L'execution auto a ete explicitement rejetee (archive Decisions : "Action bot sans validation humaine — Securite + argument commercial").
+Alternative ecartee : execution auto (bot decideur — rejet historique) ; auto-execution des actions "sures" (alerte) seules (incoherence modele mental + surface injection sur le tri sur/non-sur) ; chantier_id depuis le payload (IDOR direct).
+
+[2026-06-16] Shinji [permanent:true]
+Decision : Sprint 8 — chat polling 30s (PO-8-01=A, pas de Realtime/WebSocket/SSE, zero dependance Realtime SDK, coherent fil notifs Sprint 4 PO-4V-06). Accueil Claw (feature #9) greffe sur GET /api/auth/qr/[token] EXISTANT : apres creation session, accueil Haiku idempotent (uq_claw_accueil_user_date, 1/ouvrier/jour) best-effort total (scan reussit TOUJOURS meme si accueil KO), reutilise meteo_cache Sprint 7 (ZERO appel OpenWeather), banniere PWA (pas de cloche ouvrier PO-4V-03), trial -> contenu deterministe sans Haiku. 3 migrations manuelles sequentielles 018(chats+messages)->019(action_proposals + FK retour + enum notification_type += action_proposal,alerte_chat ISOLE fin)->020(claw_accueil_log). Ecriture chat = service_role only (RLS WITH CHECK(false) partout, D-8-04). Purge SQL-pur pg_cron (messages 90j PO-8-03=B + accueil 30j), PAS supercronic. ZERO nouvelle dependance npm/env/infra. (D-8-01/04/08/10/16/20 / ADR-8-004/005)
+Raison : volume PME BTP faible (quelques messages/h) -> polling 30s suffit, Realtime = over-engineering V2. L'accueil greffe sur le scan est contextuel au moment reel (vs cron aveugle qui ne sait pas quand l'ouvrier vient et genere pour des absents). Best-effort = le scan terrain (mains sales, batterie) n'est jamais bloque ni allonge (fire-and-forget apres session, comme le pipeline bot). Enums isoles fin de migration : PG interdit ADD VALUE dans la meme transaction que son usage (lecon Sprint 6 derive_proactive TST-K6-28, Sprint 7 briefing_lundi V-7-12). RLS service_role-only empeche de forger un message bot ou falsifier un statut de proposition via PostgREST direct.
+Alternative ecartee : Supabase Realtime (latence <1s mais SDK + policies + dependance non justifies au volume pilote) ; SSE (complexite connexion longue Docker Swarm/Traefik) ; cron nocturne pre-generant les accueils (ne sait pas quand l'ouvrier vient, cout gaspille, meteo pas fraiche) ; generation synchrone bloquant le scan (allonge le scan terrain) ; accueil dans le chat (ouvrier n'a pas le chat ouvert au scan + pollue le fil).
+
+---
+
+[2026-06-16] Shinji [permanent:true]
+Decision : Sprint 7 — selection du modele LLM via champ OPTIONNEL model? sur LLMGenerateParams (lib/llm/client.ts). Ajout type LLMModel = 'claude-haiku-4-5' | 'claude-sonnet-4-6'. AnthropicClient lit params.model ?? 'claude-haiku-4-5' (defaut Haiku PRESERVE). genererContenuBriefing passe model:'claude-sonnet-4-6'. Sprint 5 (CR) + Sprint 6 (derives) inchanges (ne passent pas le champ). (D-7-11 / ADR-7-001)
+Raison : le briefing lundi exige Sonnet (PRD feature #5 WOW factor, PO acte RYO-7-01) alors que ILLMClient.generate() n'avait aucun parametre de modele et AnthropicClient hardcodait Haiku (const MODEL_ID). Extension minimale, backward-compatible, swappable (respecte D-5-01). Un seul AnthropicClient/getLLMClient/register partage entre les 2 modeles (le SDK Anthropic accepte model par requete).
+Alternative ecartee : dupliquer AnthropicSonnetClient + 2e factory (viole DRY, multiplie register/getLLMClient) ; variable env globale LLM_MODEL (empeche Haiku derive + Sonnet briefing dans le meme process) ; new AnthropicClient(model) (incompatible avec le singleton getLLMClient partage).
+
+[2026-06-16] Shinji [permanent:true]
+Decision : Sprint 7 — integration OpenWeather via fetch natif (Node 18+), PAS de SDK npm. Nouvelle dependance EXTERNE (One Call 3.0 + Geocoding ZIP). Cache DB meteo_cache (mig 017) cle code_postal (PAS organisation_id — meteo publique partagee entre orgs), TTL 6h, coordonnees geocoding cachees (lat/lon), nettoyage par le cron briefing (>24h). Secret OPENWEATHER_API_KEY server-only (jamais NEXT_PUBLIC_, Dokploy Environment), startup check throw si absent (pattern QR_ENCRYPTION_KEY), jamais logge (URL avec appid= interdite en log). (D-7-06/12 / ADR-7-004)
+Raison : chantiers.code_postal est la seule geodonnee ; plusieurs chantiers partagent souvent un meme CP ; la meteo est publique non proprietaire. Le cache par code_postal borne les appels a <=1/CP distinct/6h (a 20 chantiers/8 CP distincts -> <=8 appels). fetch natif evite une dependance npm superflue. Plan gratuit OpenWeather (1000 appels/jour) tres suffisant au pilote.
+Alternative ecartee : SDK OpenWeather npm (dependance superflue) ; cache memoire process lib/cache.ts (perdu au restart, cron 1x/semaine = cache toujours froid, non partage entre replicas) ; cache par chantier (N appels redondants meme CP) ; cache scope org (redondance inutile, meteo identique pour tous les chantiers d'un CP).
+
+[2026-06-16] Shinji [permanent:true]
+Decision : Sprint 7 — briefing best-effort a deux niveaux INDEPENDANTS. Meteo KO (geocoding 404 / One Call 429/timeout / JSON malforme) -> source='indisponible', Sonnet appele quand meme. Sonnet KO/timeout/trial_expired -> message_fallback deterministe (genererMessageFallbackBriefing), contenu_genere=null, briefing+notif inseres quand meme. Aucun des deux ne bloque la generation : un chantier actif est TOUJOURS briefe chaque lundi. Collecte deterministe (collecterSignaux TS pur, D-008 etendu — ADR-7-002) — le briefing AGREGE les derives Sprint 6 (derives_detectees WHERE resolved_at IS NULL), ne les recalcule pas. Idempotence DB uq_briefing_chantier_semaine (chantier_id, annee_iso, semaine_iso) + ON CONFLICT DO NOTHING. (D-7-01/02/04/07/08 / ADR-7-002/003)
+Raison : le briefing prospectif pour un chantier actif est attendu chaque lundi (feature MUST HAVE S7-F01). Contrairement au CR Sprint 5 (livrable engageant qui throw 502), un briefing degrade vaut mieux que pas de briefing. Coherent best-effort Sprint 6 (D-6-03). Un echec OpenWeather ne doit pas priver tous les chantiers de briefing un lundi entier. D-008 : decision metier deterministe, LLM redacteur seul (testable, auditable via donnees_brutes snapshot).
+Alternative ecartee : throw comme le CR Sprint 5 (un echec externe priverait tous les chantiers un lundi entier) ; faire decider Sonnet des risques/derives (viole D-008, non testable/auditable, risque d'hallucination metier) ; cache meteo scope org (cf. entree dependance OpenWeather).
+
+---
+
+[2026-06-16] Amelia [permanent:false]
+Decision : Branchement prompt Yuki briefing-chantier Sprint 7 — déviations par rapport au STUB.
+1. escapeDelimiter (schema.ts Yuki) couvre uniquement </data> et <data>. Le STUB couvrait aussi </signaux_terrain> et </comptes_rendus_semaine>. La déviation est intentionnelle : le prompt briefing Yuki n'utilise pas ces délimiteurs Sprint 5/6 — leur escaping était donc redondant. Les tests SEC-9 et NR-4 ont été mis à jour pour refléter le comportement réel.
+2. BRIEFING_LLM_PARAMS.maxTokens = 900 (Yuki) vs 800 (STUB). Test NR-3 mis à jour.
+3. buildBriefingUserMessage ne fait plus de SignauxBriefingChantierSchema.parse() — le cast est sûr car le cron garantit statut='actif' en amont (D-7-01). La validation Zod complète des inputs n'est pas dans le scope de genererContenuBriefing (D-7-04 best-effort : les erreurs vont dans le catch → fallback).
+4. genererContenuBriefing.ts : la troncature à 8000 chars est remplacée par BriefingOutputSchema.safeParse() → si invalide → fallback (D-7-04 best-effort). Un output trop court ou trop long est une anomalie LLM → fallback.
+Raison : cohérence avec le pattern Sprint 6 (MessageDeriveOutputSchema.safeParse → fallback), spec Yuki BRIEFING_LLM_PARAMS binding, et principe D-7-04.
+Alternative écartée : garder la troncature du STUB (contredit D-7-04 : un output invalide doit déclencher le fallback, pas être tronqué silencieusement).
+
+[2026-06-16] Amelia [permanent:false]
+Decision : SEC-9 mis à jour — escapeDelimiterBriefing du STUB (</signaux_terrain>, </comptes_rendus_semaine>) non porté dans le schema Yuki (escapeDelimiter covers </data> et <data> uniquement). Ces délimiteurs Sprint 5/6 ne sont pas dans le format <data>...</data> du prompt briefing → leur escaping n'est plus pertinent. EXI-Y-K7-03 BINDING couvre les 4 champs non fiables sur le délimiteur effectif.
+Raison : spec Yuki schema.ts fait autorité sur le STUB Amelia.
+Alternative écartée : conserver l'escaping étendu dans un wrapper local (over-engineering, non spécifié par Yuki).
+
+[2026-06-16] Amelia [permanent:false]
 Decision : Emplacement du schema Yuki derive-chantier = lib/detection/prompts/derive-chantier/schema.ts (co-localisé avec la feature detection). Le system prompt Yuki (artifacts/09-llm/prompts/derive-chantier/system.md) est incorporé comme constante TS inline SYSTEM_PROMPT_DERIVE dans lib/detection/genererMessageDerive.ts. Le stub buildPrompt() est supprimé et remplacé par buildUserMessage() + DERIVE_LLM_PARAMS du schema Yuki. Le slice(0, 1000) du stub est remplacé par MessageDeriveOutputSchema.safeParse() → fallback si invalide (D-6-03 best-effort).
 Raison : Co-localisation avec lib/detection/ cohérente avec le reste de l'arbo — les prompts de la feature detection vivent dans lib/detection/prompts/, pas dans lib/llm/prompts/ (qui est pour les features reporting Sprint 5). Le system prompt inline évite un import de fichier .md à l'exécution. MessageDeriveOutputSchema (min 10, max 2000) remplace la troncature manuelle : la spec Yuki dit "fallback si invalide", pas "tronquer".
 Alternative écartée : copier schema.ts sous lib/llm/prompts/derive-chantier/ (lib/llm/ est scoped Sprint 5 reporting — mélange de features) ; lire system.md depuis le filesystem à l'exécution (non testable, dépendance I/O inutile) ; garder la troncature à 1000 chars du stub (contredit D-6-03 : fallback si output invalide).
@@ -119,7 +219,6 @@ Alternative écartée : déplacer UserRole dans detection.ts (crée une dépenda
 Decision : RG-CR-011 REMPLACÉ — resolveDestinatairesInternes nouvelle signature (orgId, chantierId, adminClient). Nouvelle logique : (admins org, role='admin', deleted_at IS NULL) ∪ (conducteurs rattachés au chantier : created_by du chantier si conducteur non supprimé, OU conducteurs avec affectation ACTIVE, deleted_at IS NULL). Dédoublonnage par email via Set<string>. Compteur nbDestinataires dans les 4 pages détail remplacé par resolveDestinatairesInternes().length (exact match envoi réel). Routes cr/envoyer et rapports-hebdo/envoyer passent cr.chantier_id / rapport.chantier_id en 2e argument.
 Raison : Décision PO binding smoke 2026-06-15 : l'envoi d'un CR ou rapport hebdo ne doit plus cibler TOUS les conducteurs de l'org, mais uniquement ceux rattachés au chantier concerné. PO-5-04 respecté (N calculé côté serveur). AM-03 propriété vérifiée : un conducteur qui envoie passe forcément canAccessChantier → est created_by ou affecté (actif ou passé) ; la nouvelle règle l'inclut si actif, l'exclut si affectation uniquement passée (décision PO assumée).
 Alternative ecartee : filtre côté DB avec .or() Supabase (verbeux, moins lisible pour le cas date_fin IS NULL OR date_fin >= today — filtrage JS post-fetch trivial pour le volume pilote). Requête unique JOIN affectations+users (complexité SQL inutile pour le volume pilote). Garder RG-CR-011 (contredit la décision PO binding).
-Divergence assumée (documentée en commentaire source) : canAccessChantier accepte les affectations actives OU passées ; resolveDestinatairesInternes exige actives uniquement (date_debut <= today AND (date_fin IS NULL OR date_fin >= today)) — parties prenantes COURANTES du chantier par décision PO explicite.
 
 ---
 
