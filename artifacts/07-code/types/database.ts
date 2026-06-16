@@ -805,6 +805,7 @@ export type NotificationType =
   | 'echeance_chantier'
   | 'echeance_tache'
   | 'derive_proactive'  // Sprint 6 — détection proactive cron (migration 014 ADD VALUE)
+  | 'briefing_lundi'    // Sprint 7 — briefing automatique lundi matin (migration 016 ADD VALUE)
 
 export interface Notification {
   id: string
