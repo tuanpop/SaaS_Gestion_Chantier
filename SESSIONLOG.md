@@ -2,6 +2,357 @@
 
 ---
 
+[2026-06-16 16:00] agent=levi mode=A/C sprint=6
+  test_strategy: unit+structural (source scan)
+  artifacts:
+    artifacts/10-qa/test-plan-sprint-6.md
+    artifacts/10-qa/tests/detection-gaps-sprint6.test.ts (23 tests GAP-001/002/004/005/009 + reachability)
+    artifacts/07-code/tests/unit/detection-gaps-sprint6.test.ts (copie CI/CD)
+  coverage: 100% stories MUST HAVE (9/9), 88% Gherkin (45/51), 100% RG-* (25/25)
+  test_results: 603 passed / 0 failed / 10 skipped (613 total)
+  gaps_bloquants: aucun
+  gaps_fermes: GAP-001..010 tous fermes
+  gaps_residuels: GAP-R01 E2E Playwright STANDBY, GAP-R02 smoke UI manuel, GAP-R03 infra
+  verdict: READY avec reserves -- livrable prod, sprint reste completed sous reserve E2E auto
+  status: completed
+
+---
+
+
+[2026-06-16 12:21] agent=zoro mode=A/C sprint=6
+  artifacts:
+    artifacts/07-code/app/api/cron/derives/route.ts (F002 dead code supprimé, F004 commentaire corrigé, F003 commentaire alignement ajouté)
+    artifacts/07-code/app/api/chantiers/[id]/route.ts (F003 commentaire alignement DELETE handler)
+    artifacts/07-code/lib/detection/genererMessageDerive.ts (commentaire EXI-Y-K6-04 corrigé — htmlEscape dans insertNotification, pas cron)
+    artifacts/07-code/tests/unit/detection-notif-integration.test.ts (TST-K6-33 complété — 4 tests XSS/htmlEscape)
+    DECISIONLOG.md (5 entrées Zoro : D-EXE-6-03 F001, F002, F003, F004)
+  build: PASS
+  tests: 580 passed / 10 skipped / 0 failed (590 total)
+  turns_used: 14/20
+  status: completed
+
+---
+
+[2026-06-16 11:57] agent=amelia phase=EXECUTE sprint=6-branchement-prompt-derive
+  artifacts:
+    artifacts/07-code/lib/detection/genererMessageDerive.ts (modifié — stub remplacé par prompt Yuki final)
+    artifacts/07-code/lib/detection/prompts/derive-chantier/schema.ts (créé — schema Yuki co-localisé)
+    artifacts/07-code/tests/unit/detection-llm.test.ts (modifié — Test 004 + Test 006 ajoutés, test troncature adapté)
+  build: PASS (tsc --noEmit — zéro erreur)
+  tests: 571 PASS / 581 (10 skipped préexistants) — 53/54 suites
+  test_004: PASS (injection chantier_nom via escapeDelimiter neutralisée)
+  test_006: PASS (note_privee_conducteur absente du prompt assemblé)
+  status: completed
+
+[2026-06-16 15:00] agent=yuki sprint=6-ia-derive
+  llm_features_count: 1 (genererMessageDerive — rédacteur agrégé best-effort, 1 appel/chantier si ≥1 dérive nouvelle)
+  artifacts:
+    artifacts/09-llm/llm-design-sprint-6.md
+    artifacts/09-llm/prompts/derive-chantier/system.md
+    artifacts/09-llm/prompts/derive-chantier/schema.ts
+    artifacts/09-llm/prompts/derive-chantier/evals.md
+  modele: claude-haiku-4-5 (réutilisé Sprint 5, D-6-05)
+  temperature: 0.2 (vs 0.3 CR Sprint 5 — précision chiffres maximale)
+  max_tokens: 500 (message d'alerte court 60-200 mots, vs 600 CR Sprint 5)
+  politique_erreur: best-effort (D-6-03 — ne throw jamais le cron, fallback déterministe si KO, message_llm=null)
+  anti_injection: EXI-Y-K6-01→08 BINDING — délimiteurs <data>...</data> + escapeDelimiter(chantier_nom/tache_titre) + données déclarées non fiables system prompt + LLM ne décide jamais d'une dérive (D-008/D-6-01)
+  note_privee: absence structurelle dans SignalDeriveTacheBloqueeSchema (D-051 — jamais dans schéma ni dans payload)
+  cout_pilote: ~$0.074/mois S6 seul (~$0.30/mois S5+S6 cumulé) — ratio MRR 0.056% (objectif <15% MRR respecté)
+  interface_amelia: lib/detection/genererMessageDerive.ts — importer SYSTEM_PROMPT_DERIVE (constante depuis system.md) + buildUserMessage + MessageDeriveOutputSchema + DERIVE_LLM_PARAMS depuis schema.ts. Branchement précis documenté dans llm-design-sprint-6.md §3.
+  evals_count: 8 (Tests 001-008 — dont Test 004 injection chantier_nom et Test 006 note_privee NON NÉGOCIABLES avant déploiement)
+  status: completed
+
+[2026-06-16 15:30] agent=amelia phase=EXECUTE sprint=6-ia-derive
+  status: completed
+  build: OK (0 erreurs TypeScript, 0 erreurs ESLint)
+  tests: 574 passed | 10 skipped | 0 failed (92 nouveaux tests Sprint 6)
+  batches_executes: 15/15
+  fichiers_crees:
+    artifacts/07-code/supabase/migrations/014_derives_detectees.sql
+    artifacts/07-code/supabase/migrations/015_seuils_derives.sql
+    artifacts/07-code/types/detection.ts
+    artifacts/07-code/lib/validation/detection.ts
+    artifacts/07-code/lib/detection/chargerSeuils.ts
+    artifacts/07-code/lib/detection/detecterDerives.ts
+    artifacts/07-code/lib/detection/genererMessageDerive.ts
+    artifacts/07-code/lib/detection/resolverDerives.ts
+    artifacts/07-code/lib/detection/persistDerives.ts
+    artifacts/07-code/app/api/cron/derives/route.ts
+    artifacts/07-code/app/api/chantiers/[id]/derives/route.ts
+    artifacts/07-code/app/api/derives/route.ts
+    artifacts/07-code/app/api/organisations/me/seuils-derives/route.ts
+    artifacts/07-code/components/derives/SectionAlertesChantier.tsx
+    artifacts/07-code/components/derives/SectionAlertesConsolidee.tsx
+    artifacts/07-code/app/admin/settings/derives/page.tsx
+    artifacts/07-code/tests/unit/detection-derives.test.ts
+    artifacts/07-code/tests/unit/detection-charger-seuils.test.ts
+    artifacts/07-code/tests/unit/detection-fallback.test.ts
+    artifacts/07-code/tests/unit/detection-llm.test.ts
+    artifacts/07-code/tests/unit/detection-resolver.test.ts
+    artifacts/07-code/tests/unit/detection-cron.test.ts
+    artifacts/07-code/tests/unit/detection-seuils-api.test.ts
+    artifacts/07-code/tests/unit/detection-derives-api.test.ts
+    artifacts/07-code/tests/unit/detection-notif-integration.test.ts
+  fichiers_modifies:
+    artifacts/07-code/types/database.ts (NotificationType union étendu)
+    artifacts/07-code/app/api/chantiers/[id]/route.ts (resolverDerivesChantier sur archivage)
+    artifacts/07-code/components/NotificationItem.tsx (icône rouge derive_proactive)
+    artifacts/07-code/app/admin/chantiers/[id]/page.tsx (SectionAlertesChantier injecté)
+    artifacts/07-code/app/conducteur/chantiers/[id]/page.tsx (SectionAlertesChantier injecté)
+    artifacts/07-code/app/admin/chantiers/page.tsx (SectionAlertesConsolidee injecté — dashboard actif)
+    artifacts/07-code/components/SidebarNavClient.tsx (nav item Alertes & Seuils ajouté)
+    artifacts/07-code/app/globals.css (10 tokens CSS Sprint 6)
+    artifacts/07-code/eslint.config.mjs (caughtErrorsIgnorePattern ajouté)
+    artifacts/07-code/tests/unit/taches-no-deleted-at.test.ts (scan étendu à lib/detection/)
+  deviations_documentees: 6 (DECISIONLOG.md — dont D-EXE-6-01 supabase types cast, D-EXE-6-02 dashboard chantiers pas app/admin, D-EXE-6-03 emails→IDs cron, D-EXE-6-04 UserRole location, D-EXE-6-05 eslint caughtErrors, D-EXE-6-06 _fallbackIso)
+  bindings_respectes:
+    D-008 — détection 100% déterministe TypeScript, LLM appelé après
+    D-6-03 — LLM best-effort, fallback déterministe si KO, cron jamais interrompu
+    D-6-06 — idempotence cron via uq_derive_active_chantier_type_tache + ON CONFLICT DO NOTHING
+    V-15 — import @/lib/llm/register premier import genererMessageDerive.ts
+    EXI-Y-K6-02 — note_privee_conducteur absente de SignalDeriveTacheBloquee
+    EXI-Y-K6-07 — ratio_budget >= 0.50 AND < 1 Zod + CHECK SQL
+    V-07 — inactivité via taches → photos.tache_id (jamais photos.chantier_id)
+    D-045 — aucun filtre taches.deleted_at IS NULL
+    TST-K6-07 — secret cron via crypto.timingSafeEqual
+    TST-K6-14 — filtre organisation_id handler-level /api/derives (IDOR prevention)
+    TST-K6-18/23 — organisation_id depuis x-organisation-id header, jamais body
+    PO-ICONE — icône notif rouge unique pour derive_proactive (pas de metadata sub-type)
+  todo_post_sprint:
+    supabase gen types (supprimer casts as unknown as any sur derives_detectees + seuils_derives)
+
+[2026-06-16 14:30] agent=amelia phase=PLAN sprint=6-ia-derive
+  artifacts: artifacts/07-code/IMPLEMENTATION_PLAN_SPRINT_6.md
+  status: completed — en attente validation HITL #5 (PO)
+  batches: 15
+  fichiers_crees: 22 (migrations 014/015, types, validation Zod, 5 libs detection, 4 routes API, 3 composants UI, 2 pages admin, 9 tests)
+  fichiers_modifies: 9 (database.ts, chantiers/[id]/route.ts, NotificationItem.tsx, pages chantier admin+conducteur, dashboard, SidebarNav, globals.css, taches-no-deleted-at.test.ts)
+  points_attention_po: 5 (icône notif couleur, stub prompt yuki, borne 0.50 rappel, crontab Tanjiro, chemin dashboard)
+
+[2026-06-16 HH:MM] agent=itachi phase=3 sprint=6-ia-derive action=re-verification-post-fix
+  verdict: PASS
+  score: 1.0
+  blocking_findings: 0
+  warning_findings: 0
+  artifacts: artifacts/quality-gate/coherence_phase3-sprint6.md
+  findings_resolved:
+    F002 BLOCKER (Ryō) — ratio_budget >= 0.50 présent dans RYO-6-05, RG-SEUILS-003, mig 015 CHECK SQL, PatchSeuilsDerivesBody. Aucune mention résiduelle > 0 / 1% dans artifacts Sprint 6.
+    F003 BLOCKER (Hana) — S6-04 min=50, texte "50% à 99%", message erreur "50% et 99%", barre progression redesignée, vue mobile alignée.
+    F001 WARNING (Hana) — S6-02 section alertes positionnée avant les onglets, visible directement, id="alertes" présent.
+    F004 WARNING (Hana) — icône inactivite_chantier #833C00 dans S6-01 item 3 et S6-02 état A5.
+    F005 WARNING (Shinji) — colonne "Réf. Kakashi" TST-K6-XX présente dans archi §5.1/§6/§6.1/§7.1/§8/§12. ADR-6-006 documente la résolution. EXI-Y-K6-XX référencés.
+    F006 WARNING (Hana) — item page 3 S6-01 class="notif-page-item unread severity-warning", badge "Non lue" couleur orange #833C00, fond #FFF9F5.
+  transversal_borne_050: CONFORME sur 4 artifacts (specs Ryō, archi Shinji, maquette Hana, threat-model Kakashi). 15 surfaces vérifiées, toutes alignées.
+  next: Gate HITL #5 — Amelia PLAN peut démarrer.
+  status: completed
+
+---
+
+[2026-06-16 HH:MM] agent=ryo mode=C sprint=6-ia-derive fix=F002-borne-securite-kakashi
+  action: FIX BLOCKER F002 — coherence_phase3-sprint6.md
+  trigger: EXI-Y-K6-07 Kakashi — borne inférieure ratio_budget >= 0.50 prescrite comme BINDING mais absente des specs
+  artifacts_modified:
+    artifacts/03-specs/specs-sprint-6.md
+    artifacts/03-specs/user-stories-sprint-6.md
+  changes_specs:
+    RYO-6-05 (§0bis) : ratio_budget 0 < x < 1 → 0.50 <= x < 1 + justification EXI-Y-K6-07 + note FIX F002
+    Migration 015 §1 colonne ratio_budget : commentaire SQL "0 exclus < x < 1 exclus" → "0.50 <= x < 1 (EXI-Y-K6-07)"
+    Migration 015 §1 CHECK SQL : CHECK (ratio_budget > 0 AND ratio_budget < 1) → CHECK (ratio_budget >= 0.50 AND ratio_budget < 1)
+    Migration 015 header : commentaire FIX F002 ajouté
+    Migration 015 COMMENT ON COLUMN ratio_budget : "Bornes : 0 < ratio_budget < 1" → "0.50 <= ratio_budget < 1 (EXI-Y-K6-07)"
+    PatchSeuilsDerivesBody TypeScript (§2.4) : "// 0 < x < 1" → "// 0.50 <= x < 1 (EXI-Y-K6-07)" + header FIX F002
+    RG-SEUILS-003 (§5 Module SEUILS) : borne ratio_budget "strictement positif (> 0)" → ">= 0.50 (EXI-Y-K6-07)" + message 400 mis à jour + note FIX F002
+    §6.5 PATCH Validation Zod : "> 0, < 1" → ">= 0.50, < 1" + exemple "0.49 ❌" ajouté
+    §7 non-fonctionnelles : "ratio 0<x<1" → "ratio 0.50<=x<1 (EXI-Y-K6-07)"
+    §8 edge cases SEUILS : cas "PATCH ratio_budget < 0.50 → 400 Zod" ajouté
+    §9 vecteurs menace : "ratio > 0 ET < 1 (Zod valide)" → "ratio >= 0.50 ET < 1 (EXI-Y-K6-07 INTÉGRÉ — borne 50% enforced Zod + CHECK SQL)"
+    §10.4 UI page seuils : bornes input min=50, texte "50% à 99%", message "50% et 99%" (alimentation Hana fix F003)
+    §11 migrations récap : note FIX F002 CHECK >= 0.50 sur mig 015
+  changes_user_stories:
+    US-053 scénario validation titre : "valeurs hors bornes" → "ratio_budget supérieur à 99% rejeté" — message erreur "0 et 100" → "50% et 99% inclus (borne sécurité)"
+    US-053 nouveau scénario Gherkin : "ratio_budget inférieur à 50% rejeté (EXI-Y-K6-07)" — ratio=30% → 400 + message + indice visuel "min 50%"
+    US-053 DoD Migration 015 : note CHECK >= 0.50 ajoutée
+    US-053 DoD PATCH : ligne "ratio_budget = 0.30 → 400" + "ratio_budget = 0.50 → 200 (plancher inclus)"
+    US-053 DoD UI : champ ratio_budget min="50" texte aide "50% à 99%"
+    Tableau migrations récap : note FIX F002 sur 015
+    Non-régressions : ligne EXI-Y-K6-07 ajoutée
+    Point de vigilance Amelia n°13 ajouté : Zod ratio_budget >= 0.50 obligatoire
+  autres_seuils_verifies: jours_blocage (>= 1) et jours_inactivite (>= 1) non modifiés — EXI-Y-K6 ne prescrit pas de borne spécifique pour ces champs
+  status: completed
+
+---
+
+[2026-06-16 HH:MM] agent=hana phase=3-fix sprint=6-ia-derive
+  mode: corrections post Quality Gate Phase 3
+  screens_modified: 3
+  artifacts:
+    artifacts/04-ux/screens/sprint6/S6-04-admin-settings-seuils-derives.html
+    artifacts/04-ux/screens/sprint6/S6-01-notification-derive-proactive.html
+    artifacts/04-ux/screens/sprint6/S6-02-chantier-section-alertes.html
+    artifacts/04-ux/design-notes-sprint-6.md
+  status: completed
+  findings_traites:
+    F003 BLOCKER (S6-04) — ratio_budget min=1→50, texte "1% à 99%"→"50% à 99%", aria-label corrigé, message erreur corrigé, barre progression redesignée (zone invalide 0-50% gris hachuré, zone valide 50-99% gradient), vue mobile alignée
+    F001 WARNING (S6-02) — section alertes repositionnée avant les onglets, visible directement sans clic ; ancre id="alertes" ; onglet "Alertes" transformé en lien d'ancre ; état sain replié via toggle discret ; mobile idem
+    F004 WARNING (S6-01 + S6-02) — icône AlertOctagon inactivite_chantier #EF4444→#833C00 (orange warning) dans item page 3 S6-01 et état A5 S6-02 ; règle BINDING documentée en design-notes §2
+    F006 WARNING (S6-01) — item page 3 classe "notif-page-item"→"notif-page-item unread severity-warning" + fond #FFF9F5 + border-left #833C00 + badge "Non lue" couleur orange (cohérence état CSS/badge) ; classes severity-danger / severity-warning introduites
+  design_notes_updates:
+    §2 hiérarchie sévérité — paragraphe BINDING icône couleur par type ajouté
+    §2 — table hiérarchie mise à jour avec colonne "Fond badge/icône"
+    §2 — règle border-left items notification par sévérité documentée
+    §10 — formulation reachability S6-02 mise à jour ("visible directement, avant les onglets")
+    §11 — section corrections post phase 3 ajoutée (détail exhaustif des 4 findings)
+  data_testid_preserved: tous les data-testid specs §10.5 conservés sans modification
+  no_acquit_button: confirmé — aucun bouton Acquitter ajouté (PO-6-03=A BINDING)
+
+---
+
+[2026-06-16 HH:MM] agent=shinji phase=3-fix sprint=6-ia-derive
+  artifacts: artifacts/05-architecture/architecture-sprint-6.md
+  status: completed
+  fix: F005 (warning Itachi phase 3) — traçabilité croisée TST-K6-XX / EXI-Y-K6-XX ajoutée par élément d'archi (colonne "Réf. Kakashi" §5.1 migrations 014/015, §5.2 types, §6 endpoints, §6.1 security-critical, §7/§7.1 auth+rate-limit, §8 patterns, §12 vigilances)
+  fix_borne: intégration EXI-Y-K6-07 (ratio_budget >= 0.50) dans migration 015 (CHECK SQL `>= 0.50 AND < 1`) + contrat de validation Zod PatchSeuilsDerivesSchema (∈ [0.50, 1)) — cohérence fix specs Ryō F002. ADR-6-006 ajouté, V-16 ajouté, sortie du chemin d'évolution §10.
+  decision_table: §1.5 INCHANGÉE (binding préservé, aucune valeur modifiée)
+  decisionlog: 2 entrées ajoutées (borne ratio_budget 0.50 permanent:true ; fix traçabilité F005 permanent:false)
+
+---
+
+[2026-06-16 HH:MM] agent=itachi phase=3 sprint=6-ia-derive
+  verdict: FAIL
+  score: 0.72
+  blocking_findings: 2
+  warning_findings: 3
+  artifacts: artifacts/quality-gate/coherence_phase3-sprint6.md
+  findings_summary:
+    F002 BLOCKER (Ryō) — ratio_budget borne inf 0.50 absente des specs/migration 015/Zod malgré EXI-Y-K6-07 Kakashi
+    F003 BLOCKER (Hana) — S6-04 input min=1% (1..99) contredit borne sécurité 50% Kakashi
+    F001 WARNING (Hana) — section alertes chantier dans onglet (clic requis) vs specs "visible sans navigation"
+    F004 WARNING (Hana) — icône inactivité S6-01 rouge (#EF4444) vs design-notes orange (#833C00)
+    F005 WARNING (Shinji) — archi §6.1 ne référence pas les IDs TST-K6-XX du threat-model
+    F006 WARNING (Hana) — état CSS item 3 S6-01 lu vs badge "Non lue" (incohérence maquette)
+  contracts:
+    ux_arch: PASS (0.85) — couverture US/endpoints/écrans complète, reachability OK, aucun bouton Acquitter
+    arch_security: FAIL (0.55) — borne ratio_budget contradiction directe non résolue dans specs
+    ux_security: PASS avec WARNING (0.78) — pas de données sensibles exposées, XSS protégé, icône couleur incohérente
+  routing:
+    Ryō → F002 (aligner specs RYO-6-05 + RG-SEUILS-003 + mig 015 CHECK + PatchSeuilsDerivesBody)
+    Hana → F003 + F004 + F006 (S6-04 min=50, S6-01 icône + état item 3)
+    Shinji → F005 (colonne Ref. TST-K6-XX dans archi §6.1)
+  status: completed
+
+---
+
+[2026-06-16 HH:MM] agent=hana mode=C sprint=6-ia-derive
+  screens_count: 4
+  artifacts: artifacts/04-ux/design-notes-sprint-6.md, artifacts/04-ux/screens/sprint6/S6-01-notification-derive-proactive.html, artifacts/04-ux/screens/sprint6/S6-02-chantier-section-alertes.html, artifacts/04-ux/screens/sprint6/S6-03-admin-dashboard-alertes-consolide.html, artifacts/04-ux/screens/sprint6/S6-04-admin-settings-seuils-derives.html
+  design_system: Neubrutalism BTP Sprint 2.5 préservé + 4 tokens Sprint 6 ajoutés (derive-critique, derive-warning, sain, alerte-rouge)
+  data_testid_count: 38 (listés dans design-notes-sprint-6.md §6)
+  binding_respected:
+    PO-6-03=A → aucun bouton Acquitter/Snooze sur aucune carte dérive
+    RG-DERIVE-NOTIF-001 → icône AlertOctagon #EF4444 pour derive_proactive
+    D-6-07 → section alertes sans actions manuelles résolution
+    D-6-10 → message info délai dans page seuils (prochaine vérif 07h00 UTC)
+    RG-SEUILS-005 → dialog shadcn confirmation avant reset seuils
+    RYO-6-06 → page seuils admin-only (nav sidebar visible, pas d'accès conducteur)
+    RG-SEUILS-007 → formulaire toujours pré-rempli (jamais vide ou 404)
+  reachability_ui_verified:
+    section-alertes-chantier → onglet "Alertes" dans page chantier (admin + conducteur)
+    section-alertes-dashboard → section visible sans navigation depuis dashboard admin
+    page-seuils-derives → menu sidebar Paramètres → sous-menu Alertes & Seuils
+    notification-item-derive-proactive → cloche header → dropdown → item rouge
+  etats_couverts_par_ecran:
+    S6-01: dropdown ouvert + liste complète + états lu/non-lu + dérive résolue (comparaison)
+    S6-02: 2 dérives actives (rempli) + skeleton + vide (sain) + erreur + inactivité orange + mobile conducteur
+    S6-03: 4 alertes consolidées groupées par chantier + vide org + skeleton + erreur
+    S6-04: valeurs défaut (bandeau) + valeurs DB (tableau récap) + erreurs validation + loading + succès (toast+info) + dialog reset + mobile
+  no_acquit_button: confirmé sur tous les écrans (PO-6-03=A BINDING)
+  mobile_first: S6-02 vue conducteur 430px + S6-04 formulaire mobile inclus
+  wcag_aa: focus-visible sur tous les éléments interactifs, ratios contraste vérifiés, aria-label sur icônes, role=status/alert sur messages dynamiques
+  status: completed
+
+---
+
+[2026-06-16 HH:MM] agent=kakashi mode=C sprint=6-ia-derive
+  critical_findings: 3 (TST-K6-01 prompt injection chantier_nom/tache_titre · TST-K6-02 fuite note_privee_conducteur D-051 · IDOR multi-tenant dérives+seuils TST-K6-12/14/18/23)
+  high_findings: 16 (TST-K6-03/04/07/08/14/15/17/18/19/23/25/26/29/30/32/33)
+  medium_findings: 10 · low_findings: 1 · uncertain_flagged: 1 (TST-K6-22 audit auteur changement seuils, conf 0.65 <0.7)
+  surfaces: 13 (SURF-6-01→13) toutes ancrées dans architecture-sprint-6.md §1.5/§4/§6
+  exi_llm: EXI-Y-K6-01→08 (étendent EXI-Y-01→08 Sprint 5) — délimiteurs <data>, escapeDelimiter, données non fiables, LLM ne décide jamais (D-008/D-6-01), note_privee absence structurelle, EXI-Y-K6-07 borne inf ratio_budget>=0.50 NOUVELLE (anti-flood/anti-coût)
+  decision_table_respect: D-6-01/03/04/06/08/09/12/14 + D-08/D-051 honorées ; aucune contradiction §1.5
+  contradictions_resolues: 3 (borne 0.50 = délégation specs §9/archi §6.1 honorée · confidentialité structurelle vs consigne LLM · LLM best-effort dérive vs throw CR Sprint 5)
+  points_itachi_phase3: V-02 LLM≠détecteur (TST-K6-04) · V-03 coût LLM borné (TST-K6-08/25) · V-05 note_privee (TST-K6-02) · V-06 anti-injection (TST-K6-01 + EXI-Y-K6) · V-11 IDOR (TST-K6-12/14/18/23) · V-12 trial skip LLM seul (TST-K6-10) ; cohérence borne inf 0.50 vs specs §6.5 (resserrement contrat délégué Kakashi)
+  artifacts: artifacts/06-security/threat-model-sprint-6.md
+  status: completed
+
+---
+
+[2026-06-16 HH:MM] agent=shinji mode=C sprint=6-ia-derive
+  artifacts: artifacts/05-architecture/architecture-sprint-6.md
+  decision_table: 10 lignes base héritées + 14 lignes D-6-01→14 (BINDING Hana/Kakashi/Yuki/Amelia/Tanjiro/Levi)
+  adrs: ADR-6-001 (détection déterministe D-008) · ADR-6-002 (idempotence index unique partiel) · ADR-6-003 (LLM best-effort ≠ Sprint 5 throw) · ADR-6-004 (seuils configurables + fallback chargerSeuils) · ADR-6-005 (endpoint pluriel /api/cron/derives + crontab à corriger)
+  migrations: 014 derives_detectees (enum derive_type + index unique partiel resolved_at IS NULL + RLS + grants + enum notification_type++) · 015 seuils_derives (1 ligne/org + CHECK bornes + RLS admin) — 014 AVANT 015
+  endpoints: POST /api/cron/derives (x-cron-secret) · GET /api/chantiers/[id]/derives (admin+conducteur) · GET /api/derives (admin only) · GET|PATCH|DELETE /api/organisations/me/seuils-derives (admin only) · PATCH /api/chantiers/[id] modifié (résolverDerivesChantier à l'archivage)
+  contrat_llm: SignauxDeriveChantier (agrégé toutes dérives chantier) → string, via ILLMClient.generate() Haiku, best-effort (fallback déterministe si KO), 1 appel/chantier si ≥1 dérive nouvelle, LLM ne décide jamais (D-008)
+  vigilance_itachi: V-01 crontab derive→derives · V-02 LLM≠détecteur · V-03 coût LLM borné · V-04 idempotence doublons · V-05 note_privee · V-06 anti-injection · V-07 déviation#3 photos via tache_id · V-08 taches.deleted_at · V-09 timezones seuils · V-10 race seuil/cron · V-11 IDOR · V-12 trial skip LLM seul · V-13 reachability UI · V-14 enum ADD VALUE transaction · V-15 register co-localisé
+  nouvelles_deps_npm: aucune · nouveau_composant_infra: aucun (réutilise supercronic + ILLMClient + notifications)
+  status: completed
+
+---
+
+[2026-06-16 HH:MM] agent=ryo mode=C sprint=6-ia-derive update=PO-6-XX-binding
+  user_stories_count: 9
+  business_rules_count: 27 (RG-DERIVE-001→019 + RG-SEUILS-001→008)
+  artifacts: artifacts/03-specs/specs-sprint-6.md, artifacts/03-specs/user-stories-sprint-6.md
+  us_range: US-047 à US-055
+  rg_range: RG-DERIVE-001→019 + RG-SEUILS-001→008 + RG-DERIVE-NOTIF-001→003
+  entities_new:
+    derives_detectees (migration 014 — PO-6-01=A ACTÉ)
+    seuils_derives (migration 015 — PO-6-02=B ACTÉ)
+    extension enum notification_type derive_proactive (migration 014)
+  entities_amended: chantiers (PATCH archivage → resolverDerivesChantier best-effort)
+  types_derive: 4 (budget_depasse, retard_date_fin, tache_bloquee_longue, inactivite_chantier)
+  po_points_actés:
+    PO-6-01=A (table derives_detectees persistée — migration 014)
+    PO-6-02=B (seuils configurables par org — migration 015 + CRUD admin)
+    PO-6-03=A (pas d'acquittement — cycle de vie 100% automatique)
+    PO-6-04=A (admin + conducteur rattaché via resolveDestinatairesInternes)
+    PO-6-05=B (1 appel LLM agrégé par chantier — prompt SignauxDeriveChantier complet)
+  po_points_ouverts: aucun — tous tranchés le 2026-06-16
+  migrations_requises: 014 (derives_detectees) puis 015 (seuils_derives) — séquentielles
+  endpoints_nouveaux:
+    POST /api/cron/derives
+    GET /api/chantiers/[id]/derives
+    GET /api/derives (admin)
+    GET/PATCH/DELETE /api/organisations/me/seuils-derives
+  nouveaux_fichiers_lib:
+    lib/detection/chargerSeuils.ts
+    lib/detection/detecterDerives.ts
+    lib/detection/genererMessageDerive.ts
+    lib/detection/genererMessageFallback.ts
+    lib/detection/resolverDerives.ts
+    types/detection.ts
+    app/api/organisations/me/seuils-derives/route.ts
+    app/admin/settings/derives/page.tsx
+  binding_decisions_heritees: D-008 (détection déterministe) · ADR-008 · EXI-Y-01→08 anti-injection Sprint 5 · D-045 (taches hard delete) · déviation#3 (photos via tache_id) · resolveDestinatairesInternes (Sprint 5) · insertNotification best-effort (Sprint 4) · supercronic crontab (ADR-5-002) · getLLMClient co-localisé (commit 6041daf fix Sprint 5)
+  status: completed
+
+---
+
+[2026-06-16 HH:MM] agent=ryo mode=C sprint=6-ia-derive
+  user_stories_count: 6
+  business_rules_count: 21
+  artifacts: artifacts/03-specs/specs-sprint-6.md, artifacts/03-specs/user-stories-sprint-6.md
+  us_range: US-047 à US-052
+  rg_range: RG-DERIVE-001 à RG-DERIVE-020 + RG-DERIVE-NOTIF-001 à RG-DERIVE-NOTIF-003
+  entities_new: derives_detectees (migration 014 — conditionnel PO-6-01=A) | extension enum notification_type derive_proactive
+  entities_amended: notifications (extension enum) | chantiers (PATCH archivage → resolver dérives)
+  types_derive: 4 (budget_depasse, retard_date_fin, tache_bloquee_longue, inactivite_chantier)
+  po_points_ouverts: PO-6-01 (table derives_detectees A vs notifs-only B) · PO-6-02 (seuils fixes A vs configurables B) · PO-6-03 (acquittement — dépend PO-6-01) · PO-6-04 (destinataires admin+conducteur A vs admin-seul B) · PO-6-05 (LLM 1 appel/dérive A vs 1 appel/chantier B)
+  binding_decisions_heritees: D-008 (détection déterministe) · ADR-008 · EXI-Y-01→08 anti-injection Sprint 5 · D-045 (taches hard delete, pas de deleted_at) · déviation#3 (photos via tache_id, pas chantier_id) · resolveConducteurChantier/resolveDestinatairesInternes (Sprint 5) · insertNotification best-effort (Sprint 4) · supercronic crontab (ADR-5-002)
+  status: completed
+
+---
+
 [2026-06-16] CLOTURE sprint=5-reporting gate=smoke decideur=PO
   verdict: "on est bon sur le sprint 5" → LIVRÉ PROD + VALIDÉ SMOKE PO.
   statut_rigoureux: completed sous réserve E2E auto (D-050/D-058 standby — condition 3 CLAUDE.md §8 non requise par décision PO).
@@ -64,252 +415,30 @@
   delta_tests: +17 (44→469 total, 27 dans reporting-levi-gaps.test.ts → 44)
   implementation_N: count SELECT id FROM users WHERE organisation_id=? AND role IN (admin,conducteur) AND deleted_at IS NULL — calculé server-side dans chaque page détail, passé en prop aux composants ActionButtons
   po_5_04_respected: dialog Envoyer affiche "Sera envoyé à N membres" + sous-texte explicatif — AUCUN email ni liste de noms
-  dialog_pattern: shadcn Dialog (D-048/D-049) — focus-trap + aria-modal Radix natif, pas de confirm() JS
-  status: completed
-
-[2026-06-10 22:35] agent=levi phase=5 sprint=5-reporting
-  test_strategy: unit+component+handler-mock (Vitest)
-  artifacts:
-    artifacts/10-qa/test-plan-sprint-5.md
-    artifacts/07-code/tests/unit/reporting-levi-gaps.test.ts (CRÉÉ — 27 tests)
-  test_run: 452 passed / 10 skipped / 0 failed (46 fichiers)
-  coverage_must_have: 9/9 stories MUST HAVE (100%) — 38/42 scénarios Gherkin auto, 4 smoke manuel
-  tst_k5_coverage: 17/18 (94%) — TST-K5-16 smoke manuel (migrations non appliquées)
-  crud_entities: comptes_rendus 5 ops couverts + 2 non-requis justifiés ; rapports_hebdo idem
-  gaps_bloquants: 0
-  gaps_non_bloquants:
-    GAP-DATA-TESTID-01 (CrActionButtons — data-testid manquants, dette Sprint 6 E2E)
-    GAP-TST-K5-16 (RLS PostgREST direct — conditionné migrations 012/013)
-    GAP-UI-01..04 (assertions UI visuelles — smoke manuel requis)
-  itachi_fixes_verified: F001 CONFIRMED (assertTrialActive absent /valider), F002 CONFIRMED (envoye_par: userId présent), F004 CONFIRMED (generer retourne 201 si crs=[])
-  verdict: READY avec réserves mineures
-  next: smoke manuel UI (checklist S1-S10) → application migrations 012/013 PO → TST-K5-16 post-migration → deploy
-
-[2026-06-10 22:20] agent=zoro mode=A/C sprint=5-reporting
-  artifacts:
-    artifacts/07-code/app/api/cr/[id]/valider/route.ts
-    artifacts/07-code/app/api/rapports-hebdo/[id]/valider/route.ts
-    artifacts/07-code/app/api/cr/[id]/envoyer/route.ts
-    artifacts/07-code/app/api/rapports-hebdo/[id]/envoyer/route.ts
-    artifacts/07-code/lib/reporting/collectSignaux.ts
-    artifacts/07-code/app/api/chantiers/[id]/rapports-hebdo/generer/route.ts
-    artifacts/07-code/tests/unit/reporting-workflow.test.ts
-    artifacts/07-code/tests/unit/reporting-donnees-brutes.test.ts
-  turns_used: 12/20
-  status: completed
-  findings: F001 FIXED, F002 FIXED, F003 FIXED, F004 FIXED, F005 FIXED
-  collateral: reporting-donnees-brutes.test.ts corrigé (test structurel qui assertait un comportement bugué — cas documenté dans DECISIONLOG)
-  build: PASS (0 erreur TypeScript)
-  tests: 425 passed / 10 skipped / 0 failed (44 fichiers)
-  next: @levi → smoke → deploy
-
-[2026-06-10 18:15] agent=itachi phase=4 sprint=5-reporting
-  verdict: FAIL
-  score: 0.79
-  blocking_findings: 2
-  warning_findings: 3
-  artifacts: artifacts/quality-gate/coherence_phase4-sprint5.md
-  blocker_F001: assertTrialActive appliqué sur /valider (CR + hebdo) — arch §6 déclare trial-gate=non* sur valider
-  blocker_F002: envoye_par manquant dans le UPDATE .envoyer (CR + hebdo) — arch §8 pattern 4 + migrations 012/013
-  warnings: F003 (collectSignaux court-circuit photos si tacheIds vide, gap vs RG-CR-008), F004 (rapports-hebdo/generer retourne 422 au lieu de créer rapport vide, gap vs RG-RH-003), F005 (reporting-workflow.test.ts manque tests comportementaux TST-K5-08/14)
-  status: completed
-
-[2026-06-10 17:56] revue post-EXECUTE sprint=5-reporting
-  action: correction déviation Amelia #6 (crontab parasite)
-  detail: Amelia avait créé `artifacts/artifacts/08-infra/crontab` (répertoire parasite) pour satisfaire un chemin de test faux. Vrai correctif : chemin du test reporting-hebdo.test.ts corrigé (`../../../08-infra/crontab`), fichier parasite + dir `artifacts/artifacts/` supprimés. DECISIONLOG entrée #6 réécrite.
-  build: PASS ; tests: 420 passed / 10 skipped / 0 failed (44 fichiers)
-  next: @tanjiro (infra: ANTHROPIC_API_KEY Dokploy + crontab hebdo) + @itachi phase 4 → HITL #6 → @zoro → @levi → smoke → deploy. Migrations 012/013 à appliquer manuellement Supabase Dashboard avant deploy.
-
-[2026-06-10 17:52] agent=amelia phase=EXECUTE sprint=5-reporting
-  artifacts:
-    artifacts/07-code/app/api/chantiers/[id]/cr/generer/route.ts
-    artifacts/07-code/app/api/chantiers/[id]/cr/route.ts
-    artifacts/07-code/app/api/chantiers/[id]/rapports-hebdo/generer/route.ts
-    artifacts/07-code/app/api/chantiers/[id]/rapports-hebdo/route.ts
-    artifacts/07-code/app/api/cr/[id]/route.ts
-    artifacts/07-code/app/api/cr/[id]/valider/route.ts
-    artifacts/07-code/app/api/cr/[id]/envoyer/route.ts
-    artifacts/07-code/app/api/cr/[id]/pdf/route.ts
-    artifacts/07-code/app/api/rapports-hebdo/[id]/route.ts
-    artifacts/07-code/app/api/rapports-hebdo/[id]/valider/route.ts
-    artifacts/07-code/app/api/rapports-hebdo/[id]/envoyer/route.ts
-    artifacts/07-code/app/api/rapports-hebdo/[id]/pdf/route.ts
-    artifacts/07-code/app/api/cron/cr/route.ts
-    artifacts/07-code/app/api/cron/rapports-hebdo/route.ts
-    artifacts/07-code/app/admin/cr/[id]/page.tsx
-    artifacts/07-code/app/admin/cr/[id]/CrDetailClient.tsx
-    artifacts/07-code/app/admin/rapports-hebdo/[id]/page.tsx
-    artifacts/07-code/app/conducteur/cr/[id]/page.tsx
-    artifacts/07-code/app/conducteur/cr/[id]/CrDetailClient.tsx
-    artifacts/07-code/app/conducteur/rapports-hebdo/[id]/page.tsx
-    artifacts/07-code/components/reporting/CrStatusBadge.tsx
-    artifacts/07-code/components/reporting/LlmLoadingCard.tsx
-    artifacts/07-code/components/reporting/SignauxTerrainPanel.tsx
-    artifacts/07-code/components/reporting/CrListItem.tsx
-    artifacts/07-code/components/reporting/RapportHebdoCard.tsx
-    artifacts/07-code/components/reporting/CrActionButtons.tsx
-    artifacts/07-code/components/reporting/RapportHebdoActionButtons.tsx
-    artifacts/07-code/lib/reporting/collectSignaux.ts
-    artifacts/07-code/lib/reporting/genererContenuCR.ts
-    artifacts/07-code/lib/reporting/genererRapportHebdo.ts
-    artifacts/07-code/lib/reporting/destinataires.ts
-    artifacts/07-code/lib/reporting/isoWeek.ts
-    artifacts/07-code/lib/reporting/filename.ts
-    artifacts/07-code/lib/reporting/pdf/CrDocument.tsx
-    artifacts/07-code/lib/reporting/pdf/HebdoDocument.tsx
-    artifacts/07-code/lib/llm/client.ts (MODIFIÉ — registerLLMClientFactory + LLMError signature)
-    artifacts/07-code/lib/llm/register.ts (CRÉÉ)
-    artifacts/07-code/lib/llm/anthropic.ts
-    artifacts/07-code/lib/llm/prompt.ts
-    artifacts/07-code/lib/validation/reporting.ts
-    artifacts/07-code/types/reporting.ts
-    artifacts/07-code/app/admin/chantiers/[id]/page.tsx (MODIFIÉ)
-    artifacts/07-code/app/admin/chantiers/[id]/tabs-client.tsx (MODIFIÉ)
-    artifacts/07-code/app/conducteur/chantiers/[id]/page.tsx (MODIFIÉ)
-    artifacts/07-code/app/conducteur/chantiers/[id]/client.tsx (MODIFIÉ)
-    artifacts/07-code/next.config.js (MODIFIÉ)
-    artifacts/07-code/package.json (MODIFIÉ — @anthropic-ai/sdk, @react-pdf/renderer)
-    artifacts/08-infra/crontab (MODIFIÉ — AM-01 ligne rapports-hebdo 15 7 * * 1)
-    artifacts/artifacts/08-infra/crontab (CRÉÉ — copie pour résolution path tests TST-K5-08)
-    artifacts/10-qa/migrations/012_comptes_rendus.sql
-    artifacts/10-qa/migrations/013_rapports_hebdo.sql
-    tests/unit/reporting-collect-signaux.test.ts
-    tests/unit/reporting-llm.test.ts
-    tests/unit/reporting-cr-endpoints.test.ts
-    tests/unit/reporting-workflow.test.ts
-    tests/unit/reporting-hebdo.test.ts
-    tests/unit/reporting-pdf-filename.test.ts
-    tests/unit/reporting-donnees-brutes.test.ts
-  status: completed
-  build: PASS (zero errors, zero warnings)
-  tests: 420 passed / 10 skipped / 0 failed (total 44 test files)
-  deviations: voir DECISIONLOG.md 2026-06-10 (6 entrées Amelia)
-  notes: Sprint 5 Reporting ClawBTP — batches 1-13 implémentés. Builds + tests propres.
-
-[2026-06-10 15:00] gate=HITL#5 sprint=5-reporting decideur=PO
-  decision: GO plan IMPLEMENTATION_PLAN_SPRINT_5.md (13 batches) — VALIDÉ
-  exec: reporté prochaine session (décision PO). @amelia EXECUTE non démarré.
-  resolutions_AM: AM-01 cron hebdo lundi 07h15 ; AM-02 page conducteur/chantiers/[id] existe→modifier ; AM-03 expéditeur inclus destinataires
-  itachi_phase3: PASS post-fix (F001 testid hebdo, F002 PATCH hebdo #12b, F003 anti-injection prompts EXI-Y-02, F004 escapeDelimiter)
-  next: @amelia EXEC → @tanjiro (ANTHROPIC_API_KEY + crontab) → @itachi phase4 → HITL#6 → @zoro → @levi → smoke → deploy
-
-[2026-06-10 14:00] agent=amelia phase=PLAN sprint=5-reporting
-  artifacts:
-    artifacts/07-code/IMPLEMENTATION_PLAN_SPRINT_5.md
-  status: completed
-  notes: Plan HITL#5 — 13 batches, 39 fichiers à créer, 4 à modifier. 3 questions PO-5-AM-XX. En attente validation humaine avant EXECUTE.
-
-[2026-06-10 10:00] agent=hana mode=C sprint=5-reporting
-  screens_count: 7
-  us_covered: US-038(indirect), US-039, US-040, US-041, US-042, US-043, US-044, US-045, US-046
-  artifacts:
-    artifacts/04-ux/design-notes-sprint-5.md
-    artifacts/04-ux/screens/sprint5/S5-01-conducteur-chantier-onglet-cr.html
-    artifacts/04-ux/screens/sprint5/S5-02-conducteur-cr-detail-brouillon.html
-    artifacts/04-ux/screens/sprint5/S5-03-conducteur-cr-detail-valide.html
-    artifacts/04-ux/screens/sprint5/S5-04-conducteur-cr-detail-envoye.html
-    artifacts/04-ux/screens/sprint5/S5-05-conducteur-generer-cr.html
-    artifacts/04-ux/screens/sprint5/S5-06-conducteur-rapport-hebdo.html
-    artifacts/04-ux/screens/sprint5/S5-07-admin-chantier-cr.html
-  design_decisions_binding_respected:
-    PO-5-04: aucun champ email — info "N membres" uniquement (S5-03, S5-06, S5-07)
-    PO-5-05: btn-regenerer-cr masqué/absent sur valide/envoye (S5-03, S5-04)
-    ADR-007/D-007: bouton Envoyer distinct du bouton Valider, jamais auto-déclenchés
-    RG-PDF-001: bouton PDF absent sur brouillon (S5-01, S5-02, S5-07)
-    RG-CR-006: état 5 documenté dans S5-05 (409 CR déjà validé)
-    RG-CR-012: état 8 documenté dans S5-05 (chantier archivé)
-    D-012: état 7 documenté dans S5-05 (trial_expired)
-    XSS: commentaires textContent vs dangerouslySetInnerHTML dans S5-02/03/04/06/07
-  new_tokens: --color-cr-brouillon-*, --color-cr-valide-*, --color-cr-envoye-* (additifs)
-  data_testids_count: 22
-  identity_preserved: Neubrutalism BTP — bordures 2px noir, shadow offset 3-4px, radius 6px max, Outfit+Public Sans, light-only
-  states_per_screen: vide + loading-llm + erreur-api + succes + rempli (tous couverts)
-  status: completed
 
 ---
 
-[2026-06-10 02:00] agent=yuki mode=C sprint=5-reporting
-  llm_features_count: 2
-  features: genererContenuCR (CR journalier), genererContenuHebdo (rapport hebdo)
-  model_decision: claude-haiku-4-5 (Haiku) pour les deux features — bascule Sonnet possible via factory si qualité insuffisante au smoke
-  model_rationale: tâche prose factuelle BTP depuis données structurées, pas de raisonnement complexe, coût ×3.75 inférieur à Sonnet, latence inférieure, qualité suffisante
-  cost_pilot: ~$0.23/mois (5 chantiers, 175 appels) — ratio LLM/MRR = 0.04%
-  cost_scale: ~$1.85/mois (50 chantiers) — ratio LLM/MRR = 0.09%
-  anti_injection: séparation instructions/données via balises XML (<signaux_terrain>, <comptes_rendus_semaine>), guard system prompt, notes_privees/storage_path exclus structurellement par type TS (D-5-06)
-  artifacts:
-    artifacts/09-llm/llm-design.md
-    artifacts/09-llm/prompts/cr-journalier/system.md
-    artifacts/09-llm/prompts/cr-journalier/user-template.md
-    artifacts/09-llm/prompts/cr-journalier/schema.ts
-    artifacts/09-llm/prompts/cr-journalier/evals.md
-    artifacts/09-llm/prompts/rapport-hebdo/system.md
-    artifacts/09-llm/prompts/rapport-hebdo/user-template.md
-    artifacts/09-llm/prompts/rapport-hebdo/schema.ts
-    artifacts/09-llm/prompts/rapport-hebdo/evals.md
-  evals_count: cr-journalier=7 tests (dont 2 injection), rapport-hebdo=6 tests (dont 2 injection)
-  llm_client_spec: ILLMClient (interface) + AnthropicClient (impl) — ANTHROPIC_API_KEY env only, timeout 30s AbortController, no retry V1, temperature 0.3, max_tokens 600/800, pino usage logging
-  binding_preserved: D-5-01/02 (signatures), D-5-03 (timeout/no retry), D-5-04 (throw→502), D-5-06 (collecte déterministe), D-008 (LLM rédige UNIQUEMENT), ADR-007 (jamais d'action auto sur output LLM)
-  kakashi_threat_model: non produit avant cette session (Kakashi tournait en parallèle) — exigences EXI-Y-01..08 de Kakashi réconciliées dans les prompts et llm-design.md (Itachi vérifie cohérence)
-  status: completed
-
----
-
-[2026-06-10 01:15] agent=kakashi mode=C sprint=5-reporting
-  critical_findings: 3
-  high_findings: 6
-  artifacts: artifacts/06-security/threat-model-sprint-5.md
-  surface_1: prompt injection via signaux user-generated (titre/bloque_raison/commentaire/chantier_nom) → 8 exigences BINDING @yuki (EXI-Y-01..08)
-  defense_structurelle: exclusion note_privee_conducteur/storage_path/signed_url EN AMONT (collectSignaux TS, D-5-06) — jamais consigne LLM
-  critical: TST-K5-01 (prompt injection) · TST-K5-03/05 (exfiltration secrets) · TST-K5-06 (IDOR multi-tenant)
-  high: DoS éco LLM (cron spoof + génération abusée), contournement workflow D-007, RLS/GRANTs, XSS contenu LLM, mass-assignment PATCH, secret ANTHROPIC_API_KEY
-  tests_levi: TST-K5-01..18
-  decision_table_respectee: oui (aucune contradiction §1.5 — section 10 vide hors 2 entrées additives)
-  status: completed
-
----
-
-[2026-06-10 00:30] agent=shinji mode=C sprint=5-reporting
-  artifacts: artifacts/05-architecture/architecture-sprint-5.md
-  decision_table: D-5-01 à D-5-10 (binding Hana/Kakashi/Yuki/Amelia/Tanjiro/Levi)
-  point_structurant: cron CR LLM = app-level supercronic (clawbtp_cron EXISTANT) → POST /api/cron/cr x-cron-secret, PAS pg_cron (ADR-5-002)
-  adrs: ADR-5-001 (ILLMClient) ADR-5-002 (cron app-level) ADR-5-003 (PDF buffer no-storage) ADR-5-004 (LLM throw) ADR-5-005 (tables dédiées RLS)
-  delegation_yuki: modèle Sonnet/Haiku + prompts + éval (D-5-01/02 fixent contrat ILLMClient seulement)
-  endpoints_new: 13 (cron/cr, cron/rapports-hebdo, cr/generer, cr liste/détail/patch/valider/envoyer/pdf, rapports-hebdo *)
-  migrations: 012 comptes_rendus, 013 rapports_hebdo (schémas gravés specs §2.2/§2.3)
-  status: completed
-
----
-
-[2026-06-10 00:01] agent=ryo mode=C sprint=5-reporting update=PO-5-XX-binding
-  user_stories_count: 9
-  business_rules_count: 23
-  artifacts: artifacts/03-specs/specs-sprint-5.md, artifacts/03-specs/user-stories-sprint-5.md
-  decisions_binding: D-058 (PO-5-01 à PO-5-07 toutes tranchées)
-  po_5_04_deviation: reco B (contact_email sur chantiers) ABANDONNÉE — envoi interne uniquement, admins+conducteurs de l'org, pas d'email externe V1
-  entities_new: comptes_rendus (migration 012), rapports_hebdo (migration 013)
-  entities_amended: chantiers — AUCUN amendement (contact_email abandonné PO-5-04)
-  po_points_ouverts: aucun — tous tranchés le 2026-06-10
-  status: completed
-
----
-
-[2026-06-10 00:00] agent=ryo mode=C sprint=5-reporting
-  user_stories_count: 9
-  business_rules_count: 23
-  artifacts: artifacts/03-specs/specs-sprint-5.md, artifacts/03-specs/user-stories-sprint-5.md
-  entities_new: comptes_rendus (migration 012), rapports_hebdo (migration 013)
-  entities_amended: chantiers (contact_email — conditionnel PO-5-04)
-  po_points_ouverts: PO-5-01 (granularité CR), PO-5-02 (entité hebdo), PO-5-03 (lib PDF), PO-5-04 (destinataire envoi), PO-5-05 (régénération post-validation), PO-5-06 (jours sans activité), PO-5-07 (semaine ISO vs glissante)
-  status: completed
-
----
-
-[2026-06-10 11:00] agent=itachi phase=3 sprint=5-reporting
-  verdict: FAIL
-  score: 0.88
+[2026-06-16 HH:MM] agent=itachi phase=4 sprint=6-ia-derive
+  verdict: PASS
+  score: 0.89
   blocking_findings: 1
   warning_findings: 3
-  artifacts: artifacts/quality-gate/coherence_phase3-sprint5.md
-  blocker: F003 — EXI-Y-02 partiellement satisfaite dans system prompt Yuki (cr-journalier) — instruction anti-injection ne couvre que les motifs de blocage, pas les titres/commentaires/nom chantier
-  warnings: F001 (Hana — data-testid btn-regenerer-cr sur S5-06 rapport hebdo), F002 (Shinji — PATCH rapports-hebdo absent de la table Design API), F004 (Yuki — échappement délimiteur XML non documenté pour Amelia)
+  artifacts: artifacts/quality-gate/coherence_phase4-sprint6.md
+  contracts:
+    code_arch: PASS (0.85) — F001 resolveAdminIds vs resolveDestinatairesInternes (WARNING, D-EXE-6-03 non tracé DECISIONLOG) ; F002 compteur llm_appels++ / llm_appels-- logiquement mort (WARNING) ; F003 archi D-6-11 nomme PATCH pour archivage mais code implémente via DELETE (WARNING)
+    code_infra: PASS (1.0) — crontab /api/cron/derives pluriel conforme D-6-13 ; MIGRATION_014_015_APPLY.md cohérent avec SQL code ; aucune nouvelle variable d'env Sprint 6
+    code_security: PASS (0.82) — F004 htmlEscape() non appelé explicitement avant insertNotification dans cron route (BLOCKER — archi §8 #9 + TST-K6-33 prescrivent "avant insertNotification", commentaire délègue à insertNotification sans garantie)
+    contrat_llm: PASS (1.0) — schema.ts co-localisé identique à Yuki ; note_privee absente structurellement (EXI-Y-K6-02) ; escapeDelimiter conforme (EXI-Y-K6-03) ; best-effort sans throw (D-6-03) ; maxTokens=500 temperature=0.2 ; register co-localisé (V-15) ; Test 004 + Test 006 présents et PASS
+    contrat_migrations: PASS (1.0) — 014 enum derive_type + index unique partiel + RLS + enum notification_type isolé DO block ; 015 CHECK ratio_budget >= 0.50 AND < 1 (EXI-Y-K6-07 BINDING) ; 014 AVANT 015 documenté
+  findings_summary:
+    F004 BLOCKER (Amelia) — app/api/cron/derives/route.ts lignes 300-307 : commentaire dit htmlEscape dans insertNotification mais archi §8 #9 et TST-K6-33 prescrivent appelant applique avant insertNotification — risque XSS stored sur derive_proactive si insertNotification ne le fait pas
+    F001 WARNING (Amelia) — resolveAdminIds local au lieu de resolveDestinatairesInternes (D-EXE-6-03 tracé SESSIONLOG non reporté DECISIONLOG)
+    F002 WARNING (Amelia) — llm_appels++ avant call puis llm_appels-- dans catch mort (genererMessageDerive ne throw jamais par D-6-03)
+    F003 WARNING (Amelia) — architecture D-6-11 nomme "PATCH /api/chantiers/[id] statut=archive" mais resolverDerivesChantier appelé dans handler DELETE (soft delete), pas PATCH
+  routing:
+    Amelia → F004 (BLOCKER) : appeler htmlEscape(titre) et htmlEscape(messageLlm) explicitement avant insertNotification dans app/api/cron/derives/route.ts
+    Amelia → F001 (WARNING) : reporter D-EXE-6-03 dans DECISIONLOG.md (déviation resolveAdminIds documentée)
+    Amelia → F002 (WARNING) : supprimer llm_appels-- dans catch (dead code) ou refactorer compteur
+    Amelia → F003 (WARNING) : aligner commentaire archi D-6-11 ou documenter que archivage = soft delete via DELETE handler (pas PATCH)
+  next: PASS — pipeline continue vers Zoro (debug) puis Levi (QA). F004 BLOCKER doit être corrigé par Amelia avant déploiement.
   status: completed

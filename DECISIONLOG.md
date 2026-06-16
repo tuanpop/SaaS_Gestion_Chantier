@@ -10,6 +10,111 @@ Alternative ecartee : [ce qui a ete considere et rejete]
 
 ---
 
+[2026-06-16] Amelia [permanent:true]
+Decision : Emplacement du schema Yuki derive-chantier = lib/detection/prompts/derive-chantier/schema.ts (co-localisé avec la feature detection). Le system prompt Yuki (artifacts/09-llm/prompts/derive-chantier/system.md) est incorporé comme constante TS inline SYSTEM_PROMPT_DERIVE dans lib/detection/genererMessageDerive.ts. Le stub buildPrompt() est supprimé et remplacé par buildUserMessage() + DERIVE_LLM_PARAMS du schema Yuki. Le slice(0, 1000) du stub est remplacé par MessageDeriveOutputSchema.safeParse() → fallback si invalide (D-6-03 best-effort).
+Raison : Co-localisation avec lib/detection/ cohérente avec le reste de l'arbo — les prompts de la feature detection vivent dans lib/detection/prompts/, pas dans lib/llm/prompts/ (qui est pour les features reporting Sprint 5). Le system prompt inline évite un import de fichier .md à l'exécution. MessageDeriveOutputSchema (min 10, max 2000) remplace la troncature manuelle : la spec Yuki dit "fallback si invalide", pas "tronquer".
+Alternative écartée : copier schema.ts sous lib/llm/prompts/derive-chantier/ (lib/llm/ est scoped Sprint 5 reporting — mélange de features) ; lire system.md depuis le filesystem à l'exécution (non testable, dépendance I/O inutile) ; garder la troncature à 1000 chars du stub (contredit D-6-03 : fallback si output invalide).
+
+[2026-06-16] Shinji [permanent:true]
+Decision : Sprint 6 — borne inférieure ratio_budget = 0.50 (au lieu de > 0) entérinée et SORTIE du chemin d'évolution → scope Sprint 6. Enforced en défense profonde : Zod PatchSeuilsDerivesSchema (ratio_budget ∈ [0.50, 1)) ET CHECK SQL migration 015 (ratio_budget >= 0.50 AND ratio_budget < 1). (ADR-6-006 / EXI-Y-K6-07)
+Raison : Kakashi a tranché la délégation que l'archi §6.1 lui confiait (EXI-Y-K6-07 / TST-K6-25). Un ratio_budget proche de 0 ferait dériver tout chantier (flood notif + DoS économique LLM) ; un seuil < 50% n'a aucun sens métier BTP. Résout F002 (bloquant Itachi Phase 3) côté archi et aligne le fix specs Ryō (RYO-6-05 / RG-SEUILS-003) + UX Hana (S6-04 min=50%). Aucune valeur en prod < 0.50 (défaut 0.85). Decision Table §1.5 inchangée.
+Alternative écartée : laisser > 0 + rate-limit utilisateur (YAGNI au pilote, ne traite pas la cause — un seuil absurde) ; borne Zod seul sans CHECK SQL (pas de défense profonde — écriture service_role contournerait Zod).
+
+[2026-06-16] Shinji [permanent:false]
+Decision : Sprint 6 — fix traçabilité F005 (warning Itachi Phase 3) : architecture-sprint-6.md §5.1/§5.2/§6/§6.1/§7.1/§8/§12 référencent désormais les IDs TST-K6-XX et EXI-Y-K6-XX du threat-model par élément d'archi (colonne "Réf. Kakashi" ajoutée aux tables endpoints, security-critical, migrations 014/015, vigilances). Aucune décision binding modifiée. V-16 ajouté (borne ratio_budget non enforcée).
+Raison : Itachi/Amelia/Levi Phase 4 doivent savoir quelle exigence sécurité couvre quel élément d'archi : anti-injection EXI-Y-K6-01/02/03, note_privee TST-K6-02, IDOR TST-K6-12/14/18/23, x-cron-secret + DoS LLM TST-K6-07/08/25, borne EXI-Y-K6-07, trial skip LLM TST-K6-10.
+Alternative écartée : laisser la prose descriptive sans IDs (gap de traçabilité Phase 4 — verdict F005).
+
+[2026-06-16] Shinji [permanent:true]
+Decision : Sprint 6 — détection des dérives proactives = lib TypeScript pure (lib/detection/detecterDerives.ts, 4 fonctions recevant SeuilsEffectifs, ZÉRO appel LLM) ; le LLM Haiku (genererMessageDerive) est appelé APRÈS à partir d'un snapshot typé SignauxDeriveChantier et ne décide JAMAIS d'une dérive. (D-6-01 / ADR-6-001)
+Raison : D-008 / ADR-008 BINDING absolu — la détection métier critique doit être déterministe, testable sans réseau, reproductible, auditable (signal_valeur). Reproduit le pattern Sprint 5 (collectSignaux→genererContenuCR). Feature MUST HAVE : S6-F01 détection proactive (US-047, ADR-008).
+Alternative écartée : LLM détecteur (non déterministe, faux positifs sur décision métier, coût non borné, opaque) ; règles SQL pures sans LLM (perd la restitution "orientée action" du PRD — le LLM enrichit le message, pas la décision).
+
+[2026-06-16] Shinji [permanent:true]
+Decision : Sprint 6 — idempotence cron-over-cron au niveau DB : index UNIQUE partiel uq_derive_active_chantier_type_tache sur (chantier_id, type, COALESCE(tache_id, sentinel uuid)) WHERE resolved_at IS NULL + INSERT ON CONFLICT DO NOTHING. Une dérive résolue (resolved_at posé) peut se ré-ouvrir en nouvelle ligne (audit trail). Pas de SELECT-puis-INSERT. (D-6-06 / ADR-6-002)
+Raison : PO-6-01=A — une dérive persistante ne doit générer qu'une notification, mais une dérive résolue puis redéclenchée doit re-notifier. L'index partiel garantit l'unicité de la dérive ACTIVE sans empêcher la ré-ouverture. Gère le double-run cron (replicas:1 + contrainte DB). Leçon Sprint 4 (doublons jalons via notifications.lu).
+Alternative écartée : idempotence via notifications.lu (couple détection et état de lecture, fragile) ; SELECT-then-INSERT (race cron double-run).
+
+[2026-06-16] Shinji [permanent:true]
+Decision : Sprint 6 — appel LLM dérive = BEST-EFFORT (≠ throw de Sprint 5). Si Haiku KO/timeout/trial_expired : la dérive est quand même persistée + notifiée avec message fallback déterministe (genererMessageFallback) et message_llm=null ; le cron ne throw jamais, llm_erreurs++. (D-6-03 / ADR-6-003)
+Raison : une dérive est une ALERTE sur un fait déterministe — la valeur est le fait, le message LLM est un confort ; elle ne doit jamais être perdue sur indispo LLM. Contraste légitime avec Sprint 5 (un CR est un LIVRABLE rédigé validé par un humain → throw, ADR-5-004). Cohérent best-effort des notifications (ADR-4V-001). Feature MUST HAVE : S6-F01 (US-047 scénario LLM KO).
+Alternative écartée : throw comme le CR (perdrait l'alerte sur indispo LLM — inacceptable pour une fonction de vigilance) ; ne pas notifier si LLM KO (idem).
+
+[2026-06-16] Shinji [permanent:true]
+Decision : Sprint 6 — 1 appel LLM AGRÉGÉ par chantier (genererMessageDerive(signaux: SignauxDeriveChantier): Promise<string> reçoit toutes les dérives du chantier), appelé UNIQUEMENT si ≥1 dérive NOUVELLE. Réutilise l'interface ILLMClient existante (Haiku) via getLLMClient() + import side-effect register.ts co-localisé. Modèle/prompt/temperature délégués à @yuki. (D-6-04/D-6-05)
+Raison : PO-6-05=B + RG-DERIVE-013 — coût LLM borné (court-circuit chantiers sains + dérives déjà actives). Réutilisation Sprint 5 = zéro nouvelle dépendance. Import co-localisé = fix "LLM client not registered" (commit 6041daf, mémoire nextjs-instrumentation-module-isolation). Plafond cible <5% MRR. Feature MUST HAVE : S6-F01 (US-052 message agrégé).
+Alternative écartée : 1 appel LLM par dérive (coût N× supérieur) ; appel sur dérives déjà actives (re-coût inutile) ; nouvelle dépendance SDK (ILLMClient existe déjà).
+
+[2026-06-16] Shinji [permanent:true]
+Decision : Sprint 6 — seuils de détection configurables par org : table seuils_derives (mig 015, 1 ligne/org UNIQUE, CHECK ratio 0<x<1 / jours≥1), CRUD admin, fallback constantes SEUILS_DEFAUT (0.85/3j/7j) via chargerSeuils() (source 'db'|'defaut'). GET ne renvoie jamais 404. Reset = DELETE la ligne. Aucune rétroaction sur dérives actives (appliqué au prochain cron). (D-6-08/D-6-10 / ADR-6-004)
+Raison : PO-6-02=B — calibrage par org (PME tailles variées). source transparent dans l'UI, reset trivial. Pas de rétroaction = comportement prévisible (RYO-6-07). Le cron n'utilise jamais les constantes directement, toujours via chargerSeuils. Feature MUST HAVE : S6-F02 (US-053/054/055).
+Alternative écartée : constantes TS figées (pas de calibrage) ; seuils en colonnes sur organisations (pollue table cœur, complique reset).
+Note 2026-06-16 (fix F002/F005, ADR-6-006) : la borne CHECK ratio_budget est resserrée à `>= 0.50 AND < 1` (EXI-Y-K6-07), Zod aligné `>= 0.50`. Voir l'entrée dédiée en tête de log.
+
+[2026-06-16] Shinji [permanent:false]
+Decision : Sprint 6 — endpoint cron canonique = /api/cron/derives (PLURIEL), conforme specs §6.1. Le crontab clawbtp_cron contient une ligne héritée /api/cron/derive (SINGULIER, commentaire "dérives budget") pointant un endpoint jamais implémenté → Tanjiro corrige la ligne (derive→derives, déjà à 07h00 UTC conforme RYO-6-02). Pas de double endpoint. (D-6-13 / ADR-6-005 / Point de vigilance V-01)
+Raison : un seul endpoint réel cohérent avec les specs ; supprime un endpoint mort au nommage trompeur ("budget"). Itachi phase 3 vérifie la cohérence crontab↔route↔specs.
+Alternative écartée : implémenter sous /api/cron/derive singulier (diverge des specs, perpétue le nommage trompeur) ; créer les deux (endpoint mort).
+
+[2026-06-16] Shinji [permanent:true]
+Decision : Sprint 6 — écriture derives_detectees + seuils_derives via service_role only (RLS SELECT par org D-028 ; INSERT/UPDATE WITH CHECK(false), DELETE USING(false)). Seuils : SELECT RLS restreinte role='admin'. Cycle de vie dérive 100% automatique (détection→notif→auto-résolution→ré-ouverture), AUCUN acquittement/snooze/delete manuel exposé au client. Résolution synchrone à l'archivage chantier via resolverDerivesChantier (best-effort, ne bloque jamais l'archivage). Trial-gate : skip LLM seul (détection+notif fallback toujours). (D-6-07/D-6-09/D-6-11/D-6-12)
+Raison : D-028/D-029 cohérent notifications/comptes_rendus — contrôle métier handler-level. PO-6-03=A cycle auto. RG-DERIVE-012 évite des dérives orphelines actives sur chantier archivé. D-012 : la détection est de la valeur produit (pas facturable), seul l'appel Haiku est skippé hors abonnement (cohérent vigilance cron Sprint 5).
+Alternative écartée : INSERT/UPDATE authenticated (surface forge, contrôle transition en policy au lieu du handler) ; acquittement manuel (PO-6-03=A le rejette) ; skip toute la détection si trial (perdrait la valeur produit).
+
+---
+
+[2026-06-16] Amelia [permanent:false]
+Decision : Sprint 6 EXECUTE — (adminClient as unknown as any).from('table') pour derives_detectees et seuils_derives. Pattern identique aux tables comptes_rendus/rapports_hebdo (Sprint 5, même entrée DECISIONLOG). Commentaires TODO dans chaque cast.
+Raison : derives_detectees et seuils_derives ne sont pas encore dans Database types (migrations 014/015 non encore appliquées en prod). TypeScript rejette les queries sans ce cast. Post-migration supabase gen types corrigera.
+Alternative écartée : spec telle qu'écrite — type partiel manuel fragile.
+
+[2026-06-16] Amelia [permanent:false]
+Decision : Sprint 6 EXECUTE — Archivage chantier via DELETE handler (non PATCH). resolverDerivesChantier injecté dans DELETE (non PATCH).
+Raison : Relecture de app/api/chantiers/[id]/route.ts — le handler DELETE, non PATCH, effectue le soft-delete (statut='archive'). Le plan prévoyait PATCH (lecture correcte des specs mais non de l'implémentation existante). Corrects comportements préservés.
+Alternative écartée : PATCH (handler ne fait pas l'archivage dans cette implémentation).
+
+[2026-06-16] Amelia [permanent:false]
+Decision : Sprint 6 EXECUTE — resolveDestinatairesInternes retourne des emails, non des user IDs. Pour insertNotification (qui attend des user IDs), ajout du helper resolveAdminIds() dans le cron qui fait SELECT id FROM users WHERE org + role=admin. resolveConducteurChantier retourne correctement un user ID.
+Raison : resolveDestinatairesInternes (lib/reporting/destinataires.ts) retourne string[] d'emails (pour Resend). insertNotification attend userId. Résolution: helper interne au cron pour les IDs admins.
+Alternative écartée : modifier resolveDestinatairesInternes (effet de bord sur les autres appelants Resend).
+
+[2026-06-16] Zoro [permanent:false]
+Decision : D-EXE-6-03 (tracé SESSIONLOG, absent DECISIONLOG — F001 Itachi Phase 4) — resolveAdminIds() local dans app/api/cron/derives/route.ts au lieu de resolveDestinatairesInternes() pour la résolution des IDs admins destinataires des notifications dérive.
+Raison : resolveDestinatairesInternes (lib/reporting/destinataires.ts) retourne string[] d'emails (pour Resend) — non compatible avec insertNotification qui attend des userId. Le helper local resolveAdminIds() fait SELECT id FROM users WHERE organisation_id = orgId AND role = 'admin' AND deleted_at IS NULL, ce qui est fonctionnellement équivalent à la partie admins de resolveDestinatairesInternes (même filtre deleted_at IS NULL, ouvriers exclus par role='admin'). TST-K6-34 est satisfait : destinataires = admins + conducteur rattaché, jamais ouvrier.
+Alternative écartée : modifier resolveDestinatairesInternes pour retourner des IDs (effet de bord sur tous les appelants Resend Sprint 5) ; adapter resolveDestinatairesInternes avec un mode retour (over-engineering).
+
+[2026-06-16] Zoro [permanent:false]
+Decision : F004 Itachi Phase 4 (BLOCKER XSS) — htmlEscape() est appliqué PAR insertNotification en interne (lib/notifications/notif.ts étape 2, lignes 184-185, K4V-02) et NON par le cron avant l'appel. Commentaires du cron et de genererMessageDerive.ts corrigés. Test TST-K6-33 complété avec 2 cas intégration : payload XSS brut → INSERT échappé (no double-encodage), payload sain → INSERT inchangé.
+Raison : Investigation réelle du code (non des commentaires). insertNotification applique htmlEscape(params.titre).slice(0,200) et htmlEscape(params.message).slice(0,1000) AVANT INSERT. Ajouter htmlEscape dans le cron aurait produit du double-échappement (&amp;lt; au lieu de &lt;). La délégation à insertNotification est correcte et conforme à D-4V-002 (point unique d'échappement). TST-K6-33 est satisfait en interne par insertNotification — les tests ajoutés le prouvent par inspection du payload INSERT capturé.
+Alternative écartée : appliquer htmlEscape dans le cron (double-échappement — bug introduit) ; modifier la signature de insertNotification pour accepter des valeurs déjà échappées (casse tous les appelants Sprint 4/5).
+
+[2026-06-16] Zoro [permanent:false]
+Decision : F002 Itachi Phase 4 — suppression du try/catch externe mort autour de genererMessageDerive dans le cron + suppression du pattern llm_appels++/llm_appels-- (dead code). Nouveau pattern : llm_appels++ avant l'appel (la tentative a lieu), await genererMessageDerive sans try/catch externe, messageLlmDb = messageLlm toujours.
+Raison : genererMessageDerive a un catch total en interne (D-6-03 BINDING) et retourne toujours une string. Le try/catch externe était dead code — ne pouvait jamais être atteint. Le pattern llm_appels++/llm_appels-- était incohérent : en cas de KO LLM le compteur revenait à 0 (sous-comptage de la tentative). genererMessageDerive log lui-même les erreurs LLM internes via logger.warn. llm_erreurs++ dans le cron supprimé (la détection du fallback par comparaison de chaînes serait fragile).
+Alternative écartée : détecter le fallback par comparaison de chaînes (fragile, double-appel à genererMessageFallback) ; changer la signature de genererMessageDerive pour retourner {message, isLlm} (changement de contrat hors scope debug).
+
+[2026-06-16] Zoro [permanent:false]
+Decision : F003 Itachi Phase 4 — archivage chantier (soft delete statut='archive') implémenté dans DELETE /api/chantiers/[id], non dans PATCH, contrairement à la description D-6-11. resolverDerivesChantier appelé dans DELETE handler (best-effort). Commentaire d'alignement ajouté dans le handler DELETE. Levi : tester TST-K6-24 via DELETE /api/chantiers/[id].
+Raison : L'entrée Amelia 2026-06-16 "Archivage chantier via DELETE handler (non PATCH)" documentait déjà la déviation d'implémentation. Le PATCH handler ne modifie pas le statut (UpdateChantierSchema sans champ statut). Comportement runtime correct — seule la doc architecturale était désalignée.
+Alternative écartée : réimplémenter l'archivage dans PATCH (casse l'implémentation existante, hors scope debug).
+
+[2026-06-16] Amelia [permanent:false]
+Decision : Sprint 6 EXECUTE — Dashboard admin = app/admin/chantiers/page.tsx (non app/admin/page.tsx qui n'existe pas). SectionAlertesConsolidee injectée dans ChantiersAdminPage, conditionnée à activeTab === 'actifs'.
+Raison : Risque #4 du plan. Le routing admin dans ce projet n'a pas de page dashboard dédiée — la liste de chantiers est la page principale. Condition activeTab pour ne montrer les alertes qu'en onglet "Actifs" (cohérent avec la pertinence des alertes actives).
+Alternative écartée : créer app/admin/page.tsx (redirection ou duplication de contenu non justifiée par les specs).
+
+[2026-06-16] Amelia [permanent:false]
+Decision : Sprint 6 EXECUTE — eslint.config.mjs : ajout de caughtErrorsIgnorePattern: "^_" dans la règle @typescript-eslint/no-unused-vars.
+Raison : Les catch clauses dans les Client Components (SectionAlertesChantier, SectionAlertesConsolidee) utilisent `_err` pour se conformer à la convention de préfixage _ des variables inutilisées — mais le pattern varsIgnorePattern ne couvre pas les catch bindings (caughtErrors est une config séparée). Build échouait avec 2 erreurs ESLint sur ces catch.
+Alternative écartée : supprimer la variable catch (syntax `catch { ... }` — non universellement supportée dans les versions TS/ESLint du projet) ; eslint-disable inline (plus intrusif).
+
+[2026-06-16] Amelia [permanent:false]
+Decision : Sprint 6 EXECUTE — Import UserRole depuis @/types/database (non @/types/detection). 3 routes API (derives, chantiers/[id]/derives, organisations/me/seuils-derives) importaient incorrectement UserRole depuis detection.ts où il n'est pas défini.
+Raison : UserRole est un type de base DB (Database["public"]["Enums"]["user_role"]) dans types/database.ts. La specs Sprint 6 ne le déplace pas. Les routes l'importaient via une union incorrecte dans detection.ts.
+Alternative écartée : déplacer UserRole dans detection.ts (crée une dépendance circulaire potentielle avec database.ts).
+
+---
+
 [2026-06-15] Zoro [permanent:false]
 Decision : RG-CR-011 REMPLACÉ — resolveDestinatairesInternes nouvelle signature (orgId, chantierId, adminClient). Nouvelle logique : (admins org, role='admin', deleted_at IS NULL) ∪ (conducteurs rattachés au chantier : created_by du chantier si conducteur non supprimé, OU conducteurs avec affectation ACTIVE, deleted_at IS NULL). Dédoublonnage par email via Set<string>. Compteur nbDestinataires dans les 4 pages détail remplacé par resolveDestinatairesInternes().length (exact match envoi réel). Routes cr/envoyer et rapports-hebdo/envoyer passent cr.chantier_id / rapport.chantier_id en 2e argument.
 Raison : Décision PO binding smoke 2026-06-15 : l'envoi d'un CR ou rapport hebdo ne doit plus cibler TOUS les conducteurs de l'org, mais uniquement ceux rattachés au chantier concerné. PO-5-04 respecté (N calculé côté serveur). AM-03 propriété vérifiée : un conducteur qui envoie passe forcément canAccessChantier → est created_by ou affecté (actif ou passé) ; la nouvelle règle l'inclut si actif, l'exclut si affectation uniquement passée (décision PO assumée).
