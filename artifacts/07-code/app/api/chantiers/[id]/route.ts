@@ -22,6 +22,7 @@ import { calculerCouleur } from '@/lib/coloration'
 import { toApiResponse } from '@/lib/errors'
 import { logger } from '@/lib/logger'
 import { insertNotification, resolveAdminsOrg, resolveConducteurChantier } from '@/lib/notifications/notif'
+import { resolverDerivesChantier } from '@/lib/detection/resolverDerives'
 import type {
   UserRole,
   Chantier,
@@ -438,6 +439,25 @@ export async function DELETE(
     }
 
     reqLogger.info({ chantierId, userId }, 'Chantier archivé (soft delete)')
+
+    // D-6-11 / TST-K6-24 : résoudre les dérives actives du chantier archivé (best-effort)
+    // Après l'UPDATE du chantier — ne bloque JAMAIS l'archivage en cas d'erreur.
+    //
+    // Note d'alignement architectural (Zoro 2026-06-16, F003 Itachi Phase 4) :
+    // L'architecture D-6-11 décrit "PATCH /api/chantiers/[id] posant statut='archive' appelle
+    // resolverDerivesChantier". Dans l'implémentation réelle, le soft delete (statut='archive')
+    // est effectué ici dans DELETE, pas dans PATCH (PATCH ne modifie pas le statut).
+    // Voir DECISIONLOG entrée Amelia 2026-06-16 (permanent:false) et Zoro 2026-06-16.
+    // Levi : tester TST-K6-24 via DELETE /api/chantiers/[id], pas PATCH.
+    try {
+      await resolverDerivesChantier(chantierId, adminClient)
+    } catch (resolverErr) {
+      // Best-effort strict : log warn, ne propage jamais l'erreur (TST-K6-24)
+      reqLogger.warn(
+        { chantierId, error: resolverErr instanceof Error ? resolverErr.message : String(resolverErr) },
+        'resolverDerivesChantier failed — archivage non bloqué (best-effort)',
+      )
+    }
 
     return new NextResponse(null, { status: 204 })
   } catch (error) {
