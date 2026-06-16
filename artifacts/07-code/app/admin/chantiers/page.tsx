@@ -22,6 +22,7 @@ import { logger } from '@/lib/logger'
 import type { Chantier, ChantierWithColoration } from '@/types/database'
 import { Button } from '@/components/ui/button'
 import { ChantiersTabsNav } from './_components/ChantiersTabsNav'
+import { SectionAlertesConsolidee } from '@/components/derives/SectionAlertesConsolidee'
 
 export const metadata = {
   title: 'Chantiers',
@@ -177,6 +178,9 @@ export default async function ChantiersAdminPage({ searchParams }: PageProps) {
 
   return (
     <div>
+      {/* Sprint 6 — Vue consolidée alertes proactives (US-051 BINDING : en haut du dashboard admin) */}
+      {activeTab === 'actifs' && <SectionAlertesConsolidee />}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 mb-6">
         <div>

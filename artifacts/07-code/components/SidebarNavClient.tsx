@@ -100,6 +100,20 @@ export function SidebarNavClient({ inSheet = false }: SidebarNavClientProps = {}
       ),
       badge: '7',
     },
+    // Sprint 6 — Alertes & Seuils (US-053 reachability UI — F003 BINDING)
+    {
+      href: '/admin/settings/derives',
+      label: 'Alertes & Seuils',
+      testId: 'nav-link-parametres-seuils',
+      // RBAC: visible admin only
+      icon: (
+        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+          <line x1="12" y1="9" x2="12" y2="13"/>
+          <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+      ),
+    },
   ]
 
   return (
@@ -124,12 +138,13 @@ export function SidebarNavClient({ inSheet = false }: SidebarNavClientProps = {}
         {!inSheet && <NotificationBell />}
       </div>
 
-      {navItems.map(({ href, label, icon, badge }) => {
+      {navItems.map(({ href, label, icon, badge, testId }) => {
         const active = isActive(pathname, href)
         return (
           <Link
             key={href}
             href={href}
+            data-testid={testId}
             className={cn(
               'flex items-center gap-3 px-6 py-3 font-medium text-[15px] transition-colors',
               active

@@ -31,6 +31,7 @@ import { getPreviousIsoWeek, getWeekBounds, formatSemaineLabel } from '@/lib/rep
 import { ArchiveButton } from './archive-button'
 import { UnarchiveButton } from './unarchive-button'
 import { ChantierDetailAdminTabs } from './tabs-client'
+import { SectionAlertesChantier } from '@/components/derives/SectionAlertesChantier'
 import type { Chantier, TacheWithUser, AffectationWithUser, PhotoConducteurDisplay } from '@/types/database'
 import type { CompteRenduListe, RapportHebdoListe } from '@/types/reporting'
 // T04 — TacheItem supprimé de cet import (remplacé par tableau inline dans tabs-client.tsx)
@@ -263,6 +264,9 @@ export default async function ChantierDetailAdminPage({ params }: PageProps) {
           </p>
         </div>
       )}
+
+      {/* Sprint 6 — Section alertes proactives (F001 BINDING : avant les onglets, ancre id="alertes" dans SectionAlertesChantier) */}
+      <SectionAlertesChantier chantierId={chantierId} />
 
       {/* T04 — Système de tabs : Client Component gère les tabs et tout le contenu tabulé */}
       {/* Fix #5 : photos passées au client (PhotoConducteurDisplay[] — sans storage_path) */}

@@ -31,6 +31,7 @@ import type {
 } from '@/types/database'
 import type { CompteRenduListe, RapportHebdoListe } from '@/types/reporting'
 import { ChantierDetailConducteurClient } from './client'
+import { SectionAlertesChantier } from '@/components/derives/SectionAlertesChantier'
 
 export const dynamic = 'force-dynamic'
 
@@ -225,6 +226,9 @@ export default async function ChantierDetailConduPage({ params }: PageProps) {
         </div>
         <p className="text-white/60 text-xs mt-1">{chantier.client_nom}</p>
       </div>
+
+      {/* Sprint 6 — Section alertes proactives (F001 BINDING : avant les onglets, ancre id="alertes" dans SectionAlertesChantier) */}
+      <SectionAlertesChantier chantierId={chantierId} />
 
       {/* Client Component pour les interactions (tâches + affectation + photos + CRs) */}
       <ChantierDetailConducteurClient

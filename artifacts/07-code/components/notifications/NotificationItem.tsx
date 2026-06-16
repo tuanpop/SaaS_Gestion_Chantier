@@ -14,6 +14,7 @@ import {
   TrendingDown,
   CalendarX,
   CalendarClock,
+  AlertOctagon,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { NotificationDisplay, NotificationType } from '@/types/database'
@@ -37,6 +38,12 @@ const NOTIF_ICON_MAP: Record<NotificationType, IconConfig> = {
   derive_budget:        { icon: TrendingDown,    color: '#F97316', bgColor: '#FFF7ED' },
   echeance_chantier:    { icon: CalendarX,       color: '#EF4444', bgColor: '#FEF2F2' },
   echeance_tache:       { icon: CalendarClock,   color: '#F97316', bgColor: '#FFF7ED' },
+  // Sprint 6 — détection proactive : ROUGE UNIQUE dans le fil de notifications (PO décision acté)
+  // Le type de dérive (budget/retard/blocage/inactivité) n'est pas dans notifications.type
+  // (uniquement 'derive_proactive'). La distinction de couleur par sous-type est dans la section
+  // Alertes du chantier (AlertCardDerive.tsx) où le type de dérive est disponible.
+  // DECISIONLOG: déviation assumée Hana S6-01 F004 (orange inactivité dans dropdown) — YAGNI.
+  derive_proactive:     { icon: AlertOctagon,    color: '#EF4444', bgColor: '#FEF2F2' },
 }
 
 // ============================================================
@@ -71,6 +78,10 @@ function buildUrl(
   if (!chantier_id) return ''
 
   if (role === 'admin') {
+    // Sprint 6 : derive_proactive navigue vers la section #alertes du chantier
+    if (type === 'derive_proactive') {
+      return `/admin/chantiers/${chantier_id}#alertes`
+    }
     return `/admin/chantiers/${chantier_id}`
   }
 
@@ -83,8 +94,10 @@ function buildUrl(
       return `/conducteur/chantiers/${chantier_id}`
     case 'derive_budget':
     case 'echeance_chantier':
-      // conducteur redirigé vers sa vue chantier
       return `/conducteur/chantiers/${chantier_id}`
+    case 'derive_proactive':
+      // Sprint 6 : navigate vers section alertes du chantier conducteur
+      return `/conducteur/chantiers/${chantier_id}#alertes`
     default:
       return `/conducteur/chantiers/${chantier_id}`
   }
