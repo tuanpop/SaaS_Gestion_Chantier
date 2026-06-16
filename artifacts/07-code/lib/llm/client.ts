@@ -1,6 +1,15 @@
 // lib/llm/client.ts — Interface ILLMClient + types + factory
 // D-5-01 BINDING : abstraction testable, swappable Haiku↔Sonnet sans toucher les handlers
 // llm-design.md §3 + architecture-sprint-5.md §1.5 D-5-01
+// Sprint 7 ADR-7-001 D-7-11 : ajout LLMModel + model? optionnel backward-compatible
+
+// ============================================================
+// Types modèle LLM (Sprint 7 — ADR-7-001)
+// Champ optionnel — défaut claude-haiku-4-5 géré par AnthropicClient
+// Non-régression : Sprint 5/6 ne passent pas model → Haiku (comportement inchangé)
+// ============================================================
+
+export type LLMModel = 'claude-haiku-4-5' | 'claude-sonnet-4-6'
 
 // ============================================================
 // Interface et types
@@ -11,6 +20,13 @@ export interface LLMGenerateParams {
   userMessage: string
   maxTokens: number
   temperature: number
+  /**
+   * Modèle LLM à utiliser (optionnel — ADR-7-001 / D-7-11).
+   * Si absent : défaut claude-haiku-4-5 (géré par AnthropicClient — backward-compat Sprint 5/6).
+   * Sprint 7 : genererContenuBriefing passe model: 'claude-sonnet-4-6'.
+   * Sprint 5/6 (genererContenuCR, genererMessageDerive) : ne passent pas ce champ → Haiku.
+   */
+  model?: LLMModel
 }
 
 /**

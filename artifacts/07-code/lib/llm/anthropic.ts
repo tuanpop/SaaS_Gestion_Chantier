@@ -1,7 +1,8 @@
 // lib/llm/anthropic.ts — Implémentation AnthropicClient
 // D-5-01 : implémente ILLMClient via @anthropic-ai/sdk
 // D-5-03 : timeout 30s AbortController, pas de retry V1
-// llm-design.md §3 — modèle claude-haiku-4-5, temperature 0.3
+// llm-design.md §3 — modèle défaut claude-haiku-4-5, temperature 0.3
+// Sprint 7 ADR-7-001 D-7-11 : support model? optionnel — défaut Haiku INCHANGÉ
 // Sécurité : ANTHROPIC_API_KEY jamais loggée (pino redact couvre 'token'/'authorization')
 // TST-K5-17 : clé jamais en NEXT_PUBLIC_ANTHROPIC_*
 
@@ -10,9 +11,10 @@ import type { ILLMClient, LLMGenerateParams } from './client'
 import { LLMError } from './client'
 import { logger } from '@/lib/logger'
 
-// Modèle retenu — llm-design.md §2 Yuki (Haiku = prose factuelle BTP)
+// Modèle DÉFAUT — llm-design.md §2 Yuki (Haiku = prose factuelle BTP)
 // ID vérifié : claude-haiku-4-5 (alias stable, voir documentation API Anthropic)
-const MODEL_ID = 'claude-haiku-4-5'
+// D-7-11 BINDING : ne JAMAIS changer ce défaut. Sprint 7 passe model: 'claude-sonnet-4-6' explicitement.
+const DEFAULT_MODEL_ID = 'claude-haiku-4-5'
 
 // Timeout 30s D-5-03
 const TIMEOUT_MS = 30_000
@@ -21,6 +23,7 @@ const TIMEOUT_MS = 30_000
  * Implémentation Anthropic de ILLMClient.
  * SDK officiel @anthropic-ai/sdk, typage strict, AbortController 30s.
  * Startup check : ANTHROPIC_API_KEY (llm-design.md §6).
+ * Sprint 7 ADR-7-001 : support du champ optionnel model? — défaut Haiku préservé.
  */
 export class AnthropicClient implements ILLMClient {
   private readonly client: Anthropic
@@ -42,15 +45,19 @@ export class AnthropicClient implements ILLMClient {
   async generate(params: LLMGenerateParams): Promise<string> {
     const { systemPrompt, userMessage, maxTokens, temperature } = params
 
+    // Sprint 7 ADR-7-001 : utiliser model si fourni, sinon défaut Haiku
+    // Non-régression : Sprint 5/6 ne passent pas model → undefined → DEFAULT_MODEL_ID
+    const modelId = params.model ?? DEFAULT_MODEL_ID
+
     // Log de l'appel sans exposer les contenus (sécurité)
     logger.debug(
-      { model: MODEL_ID, maxTokens, temperature },
+      { model: modelId, maxTokens, temperature },
       'llm: generating content',
     )
 
     try {
       const response = await this.client.messages.create({
-        model: MODEL_ID,
+        model: modelId,
         max_tokens: maxTokens,
         temperature,
         system: systemPrompt,
@@ -65,7 +72,7 @@ export class AnthropicClient implements ILLMClient {
       // Log usage tokens (tracking coûts llm-design.md §3)
       logger.info(
         {
-          model: MODEL_ID,
+          model: modelId,
           inputTokens: response.usage.input_tokens,
           outputTokens: response.usage.output_tokens,
           stopReason: response.stop_reason,
@@ -89,7 +96,7 @@ export class AnthropicClient implements ILLMClient {
         err instanceof Anthropic.APIConnectionTimeoutError ||
         (err instanceof Error && err.message.includes('timeout'))
 
-      // Message générique — jamais de détail SDK/headers en réponse (TST-K5-17)
+      // Message générique — jamais de détail SDK/headers en réponse (TST-K5-17 / TST-K7-30)
       const message = isTimeout
         ? 'Timeout LLM — la génération a dépassé 30 secondes'
         : 'Erreur LLM — génération impossible'
@@ -97,7 +104,7 @@ export class AnthropicClient implements ILLMClient {
       // Log interne complet (jamais en réponse HTTP)
       logger.error(
         {
-          model: MODEL_ID,
+          model: modelId,
           error: err instanceof Error ? err.message : String(err),
           isTimeout,
         },
