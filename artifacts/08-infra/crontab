@@ -5,8 +5,9 @@
 # Génération CRs journaliers — tous les jours à 18h00
 0 18 * * * curl -sf -X POST -H "x-cron-secret: ${CRON_SECRET}" "${APP_INTERNAL_URL}/api/cron/cr"
 
-# Détection dérives budget — tous les jours à 07h00
-0 7 * * * curl -sf -X POST -H "x-cron-secret: ${CRON_SECRET}" "${APP_INTERNAL_URL}/api/cron/derive"
+# Détection proactive des dérives — tous les jours à 07h00 UTC (D-6-02 / ADR-6-005 / D-6-13)
+# Endpoint canonique : /api/cron/derives (PLURIEL) — corrige la ligne singulière morte héritée Sprint 4
+0 7 * * * curl -sf -X POST -H "x-cron-secret: ${CRON_SECRET}" "${APP_INTERNAL_URL}/api/cron/derives"
 
 # Briefing lundi matin — tous les lundis à 07h30
 30 7 * * 1 curl -sf -X POST -H "x-cron-secret: ${CRON_SECRET}" "${APP_INTERNAL_URL}/api/cron/briefing"

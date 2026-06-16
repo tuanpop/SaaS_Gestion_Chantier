@@ -24,7 +24,7 @@ const eslintConfig = [
       // Typage strict — toujours préférer unknown à any
       "@typescript-eslint/no-explicit-any": "warn",
       // Pas de variables inutilisées (sauf préfixées par _)
-      "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }],
+      "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_", varsIgnorePattern: "^_", caughtErrorsIgnorePattern: "^_" }],
     },
   },
   {
