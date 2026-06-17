@@ -12,7 +12,7 @@
 -- Hebdomadaire : chaque dimanche à 03h00 UTC
 -- ============================================================
 
-DO $$
+DO $do$
 BEGIN
   IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_cron') THEN
     IF NOT EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'purge-chat-messages') THEN
@@ -23,7 +23,7 @@ BEGIN
       );
     END IF;
   END IF;
-END $$;
+END $do$;
 
 -- ============================================================
 -- 2. Purge claw_accueil_log > 30 jours (RG-ACCUEIL-008)
@@ -31,7 +31,7 @@ END $$;
 -- Cohérent avec la purge des notifications (PO-4V-04 pattern Sprint 4)
 -- ============================================================
 
-DO $$
+DO $do$
 BEGIN
   IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_cron') THEN
     IF NOT EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'purge-claw-accueil') THEN
@@ -42,4 +42,4 @@ BEGIN
       );
     END IF;
   END IF;
-END $$;
+END $do$;
