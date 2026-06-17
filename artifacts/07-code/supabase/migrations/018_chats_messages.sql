@@ -124,6 +124,11 @@ CREATE TABLE IF NOT EXISTS public.messages (
   -- Auteur : null pour les messages system (auteur_id ON DELETE SET NULL)
   auteur_id       uuid                  NULL REFERENCES users(id) ON DELETE SET NULL,
 
+  -- Snapshot dénormalisé de l'auteur au moment de l'envoi (cf. migration 022).
+  -- auteur_nom : 'prénom nom', 'Claw' (bot), 'Système' (system). auteur_role : NULL pour bot/system.
+  auteur_nom      text                  NULL,
+  auteur_role     text                  NULL,
+
   type            public.message_type   NOT NULL,
 
   -- Contenu brut du message
