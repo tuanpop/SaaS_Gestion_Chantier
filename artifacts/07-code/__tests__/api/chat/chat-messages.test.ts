@@ -15,7 +15,7 @@
  *   POST-3 : body vide → 400
  *   POST-4 : body type='bot' → 400 (V-8-07 — z.literal('user') rejette 'bot')
  *   POST-5 : message > 4000 chars → 400
- *   POST-6 : chat introuvable → 404
+ *   POST-6 : chat absent (chantier pré-Sprint 8) → créé à la volée → 201
  *   GET-1 : admin → 200 + messages[]
  *   GET-2 : limit > 50 → 400 (D-8-06 enforced server-side)
  *   GET-3 : unauthenticated → 401
@@ -97,6 +97,7 @@ const adminHeaders = {
 function setupAdminMock(overrides: {
   chantierData?: unknown
   chatData?: unknown
+  chatDataAfterCreate?: unknown
   userRow?: unknown
   insertData?: unknown
   affectationData?: unknown
@@ -104,6 +105,8 @@ function setupAdminMock(overrides: {
   const {
     chantierData = { id: CHANTIER_ID, organisation_id: ORG_ID, statut: 'actif' },
     chatData = { id: CHAT_ID, organisation_id: ORG_ID },
+    // Re-lecture après création paresseuse (get-or-create) — chantier pré-Sprint 8
+    chatDataAfterCreate = { id: CHAT_ID, organisation_id: ORG_ID },
     userRow = { prenom: 'Jean', nom: 'Dupont' },
     insertData = {
       id: MESSAGE_ID,
@@ -122,6 +125,7 @@ function setupAdminMock(overrides: {
   } = overrides
 
   let callIndex = 0
+  let chatsSelectCall = 0
   mockAdminFrom.mockImplementation((tableName: string) => {
     if (tableName === 'chantiers') {
       return {
@@ -148,10 +152,17 @@ function setupAdminMock(overrides: {
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
             eq: vi.fn().mockReturnValue({
-              maybeSingle: vi.fn().mockResolvedValue({ data: chatData, error: null }),
+              maybeSingle: vi.fn().mockImplementation(() => {
+                chatsSelectCall++
+                // 1er appel = lookup initial ; appels suivants = re-lecture après création paresseuse
+                const data = chatsSelectCall === 1 ? chatData : (chatData ?? chatDataAfterCreate)
+                return Promise.resolve({ data, error: null })
+              }),
             }),
           }),
         }),
+        // get-or-create : upsert idempotent (onConflict chantier_id)
+        upsert: vi.fn().mockResolvedValue({ error: null }),
       }
     }
     if (tableName === 'users') {
@@ -272,18 +283,25 @@ describe('POST /api/chantiers/[id]/chat/messages', () => {
     expect(response.status).toBe(400)
   })
 
-  it('POST-6 : chat introuvable → 404', async () => {
+  it('POST-6 : chat absent (chantier pré-Sprint 8) → créé à la volée → 201', async () => {
+    // chatData null = pas de chat existant → le handler le crée (get-or-create),
+    // puis insère le message. Comportement self-heal pour les chantiers pré-Sprint 8.
     setupAdminMock({ chatData: null })
 
     const req = makeRequest(
       `http://localhost/api/chantiers/${CHANTIER_ID}/chat/messages`,
       'POST',
-      { contenu: 'Test' },
+      { contenu: 'Premier message' },
       adminHeaders,
     )
 
     const response = await POST(req, { params: Promise.resolve({ id: CHANTIER_ID }) })
-    expect(response.status).toBe(404)
+    expect(response.status).toBe(201)
+
+    const body = await response.json() as Record<string, unknown>
+    expect(body['id']).toBe(MESSAGE_ID)
+    // Pipeline lancé après création paresseuse du chat
+    expect(mockLancerPipelineBot).toHaveBeenCalled()
   })
 
   it('FIRE-1 : D-8-10 binding — pipeline lancé sans await (ne bloque pas le 201)', async () => {

@@ -400,8 +400,11 @@ export async function POST(
 
     const { contenu } = parsed.data
 
-    // 4. Récupérer le chat
-    const { data: chatRow, error: chatError } = await (adminClient as unknown as ReturnType<typeof createAdminClient>)
+    // 4. Récupérer le chat (get-or-create)
+    // PO-8-04=A : le chat est créé à la création du chantier. Les chantiers créés
+    // AVANT Sprint 8 n'ont pas de ligne `chats` → création paresseuse ici (self-heal).
+    // Le chantier est déjà vérifié 'ok' (non archivé, accès autorisé) en amont.
+    const { data: existingChat, error: chatError } = await (adminClient as unknown as ReturnType<typeof createAdminClient>)
       .from('chats')
       .select('id, organisation_id')
       .eq('chantier_id', chantierId)
@@ -411,9 +414,45 @@ export async function POST(
         error: { message: string } | null
       }
 
-    if (chatError || !chatRow) {
-      reqLogger.warn({ chantierId }, 'POST messages: chat introuvable pour ce chantier')
-      return NextResponse.json({ error: 'Chat introuvable pour ce chantier.' }, { status: 404 })
+    if (chatError) {
+      reqLogger.error({ error: chatError.message, chantierId }, 'POST messages: erreur lecture chat')
+      return NextResponse.json({ error: 'Erreur interne.' }, { status: 500 })
+    }
+
+    let chatRow = existingChat
+
+    if (!chatRow) {
+      // Création paresseuse — chantier pré-Sprint 8. chantier_id UNIQUE → upsert idempotent (race-safe).
+      const { error: createError } = await (adminClient as unknown as ReturnType<typeof createAdminClient>)
+        .from('chats')
+        .upsert(
+          { chantier_id: chantierId, organisation_id: auth.organisationId },
+          { onConflict: 'chantier_id', ignoreDuplicates: true },
+        ) as unknown as { error: { message: string } | null }
+
+      if (createError) {
+        reqLogger.error({ error: createError.message, chantierId }, 'POST messages: erreur création chat')
+        return NextResponse.json({ error: 'Erreur interne.' }, { status: 500 })
+      }
+
+      // Re-lecture : upsert ignoreDuplicates ne renvoie pas la ligne en cas de conflit concurrent.
+      const { data: refetched, error: refetchError } = await (adminClient as unknown as ReturnType<typeof createAdminClient>)
+        .from('chats')
+        .select('id, organisation_id')
+        .eq('chantier_id', chantierId)
+        .eq('organisation_id', auth.organisationId)
+        .maybeSingle() as unknown as {
+          data: { id: string; organisation_id: string } | null
+          error: { message: string } | null
+        }
+
+      if (refetchError || !refetched) {
+        reqLogger.error({ error: refetchError?.message, chantierId }, 'POST messages: chat introuvable après création')
+        return NextResponse.json({ error: 'Erreur interne.' }, { status: 500 })
+      }
+
+      chatRow = refetched
+      reqLogger.info({ chantierId, chatId: chatRow.id }, 'POST messages: chat créé à la volée (chantier pré-Sprint 8)')
     }
 
     // 5. Résoudre le nom d'affichage de l'auteur
