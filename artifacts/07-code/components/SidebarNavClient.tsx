@@ -89,17 +89,6 @@ export function SidebarNavClient({ inSheet = false }: SidebarNavClientProps = {}
         </svg>
       ),
     },
-    {
-      href: '/admin/chats',
-      label: 'Chats',
-      // RBAC: visible admin only
-      icon: (
-        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
-        </svg>
-      ),
-      badge: '7',
-    },
     // Sprint 7 — Briefings lundi (US-061 reachability UI — V-7-14 BINDING)
     {
       href: '/admin/briefings',
@@ -159,7 +148,7 @@ export function SidebarNavClient({ inSheet = false }: SidebarNavClientProps = {}
         {!inSheet && <NotificationBell />}
       </div>
 
-      {navItems.map(({ href, label, icon, badge, testId }) => {
+      {navItems.map(({ href, label, icon, testId }) => {
         const active = isActive(pathname, href)
         return (
           <Link
@@ -175,12 +164,6 @@ export function SidebarNavClient({ inSheet = false }: SidebarNavClientProps = {}
           >
             {icon}
             {label}
-            {badge && (
-              <span className="ml-auto bg-accent text-white text-[10px] font-bold px-1.5 py-0.5 rounded-sm">
-                {/* T11 — rounded-sm (4px) au lieu de rounded (6px) */}
-                {badge}
-              </span>
-            )}
           </Link>
         )
       })}
