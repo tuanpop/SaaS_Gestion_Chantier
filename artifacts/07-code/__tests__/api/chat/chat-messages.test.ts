@@ -101,12 +101,15 @@ function setupAdminMock(overrides: {
   userRow?: unknown
   insertData?: unknown
   affectationData?: unknown
+  messagesData?: unknown[]
 } = {}) {
   const {
     chantierData = { id: CHANTIER_ID, organisation_id: ORG_ID, statut: 'actif' },
     chatData = { id: CHAT_ID, organisation_id: ORG_ID },
     // Re-lecture après création paresseuse (get-or-create) — chantier pré-Sprint 8
     chatDataAfterCreate = { id: CHAT_ID, organisation_id: ORG_ID },
+    // Lecture GET messages (via adminClient depuis le fix RLS ouvrier)
+    messagesData = [],
     userRow = { prenom: 'Jean', nom: 'Dupont' },
     insertData = {
       id: MESSAGE_ID,
@@ -175,10 +178,33 @@ function setupAdminMock(overrides: {
       }
     }
     if (tableName === 'messages') {
+      // POST : .insert().select().single()
       const singleFn = vi.fn().mockResolvedValue({ data: insertData, error: null })
-      const selectFn = vi.fn().mockReturnValue({ single: singleFn })
-      const insertFn = vi.fn().mockReturnValue({ select: selectFn })
-      return { insert: insertFn }
+      const insertSelectFn = vi.fn().mockReturnValue({ single: singleFn })
+      const insertFn = vi.fn().mockReturnValue({ select: insertSelectFn })
+
+      // GET (via adminClient depuis fix RLS ouvrier) :
+      // .select().eq().eq().is().order().limit() [thenable] + .gt() (cursor)
+      const readResult = { data: messagesData, error: null }
+      const limitObj = {
+        gt: vi.fn().mockResolvedValue(readResult),
+        then: (onFulfilled: (v: typeof readResult) => unknown) =>
+          Promise.resolve(readResult).then(onFulfilled),
+      }
+      const readChain: {
+        eq: (...a: unknown[]) => unknown
+        is: (...a: unknown[]) => unknown
+        order: (...a: unknown[]) => unknown
+        limit: (...a: unknown[]) => unknown
+      } = {
+        eq: vi.fn(() => readChain),
+        is: vi.fn(() => readChain),
+        order: vi.fn(() => readChain),
+        limit: vi.fn(() => limitObj),
+      }
+      const readSelectFn = vi.fn(() => readChain)
+
+      return { insert: insertFn, select: readSelectFn }
     }
     return {
       select: vi.fn().mockReturnThis(),
@@ -341,10 +367,7 @@ describe('GET /api/chantiers/[id]/chat/messages', () => {
   })
 
   it('GET-1 : admin → 200 + messages[] (happy path)', async () => {
-    setupAdminMock()
-
-    // Mock createClient pour la lecture des messages
-    const { createClient } = await import('@/lib/supabase/server')
+    // Lecture via adminClient (fix RLS ouvrier) → messages fournis par setupAdminMock
     const mockMessages = [
       {
         id: MESSAGE_ID,
@@ -360,15 +383,7 @@ describe('GET /api/chantiers/[id]/chat/messages', () => {
         created_at: new Date().toISOString(),
       },
     ]
-
-    const limitFn = vi.fn().mockResolvedValue({ data: mockMessages, error: null })
-    const orderFn = vi.fn().mockReturnValue({ limit: limitFn })
-    const isFn = vi.fn().mockReturnValue({ order: orderFn })
-    const eqFn = vi.fn().mockReturnThis()
-    const selectFn = vi.fn().mockReturnValue({ eq: eqFn })
-    eqFn.mockReturnValue({ eq: eqFn, is: isFn })
-
-    vi.mocked(createClient).mockResolvedValueOnce({ from: vi.fn().mockReturnValue({ select: selectFn }) } as unknown as Awaited<ReturnType<typeof createClient>>)
+    setupAdminMock({ messagesData: mockMessages })
 
     const req = makeRequest(
       `http://localhost/api/chantiers/${CHANTIER_ID}/chat/messages`,
@@ -382,6 +397,7 @@ describe('GET /api/chantiers/[id]/chat/messages', () => {
 
     const body = await response.json() as { messages: unknown[]; has_more: boolean }
     expect(Array.isArray(body.messages)).toBe(true)
+    expect(body.messages.length).toBe(1)
     expect(typeof body.has_more).toBe('boolean')
   })
 

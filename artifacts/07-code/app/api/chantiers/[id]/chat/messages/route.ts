@@ -17,7 +17,9 @@
 //   Admin : tous les chantiers de son organisation
 //
 // RLS : messages table — WITH CHECK(false) sur INSERT/UPDATE
-//   Toutes les écritures via adminClient (bypass RLS). Lectures via createClient() (RLS SELECT).
+//   Lectures ET écritures via adminClient (bypass RLS) : l'ouvrier (cookie ouvrier_session,
+//   pas de JWT) serait rôle anon avec createClient() → permission denied. Isolation tenant
+//   garantie handler-level (assertChantierAccess + filtres org/chat_id/chantier_id).
 //
 // D-8-06 BINDING : pagination cursor-based, limit max 50 enforced server-side
 // RG-CHAT-005 : message 1-4000 chars (enforced par Zod PostMessageBodySchema)
@@ -29,7 +31,6 @@
 export const runtime = 'nodejs'
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getOuvrierSession } from '@/lib/ouvrier-session'
 import { logger } from '@/lib/logger'
@@ -281,15 +282,16 @@ export async function GET(
       created_at: string
     }
 
-    // Utiliser createClient() pour la lecture (RLS SELECT authenticated)
-    const supabase = await createClient()
-
+    // Lecture via adminClient : l'ouvrier n'a PAS de JWT Supabase (cookie ouvrier_session),
+    // donc createClient() = rôle anon → "permission denied for table messages".
+    // L'isolation tenant est garantie par assertChantierAccess (RBAC) + les filtres
+    // chat_id/chantier_id ci-dessous (le chat a été résolu scopé à auth.organisationId).
     type MessagesQuery = {
       data: MessageRow[] | null
       error: { message: string } | null
     }
 
-    let messagesQuery = (supabase as unknown as ReturnType<typeof createAdminClient>)
+    let messagesQuery = (adminClient as unknown as ReturnType<typeof createAdminClient>)
       .from('messages')
       .select(
         'id, chat_id, chantier_id, auteur_id, auteur_nom, auteur_role, type, contenu, deleted_at, action_proposal_id, created_at',
