@@ -151,7 +151,16 @@ export async function middleware(request: NextRequest) {
   const isOuvrierPage = pathname.startsWith('/ouvrier/')
   const isOuvrierApi = pathname.startsWith('/api/ouvrier/')
 
-  if (isOuvrierPage || isOuvrierApi) {
+  // Sprint 8 — endpoints chat dual-auth (JWT staff OU cookie ouvrier).
+  // L'ouvrier n'a pas de JWT Supabase : si le cookie ouvrier_session est présent sur
+  // un endpoint chat, on route vers la branche cookie (forward → handler resolveAuth).
+  // Si pas de cookie ouvrier (= admin/conducteur), on laisse passer au check JWT normal
+  // pour que les headers x-user-* soient injectés (chemin JWT du handler).
+  const isChatApi = /^\/api\/chantiers\/[^/]+\/chat(\/messages)?$/.test(pathname)
+  const hasOuvrierCookie = !!request.cookies.get('ouvrier_session')?.value
+  const isOuvrierChatApi = isChatApi && hasOuvrierCookie
+
+  if (isOuvrierPage || isOuvrierApi || isOuvrierChatApi) {
     // Pages exemptées (scan QR, no-affectation) — pas de session requise
     if (OUVRIER_PUBLIC_ROUTES.some((p) => pathname.startsWith(p))) {
       reqLogger.debug({ pathname }, 'Ouvrier public route — bypassing session check')
