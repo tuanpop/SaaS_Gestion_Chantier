@@ -618,7 +618,16 @@ export function ChantierDetailConducteurClient({
           <div
             data-testid="chat-container-conducteur"
             className="card-brutal-mobile overflow-hidden"
-            style={{ height: '600px', display: 'flex', flexDirection: 'column' }}
+            // Hauteur responsive : tient dans le viewport au-dessus du .bottom-nav fixe (z-50, ~72px).
+            // marginBottom dégage l'input de la barre de navigation fixe sur mobile.
+            style={{
+              height: 'calc(100dvh - 20rem)',
+              minHeight: '18rem',
+              maxHeight: '600px',
+              marginBottom: '5rem',
+              display: 'flex',
+              flexDirection: 'column',
+            }}
           >
             <div className="p-3 border-b-2 border-[var(--color-border-black)] bg-[var(--color-primary)] text-white">
               <h3 className="font-heading font-bold text-sm">Chat d&apos;équipe</h3>

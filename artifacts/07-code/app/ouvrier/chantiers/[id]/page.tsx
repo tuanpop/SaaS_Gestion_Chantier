@@ -6,6 +6,7 @@
 import { redirect, notFound } from 'next/navigation'
 import { cookies, headers } from 'next/headers'
 import { NextRequest } from 'next/server'
+import Link from 'next/link'
 import { OuvrierChantierClient } from './client'
 import { getOuvrierSession } from '@/lib/ouvrier-session'
 import { ClawWelcomeFetcher } from '@/components/chat/ClawWelcomeFetcher'
@@ -130,6 +131,30 @@ export default async function OuvrierChantierPage({
           D-8-16 : ClawWelcomeFetcher est best-effort, jamais visible en erreur
           US-082 BINDING : bannière visible sur la page tâches/chantier mobile */}
       <ClawWelcomeFetcher />
+
+      {/* Sprint 8 — Accès au chat d'équipe (reachability ouvrier : la page chat existe
+          mais n'avait aucun point d'entrée depuis la vue chantier ouvrier) */}
+      <Link
+        href={`/ouvrier/chantiers/${chantierId}/chat`}
+        data-testid="ouvrier-chat-link"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '8px',
+          padding: '14px',
+          marginBottom: '24px',
+          background: '#163958',
+          color: '#fff',
+          fontFamily: 'Outfit, sans-serif',
+          fontWeight: 700,
+          fontSize: '15px',
+          borderRadius: '8px',
+          textDecoration: 'none',
+        }}
+      >
+        💬 Chat d&apos;équipe
+      </Link>
 
       {/* Client Component pour les interactions (mutation statut + photos Sprint 4) */}
       <OuvrierChantierClient
