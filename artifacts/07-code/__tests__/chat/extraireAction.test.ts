@@ -216,8 +216,15 @@ describe('Schemas Zod — strip clés bénignes + garde clés tenant (EXI-Y-K8-0
     }
   })
 
-  it('PayloadCreerTacheSchema accepte assigned_to null (tâche non assignée)', () => {
-    const r = PayloadCreerTacheSchema.safeParse({ titre: 'T', assigned_to: null })
+  it('PayloadCreerTacheSchema accepte les champs optionnels à null (LLM émet null)', () => {
+    // Non-régression : Sonnet renvoie null pour les champs non fournis
+    // (assigned_to, date_echeance, description). Ne doit PAS rejeter la proposition.
+    const r = PayloadCreerTacheSchema.safeParse({
+      titre: 'T',
+      assigned_to: null,
+      date_echeance: null,
+      description: null,
+    })
     expect(r.success).toBe(true)
   })
 

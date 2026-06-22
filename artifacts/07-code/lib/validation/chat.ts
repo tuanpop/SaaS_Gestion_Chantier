@@ -82,11 +82,13 @@ export const PayloadCreerTacheSchema = z
     description: z
       .string()
       .max(500, 'La description ne peut pas dépasser 500 caractères.')
+      .nullable()
       .optional(),
     assigned_to: z.string().uuid('assigned_to doit être un UUID valide.').nullable().optional(),
     date_echeance: z
       .string()
       .regex(/^\d{4}-\d{2}-\d{2}$/, 'date_echeance doit être au format YYYY-MM-DD.')
+      .nullable()
       .optional(),
   })
   .strip() // Rejette toute clé supplémentaire (dont chantier_id/organisation_id — EXI-Y-K8-06)
@@ -115,6 +117,7 @@ export const PayloadReplanifierSchema = z
     raison: z
       .string()
       .max(200, 'La raison ne peut pas dépasser 200 caractères.')
+      .nullable()
       .optional(),
   })
   .strip()
