@@ -16,6 +16,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import type { Chantier, TacheWithUser, AffectationWithUser, PhotoConducteurDisplay } from '@/types/database'
 import { AffectationForm } from '@/components/AffectationForm'
 import { TacheCreateModal } from '@/components/TacheCreateModal'
@@ -835,6 +836,27 @@ export function ChantierDetailAdminTabs({
             EXI-8-06 BINDING : ChatFilMessages rend JSX pur — jamais dangerouslySetInnerHTML
             PO-8-01=A BINDING : polling 30s dans ChatFilMessages */}
         <TabsContent value="chat" className="pt-4">
+          {/* Sprint 8 — point d'entrée vers la file des propositions du bot (US-072) */}
+          <Link
+            href={`/admin/chantiers/${chantierId}/propositions`}
+            data-testid="link-propositions-admin"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '10px 16px',
+              marginBottom: '16px',
+              background: '#163958',
+              color: '#fff',
+              fontFamily: 'Outfit, sans-serif',
+              fontWeight: 700,
+              fontSize: '14px',
+              borderRadius: '8px',
+              textDecoration: 'none',
+            }}
+          >
+            📋 Propositions à valider
+          </Link>
           <div
             data-testid="chat-container-admin"
             className="card-brutal p-0 overflow-hidden"

@@ -615,6 +615,28 @@ export function ChantierDetailConducteurClient({
             EXI-8-06 BINDING : ChatFilMessages rend JSX pur
             PO-8-01=A BINDING : polling 30s dans ChatFilMessages */}
         <TabsContent value="chat" className="pt-2">
+          {/* Sprint 8 — point d'entrée vers la file des propositions du bot (US-072) */}
+          <Link
+            href={`/conducteur/chantiers/${chantierId}/propositions`}
+            data-testid="link-propositions-conducteur"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              padding: '12px',
+              marginBottom: '12px',
+              background: '#163958',
+              color: '#fff',
+              fontFamily: 'Outfit, sans-serif',
+              fontWeight: 700,
+              fontSize: '14px',
+              borderRadius: '8px',
+              textDecoration: 'none',
+            }}
+          >
+            📋 Propositions à valider
+          </Link>
           <div
             data-testid="chat-container-conducteur"
             className="card-brutal-mobile overflow-hidden"
