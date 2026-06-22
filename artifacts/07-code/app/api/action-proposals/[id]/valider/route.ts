@@ -168,7 +168,7 @@ export async function PATCH(
 
     // 8. Exécuter l'action (D-8-13 BINDING : SEUL appel de executerAction)
     // RG-ACTION-008 : best-effort — échec → erreur_execution logged, statut reste 'valide'
-    const resultat = await executerAction(proposal, adminClient)
+    const resultat = await executerAction(proposal, adminClient, auth.userId)
 
     // 9. Mettre à jour le résultat d'exécution
     const updatePayload: Record<string, unknown> = {
