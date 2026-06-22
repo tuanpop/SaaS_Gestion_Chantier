@@ -54,9 +54,6 @@ import { extraireActionPayload } from '@/lib/chat/extraireAction'
 import {
   validatePayloadByType,
   PayloadCreerTacheSchema,
-  PayloadAjouterCRSchema,
-  PayloadReplanifierSchema,
-  PayloadAlerteSchema,
 } from '@/lib/validation/chat'
 import type { ContexteBot } from '@/types/chat'
 
@@ -132,13 +129,17 @@ describe('validatePayloadByType — Zod .strict() IDOR (EXI-Y-K8-06 / D-8-14 BIN
     }
   })
 
-  it('ZOD-4 : payload ajouter_cr + clé arbitraire → rejeté (.strict())', () => {
+  it('ZOD-4 : payload ajouter_cr + clé bénigne arbitraire → tolérée (strippée)', () => {
+    // .strip() ignore les clés bénignes hallucinées par le LLM (non-tenant).
     const payload = {
       note: 'Pluie ce matin',
-      user_id: UUID_2, // clé non déclarée
+      user_id: UUID_2, // clé non déclarée, non-tenant → strippée (pas rejetée)
     }
     const result = validatePayloadByType('ajouter_cr', payload)
-    expect(result.success).toBe(false)
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data).not.toHaveProperty('user_id')
+    }
   })
 
   it('ZOD-5 : payload replanifier + chantier_id → rejeté (.strict())', () => {
@@ -204,33 +205,40 @@ describe('validatePayloadByType — Zod .strict() IDOR (EXI-Y-K8-06 / D-8-14 BIN
 // Tests Zod schemas directs (tests de contrat)
 // ============================================================
 
-describe('Schemas Zod directs — contrat strict', () => {
-  it('PayloadCreerTacheSchema.strict() : chantier_id reject', () => {
-    const r = PayloadCreerTacheSchema.safeParse({ titre: 'T', chantier_id: 'x' })
+describe('Schemas Zod — strip clés bénignes + garde clés tenant (EXI-Y-K8-06)', () => {
+  // Non-régression bug prod S8-7 : Sonnet renvoyait {titre, date_echeance, assigned_to:null, statut}
+  // → .strict() rejetait toute la proposition. Désormais .strip() tolère statut, assigned_to null OK.
+  it('PayloadCreerTacheSchema strippe une clé bénigne hallucinée (statut)', () => {
+    const r = PayloadCreerTacheSchema.safeParse({ titre: 'T', statut: 'a_faire', assigned_to: null })
+    expect(r.success).toBe(true)
+    if (r.success) {
+      expect(r.data).not.toHaveProperty('statut')
+    }
+  })
+
+  it('PayloadCreerTacheSchema accepte assigned_to null (tâche non assignée)', () => {
+    const r = PayloadCreerTacheSchema.safeParse({ titre: 'T', assigned_to: null })
+    expect(r.success).toBe(true)
+  })
+
+  // La protection IDOR vit désormais dans validatePayloadByType (garde clés tenant),
+  // pas au niveau du schéma (qui strippe). executerAction force chantier_id/org côté serveur.
+  it('validatePayloadByType rejette chantier_id (garde IDOR)', () => {
+    const r = validatePayloadByType('creer_tache', { titre: 'T', chantier_id: 'x' })
     expect(r.success).toBe(false)
   })
 
-  it('PayloadAjouterCRSchema.strict() : organisation_id reject', () => {
-    const r = PayloadAjouterCRSchema.safeParse({ note: 'N', organisation_id: 'x' })
+  it('validatePayloadByType rejette organisation_id (garde IDOR)', () => {
+    const r = validatePayloadByType('ajouter_cr', { note: 'N', organisation_id: 'x' })
     expect(r.success).toBe(false)
   })
 
-  it('PayloadReplanifierSchema.strict() : user_id reject', () => {
-    const r = PayloadReplanifierSchema.safeParse({
-      cible: 'tache',
-      ressource_id: UUID_1,
-      nouvelle_date: '2026-07-01',
-      user_id: 'x', // non déclaré
-    })
-    expect(r.success).toBe(false)
-  })
-
-  it('PayloadAlerteSchema.strict() : chantier_id reject', () => {
-    const r = PayloadAlerteSchema.safeParse({
+  it('validatePayloadByType rejette id (garde identité)', () => {
+    const r = validatePayloadByType('alerte', {
       titre: 'T',
       message: 'M',
       destinataires: 'tous',
-      chantier_id: 'x',
+      id: 'x',
     })
     expect(r.success).toBe(false)
   })

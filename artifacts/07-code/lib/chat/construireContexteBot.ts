@@ -172,17 +172,18 @@ export async function construireContexteBot(
     let derives_actives: DeriveContexte[] = []
 
     if (roleAppelant === 'conducteur' || roleAppelant === 'admin') {
+      // Colonnes réelles de derives_detectees (migration 014) : type, message_llm.
+      // Dérive active = resolved_at IS NULL (pas de colonne statut).
       const { data: derivesRaw, error: derivesError } = await (adminClient as unknown as AdminClient)
         .from('derives_detectees')
-        .select('id, type_derive, description, statut')
+        .select('id, type, message_llm')
         .eq('chantier_id', chantierId)
         .eq('organisation_id', organisationId)
-        .eq('statut', 'actif') as unknown as {
+        .is('resolved_at', null) as unknown as {
           data: Array<{
             id: string
-            type_derive: string
-            description: string
-            statut: string
+            type: string
+            message_llm: string | null
           }> | null
           error: { message: string } | null
         }
@@ -197,9 +198,9 @@ export async function construireContexteBot(
       // Mapping champ par champ — JAMAIS spread (EXI-Y-K8-04)
       derives_actives = (derivesRaw ?? []).map((d) => ({
         id: d.id,
-        type_derive: d.type_derive,
-        description: escapeDelimiter(d.description), // EXI-Y-K8-01
-        statut: d.statut,
+        type_derive: d.type,
+        description: escapeDelimiter(d.message_llm ?? ''), // EXI-Y-K8-01
+        statut: 'actif',
       }))
     }
 

@@ -83,13 +83,13 @@ export const PayloadCreerTacheSchema = z
       .string()
       .max(500, 'La description ne peut pas dépasser 500 caractères.')
       .optional(),
-    assigned_to: z.string().uuid('assigned_to doit être un UUID valide.').optional(),
+    assigned_to: z.string().uuid('assigned_to doit être un UUID valide.').nullable().optional(),
     date_echeance: z
       .string()
       .regex(/^\d{4}-\d{2}-\d{2}$/, 'date_echeance doit être au format YYYY-MM-DD.')
       .optional(),
   })
-  .strict() // Rejette toute clé supplémentaire (dont chantier_id/organisation_id — EXI-Y-K8-06)
+  .strip() // Rejette toute clé supplémentaire (dont chantier_id/organisation_id — EXI-Y-K8-06)
 
 // Type 2 : ajouter_cr
 export const PayloadAjouterCRSchema = z
@@ -99,7 +99,7 @@ export const PayloadAjouterCRSchema = z
       .min(1, 'La note est obligatoire.')
       .max(500, 'La note ne peut pas dépasser 500 caractères.'),
   })
-  .strict()
+  .strip()
 
 // Type 3 : replanifier
 // F004 fix — ressource_id nullable aligné sur schéma Yuki (schema.ts l.158 : .nullable())
@@ -117,7 +117,7 @@ export const PayloadReplanifierSchema = z
       .max(200, 'La raison ne peut pas dépasser 200 caractères.')
       .optional(),
   })
-  .strict()
+  .strip()
 
 // Type 4 : alerte
 export const PayloadAlerteSchema = z
@@ -132,7 +132,7 @@ export const PayloadAlerteSchema = z
       .max(500, 'Le message ne peut pas dépasser 500 caractères.'),
     destinataires: z.enum(['admins', 'conducteurs', 'tous']),
   })
-  .strict()
+  .strip()
 
 // ============================================================
 // Dispatcher : valide le payload selon le type d'action
@@ -151,6 +151,29 @@ export function validatePayloadByType(
   type: ActionType,
   payload: unknown,
 ): { success: boolean; data?: unknown; error?: z.ZodError } {
+  // EXI-Y-K8-06 / D-8-14 : rejeter explicitement l'injection de clés tenant/identité.
+  // Les schémas utilisent .strip() (tolère les clés bénignes hallucinées par le LLM, ex.
+  // statut, qui sont simplement ignorées) ; cette garde reste la protection IDOR.
+  // executerAction force déjà chantier_id/organisation_id côté serveur (défense en profondeur).
+  const FORBIDDEN_PAYLOAD_KEYS = ['chantier_id', 'organisation_id', 'org_id', 'id']
+  if (
+    typeof payload === 'object' &&
+    payload !== null &&
+    FORBIDDEN_PAYLOAD_KEYS.some((k) => k in (payload as Record<string, unknown>))
+  ) {
+    return {
+      success: false,
+      error: new z.ZodError([
+        {
+          code: z.ZodIssueCode.custom,
+          path: [],
+          message:
+            'Clé interdite (chantier_id/organisation_id/id) dans le payload — rejeté (EXI-Y-K8-06).',
+        },
+      ]),
+    }
+  }
+
   switch (type) {
     case 'creer_tache': {
       const result = PayloadCreerTacheSchema.safeParse(payload)
