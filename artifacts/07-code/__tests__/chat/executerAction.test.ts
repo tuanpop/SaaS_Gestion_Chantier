@@ -5,7 +5,7 @@
  * D-8-13 BINDING : executerAction est importé ICI (test) — c'est le seul endroit autorisé en prod
  * D-8-14 BINDING IDOR : chantier_id/organisation_id du proposal, JAMAIS du payload
  * D-045 BINDING : taches n'a pas deleted_at — statut 'a_faire' direct
- * S-8-24 BINDING : htmlEscape sur titre + message avant notification alerte
+ * D-4V-002 BINDING : htmlEscape délégué à insertNotification (point unique — jamais avant)
  * RG-ACTION-004→007 BINDING : logique par type
  * RG-ACTION-008 : best-effort — erreur → {erreur: message}, pas de throw
  *
@@ -22,7 +22,7 @@
  *   REPLAN-2 : replanifier date passée → {erreur: ...}
  *   REPLAN-3 : replanifier tâche hors périmètre → {erreur: ...}
  *   ALERTE-1 : alerte happy path → {ressource_type:'notification'}
- *   ALERTE-2 : htmlEscape sur titre/message avant notification (S-8-24)
+ *   ALERTE-2 : insertNotification appelé avec valeurs BRUTES (htmlEscape délégué à insertNotification — D-4V-002, évite double-encodage)
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
@@ -35,7 +35,6 @@ const {
   mockAdminFrom,
   mockLogger,
   mockInsertNotification,
-  mockHtmlEscape,
   mockResolveAdminsOrg,
   mockResolveConducteurChantier,
 } = vi.hoisted(() => {
@@ -49,7 +48,7 @@ const {
       child: vi.fn().mockReturnThis(),
     },
     mockInsertNotification: vi.fn().mockResolvedValue(undefined),
-    mockHtmlEscape: vi.fn().mockImplementation((s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')),
+    // htmlEscape supprimé : executerAlerte délègue maintenant à insertNotification (D-4V-002)
     mockResolveAdminsOrg: vi.fn().mockResolvedValue(['admin-001']),
     mockResolveConducteurChantier: vi.fn().mockResolvedValue('conducteur-001'),
   }
@@ -61,7 +60,7 @@ vi.mock('@/lib/supabase/admin', () => ({
 }))
 vi.mock('@/lib/notifications/notif', () => ({
   insertNotification: mockInsertNotification,
-  htmlEscape: mockHtmlEscape,
+  // htmlEscape absent du mock : executerAlerte ne l'importe plus (D-4V-002 — point unique d'échappement = insertNotification)
   resolveAdminsOrg: mockResolveAdminsOrg,
   resolveConducteurChantier: mockResolveConducteurChantier,
 }))
@@ -476,7 +475,12 @@ describe('executerAction — alerte (RG-ACTION-007)', () => {
     expect(mockInsertNotification).toHaveBeenCalled()
   })
 
-  it('ALERTE-2 : htmlEscape sur titre + message AVANT notification (S-8-24 BINDING)', async () => {
+  it('ALERTE-2 : insertNotification reçoit valeurs BRUTES — D-4V-002 point unique htmlEscape (anti double-encodage)', async () => {
+    // D-4V-002 BINDING : htmlEscape est appliqué par insertNotification en interne.
+    // executerAlerte NE DOIT PAS appliquer htmlEscape avant — sinon double-encodage en prod
+    // (&amp;lt;script&amp;gt; au lieu de &lt;script&gt;).
+    // Ce test vérifie que insertNotification reçoit les valeurs BRUTES.
+    // Le comportement correct est documenté dans DECISIONLOG F004 Itachi Phase 4 (cron derives).
     mockResolveAdminsOrg.mockResolvedValueOnce(['admin-001'])
     mockResolveConducteurChantier.mockResolvedValueOnce(null)
     mockInsertNotification.mockResolvedValue(undefined)
@@ -492,15 +496,12 @@ describe('executerAction — alerte (RG-ACTION-007)', () => {
 
     await executerAction(proposal, ADMIN_CLIENT, VALIDATEUR_ID)
 
-    // S-8-24 BINDING : htmlEscape doit être appelé sur titre et message
-    expect(mockHtmlEscape).toHaveBeenCalledWith('Alerte <script>XSS</script>')
-    expect(mockHtmlEscape).toHaveBeenCalledWith('Message & <injection>')
-
-    // insertNotification doit recevoir les versions escapées
+    // D-4V-002 : insertNotification reçoit les valeurs BRUTES (non pré-échappées).
+    // insertNotification applique htmlEscape en interne — pas de double-encodage.
     expect(mockInsertNotification).toHaveBeenCalledWith(
       expect.objectContaining({
-        titre: expect.stringContaining('&lt;'),
-        message: expect.stringContaining('&lt;'),
+        titre: 'Alerte <script>XSS</script>',   // brut — htmlEscape par insertNotification
+        message: 'Message & <injection>',         // brut — htmlEscape par insertNotification
       }),
     )
   })

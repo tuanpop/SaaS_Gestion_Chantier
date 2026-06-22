@@ -2,6 +2,29 @@
 
 ---
 
+[2026-06-23 00:11] agent=zoro mode=D
+  artifacts:
+    MODIFIED artifacts/07-code/lib/chat/executerAction.ts
+      — suppression import htmlEscape (double-encodage corrigé — D-4V-002)
+      — executerAlerte : titre/message passés BRUTS à insertNotification
+      — commentaire header mis à jour (S-8-24 → D-4V-002)
+    MODIFIED artifacts/07-code/__tests__/chat/executerAction.test.ts
+      — ALERTE-2 corrigé : vérifie valeurs BRUTES dans insertNotification (pas htmlEscape appelé avant)
+      — mock htmlEscape retiré du hoisted block (plus importé par executerAlerte)
+  turns_used: 10/20
+  drift_audit_results:
+    migrations_confrontees: 018, 019, 020, 021, 022, 002, 012
+    colonnes_fautives: 0 (aucun drift schéma/code)
+    double_htmlEscape_alerte: FIXED — exécuterAlerte ne pré-échappe plus avant insertNotification
+    nullabilite_LLM: VERIFIED — PayloadAjouterCR.note + PayloadAlerte.destinataires non-nullable par design (requis métier)
+    reachability_sprint8: VERIFIED — chat admin/conducteur dans tabs, ouvrier page+lien, accueil Claw ClawWelcomeFetcher
+    parseXxxSafe: VERIFIED — toutes best-effort, jamais throw
+  suite_results:
+    tsc: exit 0 (0 erreur)
+    total: 856 passed / 0 failed / 10 skipped (80 fichiers)
+    build: PASS
+  status: completed
+
 [2026-06-17 01:35] agent=zoro mode=D
   artifacts:
     MODIFIED artifacts/07-code/app/api/chantiers/[id]/chat/messages/route.ts

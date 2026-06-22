@@ -10,6 +10,20 @@ Alternative ecartee : [ce qui a ete considere et rejete]
 
 ---
 
+[2026-06-23] Zoro [permanent:false]
+Decision : ALERTE-DOUBLE-ESCAPE Sprint 8 — suppression de htmlEscape() dans executerAlerte (lib/chat/executerAction.ts) ; valeurs titre/message passées brutes à insertNotification. Import htmlEscape retiré. Test ALERTE-2 corrigé pour vérifier que insertNotification reçoit les valeurs BRUTES (conforme D-4V-002).
+Raison : executerAlerte appliquait htmlEscape sur titre et message AVANT de les passer à insertNotification. insertNotification applique lui-même htmlEscape en interne (lib/notifications/notif.ts lignes 184-185, D-4V-002 BINDING). En prod, le résultat était un double-encodage : &amp;lt;script&amp;gt; au lieu de &lt;script&gt;. Pattern documenté dans DECISIONLOG F004 Itachi Phase 4 (même erreur sur le cron derives). D-4V-002 désigne insertNotification comme le POINT UNIQUE d'échappement.
+Alternative écartée : appliquer htmlEscape avant insertNotification (double-encodage) ; retirer htmlEscape de insertNotification et le mettre partout en amont (duplique la responsabilité, fragile).
+
+---
+
+[2026-06-23] Zoro [permanent:false]
+Decision : AUDIT Sprint 8 systématique — 0 drift schéma supplémentaire trouvé. Résultats : (A) toutes les colonnes INSERT/UPDATE/SELECT dans lib/chat/*, app/api/chantiers/[id]/chat/messages/route.ts, app/api/action-proposals/**, app/api/ouvrier/accueil-claw/route.ts, app/api/auth/qr/[token]/route.ts confrontées aux migrations 018-022 et 002 — 0 colonne inexistante. (B) PayloadAjouterCRSchema.note et PayloadAlerteSchema.destinataires sont non-nullable par design (requis métier — null ici = proposition nulle, pas crash). (C) Reachability : chat admin/conducteur dans onglets tabs-client.tsx + liens propositions ; chat ouvrier page dédiée + lien dans page chantier ouvrier ; accueil Claw via ClawWelcomeFetcher — 0 page Sprint 8 sans entrée. (D) parseClawReplySafe/parseAccueilOutputSafe/parseIntentionSafe : toutes retournent une valeur safe sans throw.
+Raison : Audit demandé par le PO pour éliminer en une passe les bugs récurrents. Seul drift réel trouvé = double-htmlEscape (corrigé séparément ci-dessus).
+Alternative écartée : N/A — audit exhaustif, pas une décision de design.
+
+---
+
 [2026-06-17] Zoro [permanent:false]
 Decision : BUG-ARCH-MSG-1 Sprint 8 — assertChantierAccess modifié pour retourner un discriminant 'ok' | 'archived' | 'not_found' (au lieu de boolean). POST /api/chantiers/[id]/chat/messages retourne 403 quand chantier archivé + utilisateur légitime, 404 quand cross-org/inexistant/non-membre. GET conserve 404 dans tous les cas d'échec.
 Raison : RG-CHAT-007 exige 403 (chat fermé) pour un utilisateur légitime sur chantier archivé. L'ancienne implémentation retournait boolean sans distinguer archived vs not_found — le POST retournait systématiquement 404, ce qui est sémantiquement incorrect (404 signifie "pas trouvé/pas membre" dans le threat model S-8). Le fix est chirurgical : le type de retour passe à un discriminant, les deux call-sites sont mis à jour (GET garde 404 pour les deux cas d'échec, POST distingue archived→403 vs not_found→404).

@@ -4,7 +4,7 @@
 // D-8-14 BINDING IDOR : chantier_id/organisation_id TOUJOURS lus de proposal, JAMAIS du payload
 //   Toute INSERT/UPDATE porte le double filtre chantier_id = proposal.chantier_id AND organisation_id = proposal.organisation_id
 // D-045 BINDING : taches n'a pas de deleted_at — jamais de filtre taches.deleted_at IS NULL
-// S-8-24 BINDING : htmlEscape(titre) + htmlEscape(message) avant insertNotification (action alerte)
+// D-4V-002 BINDING : htmlEscape délégué à insertNotification (point unique — NE PAS appliquer avant)
 // PO-4V-03 BINDING : jamais d'ouvrier dans les destinataires alerte
 // RG-ACTION-004→007 BINDING : logique d'exécution par type
 // RG-ACTION-008 : best-effort — exécution KO → {erreur: message}, pas de rollback
@@ -12,7 +12,6 @@
 import { logger } from '@/lib/logger'
 import {
   insertNotification,
-  htmlEscape,
   resolveConducteurChantier,
   resolveAdminsOrg,
 } from '@/lib/notifications/notif'
@@ -51,13 +50,16 @@ export interface ResultatExecution {
 export async function executerAction(
   proposal: ActionProposal,
   adminClient: AdminClient,
+  // Utilisateur qui valide la proposition (admin/conducteur) — devient created_by
+  // de la tâche créée (taches.created_by NOT NULL). Source serveur (auth), jamais du payload.
+  createdBy: string,
 ): Promise<ResultatExecution> {
   // D-8-14 : source d'autorité IDOR — jamais du payload
   const { chantier_id, organisation_id, type, payload } = proposal
 
   switch (type) {
     case 'creer_tache':
-      return executerCreerTache(chantier_id, organisation_id, payload, adminClient)
+      return executerCreerTache(chantier_id, organisation_id, payload, adminClient, createdBy)
     case 'ajouter_cr':
       return executerAjouterCR(chantier_id, organisation_id, payload, adminClient)
     case 'replanifier':
@@ -82,6 +84,7 @@ async function executerCreerTache(
   organisation_id: string,
   rawPayload: unknown,
   adminClient: AdminClient,
+  createdBy: string,
 ): Promise<ResultatExecution> {
   // Re-valider le payload (EXI-Y-K8-06 — Zod strict)
   const parsed = PayloadCreerTacheSchema.safeParse(rawPayload)
@@ -99,6 +102,7 @@ async function executerCreerTache(
     const insertPayload = {
       chantier_id,            // D-8-14 : du proposal, jamais du payload
       organisation_id,        // D-8-14 : du proposal, jamais du payload
+      created_by: createdBy,  // taches.created_by NOT NULL — utilisateur validateur (auth)
       titre,
       description: description ?? null,
       assigned_to: assigned_to ?? null,
@@ -366,7 +370,10 @@ async function executerReplanifier(
 
 // ============================================================
 // Type 4 : alerte (RG-ACTION-007)
-// S-8-24 BINDING : htmlEscape(titre) + htmlEscape(message) avant insertNotification
+// D-4V-002 BINDING : htmlEscape délégué à insertNotification (point unique — D-4V-002)
+//   NE PAS appliquer htmlEscape ici — insertNotification l'applique en interne.
+//   Double-encodage si on l'applique avant (&amp;lt; au lieu de &lt;).
+//   Conforme au pattern documenté DECISIONLOG F004 Itachi Phase 4 (cron derives) et D-4V-002.
 // PO-4V-03 BINDING : jamais d'ouvrier dans les destinataires
 // Résolution users via resolveAdminsOrg + resolveConducteurChantier
 // ============================================================
@@ -388,9 +395,8 @@ async function executerAlerte(
 
   const { titre, message, destinataires } = parsed.data
 
-  // S-8-24 BINDING : htmlEscape sur titre et message AVANT insertNotification
-  const titreSafe = htmlEscape(titre)
-  const messageSafe = htmlEscape(message)
+  // D-4V-002 : NE PAS appliquer htmlEscape ici — insertNotification l'applique en interne.
+  // Passer les valeurs brutes à insertNotification (délégation à l'unique point d'échappement).
 
   try {
     // Résolution des destinataires (admins, conducteurs, ou tous) — PO-4V-03 : jamais ouvrier
@@ -420,14 +426,14 @@ async function executerAlerte(
     }
 
     // insertNotification pour chaque destinataire (best-effort interne)
-    // htmlEscape déjà appliqué ci-dessus (S-8-24 — insertNotification l'applique aussi en interne mais on est explicites)
+    // D-4V-002 : insertNotification applique htmlEscape en interne — valeurs brutes passées ici
     for (const userId of uniqueIds) {
       await insertNotification({
         organisationId: organisation_id,
         userId,
         type: 'alerte_chat' as import('@/types/database').NotificationType,
-        titre: titreSafe,
-        message: messageSafe,
+        titre,    // brut — htmlEscape délégué à insertNotification (D-4V-002)
+        message,  // brut — htmlEscape délégué à insertNotification (D-4V-002)
         chantierId: chantier_id,
         tacheId: null,
       })
