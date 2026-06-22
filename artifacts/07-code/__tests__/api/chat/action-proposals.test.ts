@@ -414,6 +414,7 @@ describe('PATCH /api/action-proposals/[id]/valider', () => {
     expect(mockExecuterAction).toHaveBeenCalledWith(
       expect.objectContaining({ id: PROPOSAL_ID }),
       expect.anything(),
+      expect.any(String), // userId validateur → created_by
     )
     // Les statuts valide → execute (ou valide si erreur)
     expect([200, 500]).toContain(response.status)

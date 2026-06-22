@@ -83,6 +83,7 @@ const CHANTIER_ID = '11111111-1111-4111-a111-111111111111'
 const ORG_ID = '22222222-2222-4222-a222-222222222222'
 const PROPOSAL_ID = '33333333-3333-4333-a333-333333333333'
 const TACHE_ID = '44444444-4444-4444-a444-444444444444'
+const VALIDATEUR_ID = '55555555-5555-4555-a555-555555555555' // utilisateur qui valide → created_by
 const ADMIN_CLIENT: MockAdminClient = { from: mockAdminFrom }
 
 function makeProposal(overrides: Partial<ActionProposal> = {}): ActionProposal {
@@ -144,7 +145,7 @@ describe('executerAction — creer_tache (RG-ACTION-004)', () => {
       payload: { titre: 'Fondations', description: 'Zone nord' },
     })
 
-    const result = await executerAction(proposal, ADMIN_CLIENT)
+    const result = await executerAction(proposal, ADMIN_CLIENT, VALIDATEUR_ID)
 
     expect(result.ressource_id).toBe(TACHE_ID)
     expect(result.ressource_type).toBe('tache')
@@ -165,12 +166,14 @@ describe('executerAction — creer_tache (RG-ACTION-004)', () => {
       },
     })
 
-    await executerAction(proposal, ADMIN_CLIENT)
+    await executerAction(proposal, ADMIN_CLIENT, VALIDATEUR_ID)
 
     // L'INSERT doit contenir chantier_id = proposal.chantier_id (D-8-14)
     const insertedPayload = (insertFn.mock.calls[0] as Array<Record<string, unknown>>)[0]
     expect(insertedPayload?.['chantier_id']).toBe(CHANTIER_ID)
     expect(insertedPayload?.['organisation_id']).toBe(ORG_ID)
+    // taches.created_by NOT NULL — renseigné avec l'utilisateur validateur (auth, pas le payload)
+    expect(insertedPayload?.['created_by']).toBe(VALIDATEUR_ID)
 
     // D-045 : statut 'a_faire' direct (pas de deleted_at)
     expect(insertedPayload?.['statut']).toBe('a_faire')
@@ -188,7 +191,7 @@ describe('executerAction — creer_tache (RG-ACTION-004)', () => {
       payload: { titre: 'Test' },
     })
 
-    const result = await executerAction(proposal, ADMIN_CLIENT)
+    const result = await executerAction(proposal, ADMIN_CLIENT, VALIDATEUR_ID)
 
     expect(result.erreur).toBeTruthy()
     expect(result.ressource_id).toBeNull()
@@ -200,7 +203,7 @@ describe('executerAction — creer_tache (RG-ACTION-004)', () => {
       payload: { description: 'Sans titre — invalide' } as unknown as import('@/types/chat').ActionPayload, // titre manquant (intentionnellement invalide — Zod reject test)
     })
 
-    const result = await executerAction(proposal, ADMIN_CLIENT)
+    const result = await executerAction(proposal, ADMIN_CLIENT, VALIDATEUR_ID)
 
     expect(result.erreur).toBeTruthy()
     expect(result.erreur).toContain('invalide')
@@ -250,7 +253,7 @@ describe('executerAction — ajouter_cr (RG-ACTION-005)', () => {
       payload: { note: 'Signal : pluie ce matin' },
     })
 
-    const result = await executerAction(proposal, ADMIN_CLIENT)
+    const result = await executerAction(proposal, ADMIN_CLIENT, VALIDATEUR_ID)
 
     expect(result.ressource_type).toBe('compte_rendu')
     // L'erreur peut être null ou "Erreur mise à jour" selon le mock — on vérifie le flow principal
@@ -271,7 +274,7 @@ describe('executerAction — ajouter_cr (RG-ACTION-005)', () => {
       payload: { note: 'Signal test' },
     })
 
-    const result = await executerAction(proposal, ADMIN_CLIENT)
+    const result = await executerAction(proposal, ADMIN_CLIENT, VALIDATEUR_ID)
 
     expect(result.erreur).toContain('Aucun CR brouillon')
     expect(result.ressource_type).toBe('compte_rendu')
@@ -313,7 +316,7 @@ describe('executerAction — ajouter_cr (RG-ACTION-005)', () => {
       payload: { note: 'Note test' },
     })
 
-    await executerAction(proposal, ADMIN_CLIENT)
+    await executerAction(proposal, ADMIN_CLIENT, VALIDATEUR_ID)
 
     // Vérifier que chantier_id est bien utilisé dans les filtres SELECT (D-8-14)
     const chantierSelectFilters = eqSelectCalls.filter((args) => args[0] === 'chantier_id')
@@ -365,7 +368,7 @@ describe('executerAction — replanifier (RG-ACTION-006)', () => {
       update: vi.fn().mockReturnValue({ eq: eqChain }),
     })
 
-    const result = await executerAction(proposal, ADMIN_CLIENT)
+    const result = await executerAction(proposal, ADMIN_CLIENT, VALIDATEUR_ID)
 
     // Que la replanification réussisse ou non (selon le mock), elle ne doit pas throw
     expect(result).toBeDefined()
@@ -382,7 +385,7 @@ describe('executerAction — replanifier (RG-ACTION-006)', () => {
       },
     })
 
-    const result = await executerAction(proposal, ADMIN_CLIENT)
+    const result = await executerAction(proposal, ADMIN_CLIENT, VALIDATEUR_ID)
 
     expect(result.erreur).toBeTruthy()
     expect(result.erreur).toContain('passé')
@@ -404,7 +407,7 @@ describe('executerAction — replanifier (RG-ACTION-006)', () => {
       },
     })
 
-    const result = await executerAction(proposal, ADMIN_CLIENT)
+    const result = await executerAction(proposal, ADMIN_CLIENT, VALIDATEUR_ID)
 
     expect(result.erreur).toBeTruthy()
     expect(result.erreur).toContain('ressource_id manquant')
@@ -435,7 +438,7 @@ describe('executerAction — replanifier (RG-ACTION-006)', () => {
       payload: { cible: 'tache', ressource_id: TACHE_ID, nouvelle_date: dateStr },
     })
 
-    await executerAction(proposal, ADMIN_CLIENT)
+    await executerAction(proposal, ADMIN_CLIENT, VALIDATEUR_ID)
 
     // Vérifier les filtres IDOR
     const eqCalls = (eqFn.mock.calls as Array<Array<string>>)
@@ -465,7 +468,7 @@ describe('executerAction — alerte (RG-ACTION-007)', () => {
       },
     })
 
-    const result = await executerAction(proposal, ADMIN_CLIENT)
+    const result = await executerAction(proposal, ADMIN_CLIENT, VALIDATEUR_ID)
 
     expect(result.ressource_type).toBe('notification')
     expect(result.erreur).toBeNull()
@@ -487,7 +490,7 @@ describe('executerAction — alerte (RG-ACTION-007)', () => {
       },
     })
 
-    await executerAction(proposal, ADMIN_CLIENT)
+    await executerAction(proposal, ADMIN_CLIENT, VALIDATEUR_ID)
 
     // S-8-24 BINDING : htmlEscape doit être appelé sur titre et message
     expect(mockHtmlEscape).toHaveBeenCalledWith('Alerte <script>XSS</script>')
@@ -515,7 +518,7 @@ describe('executerAction — alerte (RG-ACTION-007)', () => {
       },
     })
 
-    const result = await executerAction(proposal, ADMIN_CLIENT)
+    const result = await executerAction(proposal, ADMIN_CLIENT, VALIDATEUR_ID)
 
     expect(result.erreur).toContain('Aucun destinataire')
     expect(mockInsertNotification).not.toHaveBeenCalled()
